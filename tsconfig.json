@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "target": "ES2021",
+    "paths": {
+      "*": [
+        "./node_modules/*"
+      ]
+    },
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/**/*"
+  ],
+}
