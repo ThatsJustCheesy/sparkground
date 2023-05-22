@@ -2,6 +2,7 @@ import {
   Expr,
   TreeIndexPath,
   extendIndexPath,
+  isBoolLiteral,
   isHole,
   isNumericLiteral,
   isProgSymbol,
@@ -15,6 +16,7 @@ import BlockH from "../blocks/BlockH";
 import BlockHint from "../blocks/BlockHint";
 import BlockHole from "../blocks/BlockHole";
 import { Tree } from "./trees";
+import BlockBool from "../blocks/BlockBool";
 
 export function renderExpr(
   tree: Tree,
@@ -113,6 +115,17 @@ export function renderExpr(
     );
   } else if (isNumericLiteral(expr)) {
     throw "numeric literal not supported yet";
+  } else if (isBoolLiteral(expr)) {
+    const key = keyForIndexPath(indexPath);
+    return (
+      <BlockBool
+        key={key}
+        id={key}
+        indexPath={indexPath}
+        value={expr}
+        isCopySource={isCopySource}
+      />
+    );
   } else if (isQuoteLiteral(expr)) {
     throw "quote literal not supported yet";
   } else if (isHole(expr)) {

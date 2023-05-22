@@ -1,5 +1,5 @@
 import { Expr, hole, s } from "../ast/ast";
-import { ProgSymbol } from "../symbols";
+import { ProgSymbol } from "../symbol-table";
 
 export const symbols = {
   define: {
@@ -53,4 +53,8 @@ export const library: Expr[] = [
   s(_.list, hole),
   s(_.car, hole),
   s(_.cdr, hole),
+  true,
+  false,
+  // TODO: Enable once supported
+  // null,
 ];

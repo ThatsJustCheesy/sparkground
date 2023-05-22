@@ -1,5 +1,5 @@
 import { Key } from "react";
-import { ProgSymbol } from "../symbols";
+import { ProgSymbol } from "../symbol-table";
 import { Tree } from "./trees";
 
 export type Expr = SExpr | ProgSymbol | Literal | Hole;
@@ -27,11 +27,16 @@ export function isProgSymbol(expr: Expr): expr is ProgSymbol {
   return typeof expr === "object" && expr !== null && "id" in expr;
 }
 
-export type Literal = NumericLiteral | QuoteLiteral;
+export type Literal = NumericLiteral | BoolLiteral | QuoteLiteral;
 
 export type NumericLiteral = number;
 export function isNumericLiteral(expr: Expr): expr is NumericLiteral {
   return typeof expr === "number";
+}
+
+export type BoolLiteral = boolean;
+export function isBoolLiteral(expr: Expr): expr is BoolLiteral {
+  return typeof expr === "boolean";
 }
 
 export type QuoteLiteral = null | {

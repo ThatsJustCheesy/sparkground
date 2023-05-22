@@ -1,33 +1,22 @@
-import { PropsWithChildren } from "react";
-import { ProgSymbol } from "../symbol-table";
 import { UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { callEach } from "../util";
 import { TreeIndexPath } from "../ast/ast";
 
-type Props = PropsWithChildren<{
+type Props = {
   id: UniqueIdentifier;
   indexPath: TreeIndexPath;
 
-  symbol: ProgSymbol;
-  definesSymbol?: boolean;
+  value: boolean;
   isCopySource?: boolean;
+};
 
-  onSymbolMouseEnter?: (symbol: ProgSymbol) => void;
-  onSymbolMouseLeave?: (symbol: ProgSymbol) => void;
-}>;
-
-export default function BlockH({
+export default function BlockBool({
   id,
   indexPath,
 
-  symbol,
-  definesSymbol,
+  value,
   isCopySource,
-  children,
-
-  onSymbolMouseEnter,
-  onSymbolMouseLeave,
 }: Props) {
   const { isOver, setNodeRef: setNodeRef1 } = useDroppable({
     id,
@@ -49,16 +38,9 @@ export default function BlockH({
       style={{ transform: CSS.Translate.toString(transform) }}
       {...listeners}
       {...attributes}
-      className={`block-h ${isOver ? "block-dragged-over" : ""}`}
+      className={`${"block-bool"} ${isOver ? "block-dragged-over" : ""}`}
     >
-      <div
-        className={["block-h-label", definesSymbol ? "block-ident-def" : ""].join(" ")}
-        onMouseEnter={() => onSymbolMouseEnter?.(symbol)}
-        onMouseLeave={() => onSymbolMouseLeave?.(symbol)}
-      >
-        {symbol.id}
-      </div>
-      {children}
+      {value ? "true" : "false"}
     </div>
   );
 }

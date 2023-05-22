@@ -1,4 +1,12 @@
-import { Expr, isHole, isNumericLiteral, isProgSymbol, isQuoteLiteral, isSExpr } from "./ast";
+import {
+  Expr,
+  isBoolLiteral,
+  isHole,
+  isNumericLiteral,
+  isProgSymbol,
+  isQuoteLiteral,
+  isSExpr,
+} from "./ast";
 
 export function serializeExpr(expr: Expr): string {
   if (isSExpr(expr)) {
@@ -12,6 +20,7 @@ export function serializeExpr(expr: Expr): string {
 
   if (isProgSymbol(expr)) return expr.id;
   if (isNumericLiteral(expr)) return `${expr}`;
+  if (isBoolLiteral(expr)) return expr ? "#t" : "#f";
   if (isQuoteLiteral(expr)) return expr === null ? "'()" : "'(" + serializeExpr(expr.quote) + ")";
   if (isHole(expr)) return "<...>";
   throw "invalid expression";

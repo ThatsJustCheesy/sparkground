@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import { ProgSymbol } from "../symbols";
+import { ProgSymbol } from "../symbol-table";
 import { UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { callEach } from "../util";

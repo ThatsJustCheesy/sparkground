@@ -1,3 +1,4 @@
+import "./menu-bar.css";
 import { PropsWithChildren } from "react";
 
 export type Props = PropsWithChildren<{}>;

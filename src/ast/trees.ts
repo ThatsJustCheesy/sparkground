@@ -1,4 +1,4 @@
-import { Expr, isHole } from "./ast";
+import { Expr, Hole, hole, isHole } from "./ast";
 
 export type Tree = {
   id: string;
@@ -12,13 +12,17 @@ export function trees(): Tree[] {
   return [...trees_];
 }
 
-export function newTree(root: Expr) {
-  if (isHole(root)) return;
+export function treeByID(id: string): Tree | undefined {
+  return trees_.find((tree) => tree.id === id);
+}
 
-  trees_.push({
+export function newTree(root: Expr): Tree {
+  const tree: Tree = {
     id: `${++nextID}`,
     root,
-  });
+  };
+  trees_.push(tree);
+  return tree;
 }
 
 export function removeTree(tree: Tree) {
