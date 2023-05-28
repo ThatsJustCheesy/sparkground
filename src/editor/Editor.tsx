@@ -126,13 +126,13 @@ export default function Editor({ trees, rerender }: Props) {
 
     if (active.data.current?.copyOnDrop) {
       copyExprInTree(activeIndexPath, overIndexPath, {
-        x: over!.rect.right,
-        y: over!.rect.bottom,
+        x: active!.rect.current.translated!.right,
+        y: active!.rect.current.translated!.bottom,
       });
     } else {
       moveExprInTree(activeIndexPath, overIndexPath, {
-        x: over!.rect.right,
-        y: over!.rect.bottom,
+        x: active!.rect.current.translated!.right,
+        y: active!.rect.current.translated!.bottom,
       });
     }
     rerender();
