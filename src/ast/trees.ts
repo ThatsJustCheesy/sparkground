@@ -1,8 +1,14 @@
-import { Expr, Hole, hole, isHole } from "./ast";
+import { Expr } from "./ast";
+
+export type Point = {
+  x: number;
+  y: number;
+};
 
 export type Tree = {
   id: string;
   root: Expr;
+  location: Point;
 };
 
 let trees_: Tree[] = [];
@@ -16,10 +22,11 @@ export function treeByID(id: string): Tree | undefined {
   return trees_.find((tree) => tree.id === id);
 }
 
-export function newTree(root: Expr): Tree {
+export function newTree(root: Expr, location: Point): Tree {
   const tree: Tree = {
     id: `${++nextID}`,
     root,
+    location,
   };
   trees_.push(tree);
   return tree;

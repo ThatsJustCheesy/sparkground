@@ -66,7 +66,20 @@ export default function Editor({ trees, rerender }: Props) {
   return (
     <div className="editor">
       <DndContext collisionDetection={collisionDetection} onDragEnd={onBlockDragEnd}>
-        <div className="blocks">{trees.map((tree) => renderExpr(tree, tree.root))}</div>
+        <div className="blocks">
+          {trees.map((tree) => (
+            <div
+              key={tree.id}
+              style={{
+                position: "absolute",
+                top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
+                left: `calc(max(40px, ${tree.location.x}px))`,
+              }}
+            >
+              {renderExpr(tree, tree.root)}
+            </div>
+          ))}
+        </div>
 
         <Library />
       </DndContext>
@@ -93,20 +106,34 @@ export default function Editor({ trees, rerender }: Props) {
     return item?.data?.current?.indexPath;
   }
 
-  function onBlockDragEnd({ active, over }: DragEndEvent) {
+  function onBlockDragEnd({ active, over, activatorEvent }: DragEndEvent) {
     const activeIndexPath = indexPathFromDragged(active);
     if (!activeIndexPath) return;
 
     const overIndexPath = indexPathFromDragged(over);
     if (!overIndexPath) {
-      orphanExpr(activeIndexPath);
+      orphanExpr(
+        activeIndexPath,
+        {
+          x: active!.rect.current.translated!.left,
+          y: active!.rect.current.translated!.top,
+        },
+        active.data.current?.copyOnDrop
+      );
+      rerender();
       return;
     }
 
     if (active.data.current?.copyOnDrop) {
-      copyExprInTree(activeIndexPath, overIndexPath);
+      copyExprInTree(activeIndexPath, overIndexPath, {
+        x: over!.rect.right,
+        y: over!.rect.bottom,
+      });
     } else {
-      moveExprInTree(activeIndexPath, overIndexPath);
+      moveExprInTree(activeIndexPath, overIndexPath, {
+        x: over!.rect.right,
+        y: over!.rect.bottom,
+      });
     }
     rerender();
   }

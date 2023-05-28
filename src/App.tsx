@@ -61,7 +61,7 @@ const defaultExpr = s(
   s(revTail, l, acc),
   s(if_, s(null_, true), acc, s(revTail, s(cdr, l), s(append, s(list, s(car, l)), acc)))
 );
-const defaultTree = newTree(defaultExpr);
+const defaultTree = newTree(defaultExpr, { x: 0, y: 0 });
 
 function App() {
   const [renderCounter, setRenderCounter] = useState(0);

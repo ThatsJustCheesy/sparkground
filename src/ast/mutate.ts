@@ -1,12 +1,14 @@
 import { cloneDeep } from "lodash";
 import { Expr, TreeIndexPath, childAtIndex, hole, isHole, isSExpr, setChildAtIndex } from "./ast";
-import { Tree, newTree, removeTree } from "./trees";
+import { Point, Tree, newTree, removeTree } from "./trees";
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
-  { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath
+  { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath,
+  displaceTo: Point
 ) {
-  if (destinationIndexPath.length < 2) {
+  debugger;
+  if (destinationIndexPath.length === 0) {
     // Trying to replace root of a tree
     return;
   }
@@ -32,14 +34,16 @@ export function moveExprInTree(
   }
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, source);
-  if (!isHole(destination)) newTree(destination);
+  if (!isHole(destination)) newTree(destination, displaceTo);
+  console.log(destinationTree.location.x);
 }
 
 export function copyExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
-  { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath
+  { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath,
+  displaceTo: Point
 ) {
-  if (destinationIndexPath.length < 2) {
+  if (destinationIndexPath.length === 0) {
     // Trying to replace root of a tree
     return;
   }
@@ -64,19 +68,28 @@ export function copyExprInTree(
   if (destination === source || destination === destinationTree.root) return;
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, cloneDeep(source));
-  if (!isHole(destination)) newTree(destination);
+  if (!isHole(destination)) newTree(destination, displaceTo);
 }
 
-export function orphanExpr({ tree, path }: TreeIndexPath) {
+export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: boolean) {
   const expr = exprForIndexPathInTree(tree, path);
+  if (isHole(expr)) return;
+
   const exprParent = exprForIndexPathInTree(tree, path.slice(0, -1));
-  if (!isSExpr(exprParent)) {
+
+  if (copy) {
+    newTree(cloneDeep(expr), placeAt);
+    return;
+  }
+
+  if (path.length === 0 || !isSExpr(exprParent)) {
     // expr is already the root of a tree
+    tree.location = placeAt;
     return;
   }
 
   setChildAtIndex(exprParent, path.at(-1)!, hole);
-  if (!isHole(expr)) newTree(expr);
+  newTree(expr, placeAt);
 }
 
 function exprForIndexPathInTree({ root }: Tree, indexPath: number[]): Expr {

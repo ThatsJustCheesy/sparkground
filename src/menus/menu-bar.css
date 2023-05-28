@@ -1,3 +1,7 @@
+body {
+  --menu-bar-height: 3em;
+}
+
 .menu-bar {
   display: flex;
   flex-flow: row;
@@ -5,7 +9,7 @@
 
   box-sizing: border-box;
   width: 100%;
-  height: 3em;
+  height: var(--menu-bar-height);
   padding-left: 1.5em;
   padding-right: 1.5em;
 

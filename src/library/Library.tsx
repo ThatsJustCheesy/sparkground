@@ -15,6 +15,7 @@ export default function Library({}: Props) {
             {
               id: `library-${index}`,
               root: symbol,
+              location: { x: 0, y: 0 },
             },
             symbol,
             { isCopySource: true }
