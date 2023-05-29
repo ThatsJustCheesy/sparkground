@@ -18,8 +18,10 @@
   gap: 0.5em;
 
   width: fit-content;
+  height: 80vh;
   min-width: 15%;
   padding: 1em;
+  overflow: auto;
 
   border-radius: 0.5em;
   background: rgb(236, 254, 221);
