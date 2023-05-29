@@ -10,13 +10,9 @@ import {
   isSExpr,
   rootIndexPath,
 } from "./ast";
-import BlockIdent from "../blocks/BlockIdent";
-import BlockV from "../blocks/BlockV";
-import BlockH from "../blocks/BlockH";
 import BlockHint from "../blocks/BlockHint";
-import BlockHole from "../blocks/BlockHole";
 import { Tree } from "./trees";
-import BlockBool from "../blocks/BlockBool";
+import Block from "../blocks/Block";
 
 export function renderExpr(
   tree: Tree,
@@ -72,31 +68,29 @@ export function renderExpr(
 
         const key = keyForIndexPath(indexPath);
         return (
-          <BlockV
+          <Block
             key={key}
             id={key}
             indexPath={indexPath}
-            symbol={called}
-            heading={<>{heading}</>}
+            data={{ type: "v", symbol: called, heading: <>{heading}</> }}
             isCopySource={isCopySource}
           >
             {hintedBody}
-          </BlockV>
+          </Block>
         );
       }
 
       const key = keyForIndexPath(indexPath);
       return (
-        <BlockH
+        <Block
           key={key}
           id={key}
           indexPath={indexPath}
-          symbol={called}
-          definesSymbol={isSymbolDefinition}
+          data={{ type: "h", symbol: called }}
           isCopySource={isCopySource}
         >
           {renderedArgs}
-        </BlockH>
+        </Block>
       );
     }
 
@@ -104,12 +98,11 @@ export function renderExpr(
   } else if (isProgSymbol(expr)) {
     const key = keyForIndexPath(indexPath);
     return (
-      <BlockIdent
+      <Block
         key={key}
         id={key}
         indexPath={indexPath}
-        symbol={expr}
-        definesSymbol={isSymbolDefinition}
+        data={{ type: "ident", symbol: expr }}
         isCopySource={isCopySource}
       />
     );
@@ -118,11 +111,11 @@ export function renderExpr(
   } else if (isBoolLiteral(expr)) {
     const key = keyForIndexPath(indexPath);
     return (
-      <BlockBool
+      <Block
         key={key}
         id={key}
         indexPath={indexPath}
-        value={expr}
+        data={{ type: "bool", value: expr }}
         isCopySource={isCopySource}
       />
     );
@@ -130,7 +123,15 @@ export function renderExpr(
     throw "quote literal not supported yet";
   } else if (isHole(expr)) {
     const key = keyForIndexPath(indexPath);
-    return <BlockHole key={key} id={key} indexPath={indexPath} isCopySource={isCopySource} />;
+    return (
+      <Block
+        key={key}
+        id={key}
+        indexPath={indexPath}
+        data={{ type: "hole" }}
+        isCopySource={isCopySource}
+      />
+    );
   } else {
     throw "invalid expression";
   }

@@ -71,6 +71,7 @@
   align-items: baseline;
   gap: 0.5em;
 
+  width: fit-content;
   padding: 0.05em;
   padding-left: 0.5em;
   padding-right: 0.5em;
@@ -83,7 +84,6 @@
 }
 
 .block-ident,
-.block-ident-def,
 .block-bool {
   display: flex;
 
@@ -97,7 +97,7 @@
   border-radius: 0.75em;
 }
 
-.block-ident-def {
+.block-ident.block-copy-source {
   background: #cf6;
 }
 
