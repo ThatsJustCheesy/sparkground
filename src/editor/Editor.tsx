@@ -2,13 +2,16 @@ import "./editor.css";
 import { useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { renderExpr } from "../ast/render";
-import { TreeIndexPath } from "../ast/ast";
+import { Expr, TreeIndexPath, exprAtIndexPath } from "../ast/ast";
 import {
   Active,
   CollisionDescriptor,
   CollisionDetection,
   DndContext,
   DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
   Over,
 } from "@dnd-kit/core";
 import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "../ast/mutate";
@@ -63,12 +66,16 @@ const collisionDetection: CollisionDetection = ({
 
 export default function Editor({ trees, rerender }: Props) {
   const [contextHelpSymbol, setContextHelpSymbol] = useState<ProgSymbol>();
+  const [activeDrag, setActiveDrag] = useState<TreeIndexPath>();
+  const [activeDragOver, setActiveDragOver] = useState<Over>();
 
   return (
     <div className="editor">
       <DndContext
         autoScroll={false}
         collisionDetection={collisionDetection}
+        onDragStart={onBlockDragStart}
+        onDragOver={onBlockDragOver}
         onDragEnd={onBlockDragEnd}
       >
         <div className="blocks">
@@ -89,6 +96,13 @@ export default function Editor({ trees, rerender }: Props) {
         </div>
 
         <Library />
+
+        <DragOverlay dropAnimation={null} zIndex={999999}>
+          {activeDrag &&
+            renderExpr(activeDrag.tree, exprAtIndexPath(activeDrag), {
+              forDragOverlay: activeDragOver ?? true,
+            })}
+        </DragOverlay>
       </DndContext>
 
       {contextHelpSymbol ? (
@@ -113,7 +127,20 @@ export default function Editor({ trees, rerender }: Props) {
     return item?.data?.current?.indexPath;
   }
 
+  function onBlockDragStart({ active }: DragStartEvent) {
+    const activeIndexPath = indexPathFromDragged(active);
+    if (!activeIndexPath) return;
+
+    setActiveDrag(activeIndexPath);
+  }
+
+  function onBlockDragOver({ over }: DragOverEvent) {
+    setActiveDragOver(over ?? undefined);
+  }
+
   function onBlockDragEnd({ active, over }: DragEndEvent) {
+    setActiveDrag(undefined);
+
     const activeIndexPath = indexPathFromDragged(active);
     if (!activeIndexPath) return;
 

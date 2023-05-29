@@ -81,3 +81,14 @@ export function extendIndexPath({ tree, path }: TreeIndexPath, extension: number
     path: [...path, extension],
   };
 }
+export function exprAtIndexPath({ tree: { root }, path }: TreeIndexPath): Expr {
+  path = [...path];
+  while (path.length) {
+    if (!isSExpr(root)) throw "invalid index path for tree";
+
+    const index = path.shift()!;
+    root = childAtIndex(root, index);
+  }
+
+  return root;
+}

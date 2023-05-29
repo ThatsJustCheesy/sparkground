@@ -1,6 +1,6 @@
 import { PropsWithChildren } from "react";
 import { ProgSymbol } from "../symbol-table";
-import { UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
+import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { callEach } from "../util";
 import { TreeIndexPath } from "../ast/ast";
@@ -11,6 +11,7 @@ type Props = PropsWithChildren<{
 
   data: Vertical | Horizontal | Identifier | Bool | Hole;
   isCopySource?: boolean;
+  forDragOverlay?: boolean | Over;
 
   onSymbolMouseEnter?: (symbol: ProgSymbol) => void;
   onSymbolMouseLeave?: (symbol: ProgSymbol) => void;
@@ -45,6 +46,7 @@ export default function Block({
 
   data,
   isCopySource,
+  forDragOverlay,
   children,
 
   onSymbolMouseEnter,
@@ -68,30 +70,34 @@ export default function Block({
     attributes,
     listeners,
     setNodeRef: setNodeRef2,
-    transform,
-  } = useDraggable({
-    id,
-    data: { indexPath, copyOnDrop: isCopySource },
-  });
-  if (data.type === "hole") {
+  } = forDragOverlay
+    ? ({} as any)
+    : useDraggable({
+        id,
+        data: { indexPath, copyOnDrop: isCopySource },
+      });
+  if (forDragOverlay || data.type === "hole") {
     // Not draggable
     active = null;
-    over = null;
+    over = typeof forDragOverlay === "object" ? forDragOverlay : null;
     attributes = [] as any;
     listeners = [] as any;
     setNodeRef2 = () => {};
-    transform = { x: 0, y: 0, scaleX: 0, scaleY: 0 };
   }
 
   return (
     <div
       ref={callEach(setNodeRef1, setNodeRef2)}
-      style={{ transform: CSS.Translate.toString(transform) }}
+      style={{
+        visibility: !isCopySource && active?.id === id ? "hidden" : "unset",
+        // Replaced with DragOverlay:
+        // transform: CSS.Translate.toString(transform)
+      }}
       {...listeners}
       {...attributes}
       className={`block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
-        active?.id === id ? "block-dragging" : isOver ? "block-dragged-over" : ""
-      } ${active?.id === id && over?.id === "library" ? "block-drop-will-delete" : ""}`}
+        forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
+      } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""}`}
     >
       {renderData()}
     </div>

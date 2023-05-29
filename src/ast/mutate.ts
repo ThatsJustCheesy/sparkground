@@ -1,5 +1,13 @@
 import { cloneDeep } from "lodash";
-import { Expr, TreeIndexPath, childAtIndex, hole, isHole, isSExpr, setChildAtIndex } from "./ast";
+import {
+  Expr,
+  TreeIndexPath,
+  exprAtIndexPath,
+  hole,
+  isHole,
+  isSExpr,
+  setChildAtIndex,
+} from "./ast";
 import { Point, Tree, newTree, removeTree } from "./trees";
 
 export function moveExprInTree(
@@ -105,14 +113,6 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
   }
 }
 
-function exprForIndexPathInTree({ root }: Tree, indexPath: number[]): Expr {
-  indexPath = [...indexPath];
-  while (indexPath.length) {
-    if (!isSExpr(root)) throw "invalid index path for tree";
-
-    const index = indexPath.shift()!;
-    root = childAtIndex(root, index);
-  }
-
-  return root;
+function exprForIndexPathInTree(tree: Tree, path: number[]): Expr {
+  return exprAtIndexPath({ tree, path });
 }

@@ -13,6 +13,7 @@ import {
 import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block from "../blocks/Block";
+import { Over } from "@dnd-kit/core";
 
 export function renderExpr(
   tree: Tree,
@@ -21,10 +22,12 @@ export function renderExpr(
     indexPath: indexPath_,
     isCopySource,
     isSymbolDefinition,
+    forDragOverlay,
   }: {
     indexPath?: TreeIndexPath;
     isCopySource?: boolean;
     isSymbolDefinition?: boolean;
+    forDragOverlay?: boolean | Over;
   } = {}
 ): JSX.Element {
   const indexPath = indexPath_ ?? rootIndexPath(tree);
@@ -74,6 +77,7 @@ export function renderExpr(
             indexPath={indexPath}
             data={{ type: "v", symbol: called, heading: <>{heading}</> }}
             isCopySource={isCopySource}
+            forDragOverlay={forDragOverlay}
           >
             {hintedBody}
           </Block>
@@ -88,6 +92,7 @@ export function renderExpr(
           indexPath={indexPath}
           data={{ type: "h", symbol: called }}
           isCopySource={isCopySource}
+          forDragOverlay={forDragOverlay}
         >
           {renderedArgs}
         </Block>
@@ -104,6 +109,7 @@ export function renderExpr(
         indexPath={indexPath}
         data={{ type: "ident", symbol: expr }}
         isCopySource={isCopySource}
+        forDragOverlay={forDragOverlay}
       />
     );
   } else if (isNumericLiteral(expr)) {
@@ -117,6 +123,7 @@ export function renderExpr(
         indexPath={indexPath}
         data={{ type: "bool", value: expr }}
         isCopySource={isCopySource}
+        forDragOverlay={forDragOverlay}
       />
     );
   } else if (isQuoteLiteral(expr)) {
@@ -130,6 +137,7 @@ export function renderExpr(
         indexPath={indexPath}
         data={{ type: "hole" }}
         isCopySource={isCopySource}
+        forDragOverlay={forDragOverlay}
       />
     );
   } else {
