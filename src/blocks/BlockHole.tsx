@@ -6,16 +6,21 @@ type Props = {
   id: UniqueIdentifier;
   indexPath: TreeIndexPath;
 
+  isCopySource?: boolean;
+
   onSymbolMouseEnter?: (symbol: ProgSymbol) => void;
   onSymbolMouseLeave?: (symbol: ProgSymbol) => void;
 };
 
 // TODO: Needed in future?
-export default function BlockHole({ id, indexPath }: Props) {
-  const { isOver, setNodeRef } = useDroppable({
-    id,
-    data: { indexPath },
-  });
+export default function BlockHole({ id, indexPath, isCopySource }: Props) {
+  const { isOver, setNodeRef } =
+    isCopySource || indexPath.path.length === 0
+      ? { isOver: false, setNodeRef: () => {} }
+      : useDroppable({
+          id,
+          data: { indexPath },
+        });
 
   return (
     <div ref={setNodeRef} className={`block-hole ${isOver ? "block-dragged-over" : ""}`}>

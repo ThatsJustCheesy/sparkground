@@ -29,11 +29,16 @@ export default function BlockH({
   onSymbolMouseEnter,
   onSymbolMouseLeave,
 }: Props) {
-  const { isOver, setNodeRef: setNodeRef1 } = useDroppable({
-    id,
-    data: { indexPath },
-  });
+  const { isOver, setNodeRef: setNodeRef1 } =
+    isCopySource || indexPath.path.length === 0
+      ? { isOver: false, setNodeRef: () => {} }
+      : useDroppable({
+          id,
+          data: { indexPath },
+        });
   const {
+    active,
+    over,
     attributes,
     listeners,
     setNodeRef: setNodeRef2,
@@ -49,7 +54,9 @@ export default function BlockH({
       style={{ transform: CSS.Translate.toString(transform) }}
       {...listeners}
       {...attributes}
-      className={`block-h ${isOver ? "block-dragged-over" : ""}`}
+      className={`block-h ${
+        active?.id === id ? "block-dragging" : isOver ? "block-dragged-over" : ""
+      } ${active?.id === id && over?.id === "library" ? "block-drop-will-delete" : ""}`}
     >
       <div
         className={["block-h-label", definesSymbol ? "block-ident-def" : ""].join(" ")}

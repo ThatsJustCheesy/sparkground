@@ -11,9 +11,9 @@ import {
   DragEndEvent,
   Over,
 } from "@dnd-kit/core";
-import { moveExprInTree, copyExprInTree, orphanExpr } from "../ast/mutate";
+import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "../ast/mutate";
 import Library from "../library/Library";
-import { Tree } from "../ast/trees";
+import { Tree, bringTreeToFront } from "../ast/trees";
 
 export type Props = {
   trees: Tree[];
@@ -42,7 +42,8 @@ const collisionDetection: CollisionDetection = ({
     if (
       !(
         rect &&
-        Math.abs(rect.top - collisionRect.top) <= Math.min(rect.height, collisionRect.height) &&
+        (id === "library" ||
+          Math.abs(rect.top - collisionRect.top) <= Math.min(rect.height, collisionRect.height)) &&
         rect.right >= collisionRect.left
       )
     )
@@ -65,15 +66,21 @@ export default function Editor({ trees, rerender }: Props) {
 
   return (
     <div className="editor">
-      <DndContext collisionDetection={collisionDetection} onDragEnd={onBlockDragEnd}>
+      <DndContext
+        autoScroll={false}
+        collisionDetection={collisionDetection}
+        onDragEnd={onBlockDragEnd}
+      >
         <div className="blocks">
           {trees.map((tree) => (
             <div
               key={tree.id}
+              className="block-pos-container"
               style={{
                 position: "absolute",
                 top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
                 left: `calc(max(40px, ${tree.location.x}px))`,
+                zIndex: tree.zIndex,
               }}
             >
               {renderExpr(tree, tree.root)}
@@ -106,12 +113,23 @@ export default function Editor({ trees, rerender }: Props) {
     return item?.data?.current?.indexPath;
   }
 
-  function onBlockDragEnd({ active, over, activatorEvent }: DragEndEvent) {
+  function onBlockDragEnd({ active, over }: DragEndEvent) {
     const activeIndexPath = indexPathFromDragged(active);
     if (!activeIndexPath) return;
 
+    if (over?.data.current?.isLibrary) {
+      deleteExpr(activeIndexPath);
+      rerender();
+      return;
+    }
+
     const overIndexPath = indexPathFromDragged(over);
-    if (!overIndexPath) {
+    if (
+      /* Dropped on top of nothing */
+      !overIndexPath ||
+      /* Dropped on root of a tree; just treat like movement */
+      over?.data.current?.indexPath.path.length === 0
+    ) {
       orphanExpr(
         activeIndexPath,
         {
@@ -120,21 +138,21 @@ export default function Editor({ trees, rerender }: Props) {
         },
         active.data.current?.copyOnDrop
       );
-      rerender();
-      return;
+    } else {
+      if (active.data.current?.copyOnDrop) {
+        copyExprInTree(activeIndexPath, overIndexPath, {
+          x: active!.rect.current.translated!.right,
+          y: active!.rect.current.translated!.bottom,
+        });
+      } else {
+        moveExprInTree(activeIndexPath, overIndexPath, {
+          x: active!.rect.current.translated!.right,
+          y: active!.rect.current.translated!.bottom,
+        });
+      }
     }
 
-    if (active.data.current?.copyOnDrop) {
-      copyExprInTree(activeIndexPath, overIndexPath, {
-        x: active!.rect.current.translated!.right,
-        y: active!.rect.current.translated!.bottom,
-      });
-    } else {
-      moveExprInTree(activeIndexPath, overIndexPath, {
-        x: active!.rect.current.translated!.right,
-        y: active!.rect.current.translated!.bottom,
-      });
-    }
+    bringTreeToFront(activeIndexPath.tree);
     rerender();
   }
 }

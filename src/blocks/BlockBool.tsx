@@ -18,11 +18,16 @@ export default function BlockBool({
   value,
   isCopySource,
 }: Props) {
-  const { isOver, setNodeRef: setNodeRef1 } = useDroppable({
-    id,
-    data: { indexPath },
-  });
+  const { isOver, setNodeRef: setNodeRef1 } =
+    isCopySource || indexPath.path.length === 0
+      ? { isOver: false, setNodeRef: () => {} }
+      : useDroppable({
+          id,
+          data: { indexPath },
+        });
   const {
+    active,
+    over,
     attributes,
     listeners,
     setNodeRef: setNodeRef2,
@@ -38,7 +43,9 @@ export default function BlockBool({
       style={{ transform: CSS.Translate.toString(transform) }}
       {...listeners}
       {...attributes}
-      className={`${"block-bool"} ${isOver ? "block-dragged-over" : ""}`}
+      className={`block-bool ${
+        active?.id === id ? "block-dragging" : isOver ? "block-dragged-over" : ""
+      } ${active?.id === id && over?.id === "library" ? "block-drop-will-delete" : ""}`}
     >
       {value ? "true" : "false"}
     </div>

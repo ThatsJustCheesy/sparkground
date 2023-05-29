@@ -116,6 +116,19 @@
   border-radius: 0.75em;
 }
 
+.block-dragging,
+.block-pos-container:has(> .block-dragging) {
+  z-index: 999999 !important;
+}
+
+.block-dragging {
+  box-shadow: 3px 5px 8px 0px rgba(0, 0, 0, 0.5);
+}
+
 .block-dragged-over {
-  outline: 6px solid #ffe102;
+  outline: 0.4em solid #ee59cb;
+}
+
+.block-drop-will-delete {
+  outline: 0.4em solid rgba(221, 66, 66, 0.987);
 }

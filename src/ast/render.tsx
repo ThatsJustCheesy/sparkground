@@ -130,7 +130,7 @@ export function renderExpr(
     throw "quote literal not supported yet";
   } else if (isHole(expr)) {
     const key = keyForIndexPath(indexPath);
-    return <BlockHole key={key} id={key} indexPath={indexPath} />;
+    return <BlockHole key={key} id={key} indexPath={indexPath} isCopySource={isCopySource} />;
   } else {
     throw "invalid expression";
   }

@@ -7,7 +7,6 @@ export function moveExprInTree(
   { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath,
   displaceTo: Point
 ) {
-  debugger;
   if (destinationIndexPath.length === 0) {
     // Trying to replace root of a tree
     return;
@@ -90,6 +89,20 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
 
   setChildAtIndex(exprParent, path.at(-1)!, hole);
   newTree(expr, placeAt);
+}
+
+export function deleteExpr({ tree, path }: TreeIndexPath) {
+  const expr = exprForIndexPathInTree(tree, path);
+  if (isHole(expr)) return;
+
+  const exprParent = exprForIndexPathInTree(tree, path.slice(0, -1));
+
+  if (path.length === 0 || !isSExpr(exprParent)) {
+    // expr is the root of its tree
+    removeTree(tree);
+  } else {
+    setChildAtIndex(exprParent, path.at(-1)!, hole);
+  }
 }
 
 function exprForIndexPathInTree({ root }: Tree, indexPath: number[]): Expr {

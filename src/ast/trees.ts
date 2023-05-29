@@ -9,10 +9,12 @@ export type Tree = {
   id: string;
   root: Expr;
   location: Point;
+  zIndex: number;
 };
 
 let trees_: Tree[] = [];
 let nextID = 0;
+let nextZIndex = 1;
 
 export function trees(): Tree[] {
   return [...trees_];
@@ -27,6 +29,7 @@ export function newTree(root: Expr, location: Point): Tree {
     id: `${++nextID}`,
     root,
     location,
+    zIndex: ++nextZIndex,
   };
   trees_.push(tree);
   return tree;
@@ -34,4 +37,8 @@ export function newTree(root: Expr, location: Point): Tree {
 
 export function removeTree(tree: Tree) {
   trees_ = trees_.filter((tree_) => tree_.id !== tree.id);
+}
+
+export function bringTreeToFront(tree: Tree) {
+  tree.zIndex = ++nextZIndex;
 }

@@ -21,26 +21,28 @@ export default function BlockIdent({
   indexPath,
 
   symbol,
-  definesSymbol,
   isCopySource,
 
   onSymbolMouseEnter,
   onSymbolMouseLeave,
 }: Props) {
-  const { isOver, setNodeRef: setNodeRef1 } = definesSymbol
-    ? { isOver: false, setNodeRef: () => {} }
-    : useDroppable({
-        id,
-        data: { indexPath },
-      });
+  const { isOver, setNodeRef: setNodeRef1 } =
+    isCopySource || indexPath.path.length === 0
+      ? { isOver: false, setNodeRef: () => {} }
+      : useDroppable({
+          id,
+          data: { indexPath },
+        });
   const {
+    active,
+    over,
     attributes,
     listeners,
     setNodeRef: setNodeRef2,
     transform,
   } = useDraggable({
     id,
-    data: { indexPath, copyOnDrop: definesSymbol || isCopySource },
+    data: { indexPath, copyOnDrop: isCopySource },
   });
 
   return (
@@ -49,9 +51,9 @@ export default function BlockIdent({
       style={{ transform: CSS.Translate.toString(transform) }}
       {...listeners}
       {...attributes}
-      className={`${definesSymbol ? "block-ident-def" : "block-ident"} ${
-        isOver ? "block-dragged-over" : ""
-      }`}
+      className={`${isCopySource ? "block-ident-def" : "block-ident"} ${
+        active?.id === id ? "block-dragging" : isOver ? "block-dragged-over" : ""
+      } ${active?.id === id && over?.id === "library" ? "block-drop-will-delete" : ""}`}
       onMouseEnter={() => onSymbolMouseEnter?.(symbol)}
       onMouseLeave={() => onSymbolMouseLeave?.(symbol)}
     >
