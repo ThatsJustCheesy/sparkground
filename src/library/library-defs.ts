@@ -17,9 +17,21 @@ export const symbols = {
     headingArgCount: 1,
     bodyArgHints: ["then", "else"],
   },
+  "atom?": {
+    id: "atom?",
+    doc: "Returns true if arg is a boolean, number, symbol, string, or nil; false otherwise.",
+  },
+  "boolean?": {
+    id: "boolean?",
+    doc: "Returns true if arg is a boolean; false otherwise.",
+  },
+  "integer?": {
+    id: "integer?",
+    doc: "Returns true if arg is a integer; false otherwise.",
+  },
   "null?": {
     id: "null?",
-    doc: "Whether the argument is an empty list",
+    doc: "Returns true if arg is nil (the empty list); false otherwise.",
   },
   append: {
     id: "append",
@@ -48,6 +60,9 @@ const emptyIdentifier: ProgSymbol = {
 export const library: Expr[] = [
   s(_.define, hole),
   s(_.if, hole, hole, hole),
+  s(_["atom?"], hole),
+  s(_["boolean?"], hole),
+  s(_["integer?"], hole),
   s(_["null?"], hole),
   s(_.append, hole, hole),
   s(_.list, hole),
