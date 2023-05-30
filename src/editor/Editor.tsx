@@ -65,7 +65,7 @@ const collisionDetection: CollisionDetection = ({
 };
 
 export default function Editor({ trees, rerender }: Props) {
-  const [contextHelpSymbol, setContextHelpSymbol] = useState<ProgSymbol>();
+  const [contextHelpSubject, setContextHelpSubject] = useState<ProgSymbol | boolean>();
   const [activeDrag, setActiveDrag] = useState<TreeIndexPath>();
   const [activeDragOver, setActiveDragOver] = useState<Over>();
 
@@ -90,12 +90,12 @@ export default function Editor({ trees, rerender }: Props) {
                 zIndex: tree.zIndex,
               }}
             >
-              {renderExpr(tree, tree.root)}
+              {renderExpr(tree, tree.root, { onMouseOver, onMouseOut })}
             </div>
           ))}
         </div>
 
-        <Library />
+        <Library contextHelpSubject={contextHelpSubject} />
 
         <DragOverlay dropAnimation={null} zIndex={999999}>
           {activeDrag &&
@@ -104,23 +104,21 @@ export default function Editor({ trees, rerender }: Props) {
             })}
         </DragOverlay>
       </DndContext>
-
-      {contextHelpSymbol ? (
-        <>
-          {contextHelpSymbol.id}: {contextHelpSymbol.doc}
-        </>
-      ) : (
-        <div style={{ visibility: "hidden" }}>&nbsp;</div>
-      )}
     </div>
   );
 
-  function onSymbolMouseEnter(symbol: ProgSymbol) {
-    setContextHelpSymbol(symbol);
+  function onMouseOver(symbol: ProgSymbol | boolean | undefined) {
+    if (symbol === undefined) return;
+
+    setContextHelpSubject(symbol);
   }
 
-  function onSymbolMouseLeave(symbol: ProgSymbol) {
-    if (symbol === contextHelpSymbol) setContextHelpSymbol(undefined);
+  function onMouseOut(symbol: ProgSymbol | boolean | undefined) {
+    if (symbol === undefined || activeDrag) return;
+
+    if (symbol === contextHelpSubject) {
+      setContextHelpSubject(undefined);
+    }
   }
 
   function indexPathFromDragged(item: Active | Over | null): TreeIndexPath | undefined {
@@ -132,6 +130,7 @@ export default function Editor({ trees, rerender }: Props) {
     if (!activeIndexPath) return;
 
     setActiveDrag(activeIndexPath);
+    setContextHelpSubject(active.data.current?.contextHelpSubject);
   }
 
   function onBlockDragOver({ over }: DragOverEvent) {
@@ -145,7 +144,11 @@ export default function Editor({ trees, rerender }: Props) {
     if (!activeIndexPath) return;
 
     if (over?.data.current?.isLibrary) {
+      if (active.data.current?.copyOnDrop) return;
+
       deleteExpr(activeIndexPath);
+      setContextHelpSubject(undefined);
+
       rerender();
       return;
     }

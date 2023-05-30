@@ -1,7 +1,6 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useRef } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { callEach } from "../util";
 import { TreeIndexPath } from "../ast/ast";
 
@@ -13,8 +12,8 @@ type Props = PropsWithChildren<{
   isCopySource?: boolean;
   forDragOverlay?: boolean | Over;
 
-  onSymbolMouseEnter?: (symbol: ProgSymbol) => void;
-  onSymbolMouseLeave?: (symbol: ProgSymbol) => void;
+  onMouseOver?: (symbol: ProgSymbol | boolean | undefined) => void;
+  onMouseOut?: (symbol: ProgSymbol | boolean | undefined) => void;
 }>;
 
 type Vertical = {
@@ -49,8 +48,8 @@ export default function Block({
   forDragOverlay,
   children,
 
-  onSymbolMouseEnter,
-  onSymbolMouseLeave,
+  onMouseOver,
+  onMouseOut,
 }: Props) {
   // Drop area, if applicable
   let { isOver, setNodeRef: setNodeRef1 } = useDroppable({
@@ -74,7 +73,11 @@ export default function Block({
     ? ({} as any)
     : useDraggable({
         id,
-        data: { indexPath, copyOnDrop: isCopySource },
+        data: {
+          indexPath,
+          copyOnDrop: isCopySource,
+          contextHelpSubject: contextHelpSubjectFromData(),
+        },
       });
   if (forDragOverlay || data.type === "hole") {
     // Not draggable
@@ -85,9 +88,11 @@ export default function Block({
     setNodeRef2 = () => {};
   }
 
+  const divRef = useRef<HTMLElement | null>(null);
+
   return (
     <div
-      ref={callEach(setNodeRef1, setNodeRef2)}
+      ref={callEach(setNodeRef1, setNodeRef2, (div) => (divRef.current = div))}
       style={{
         visibility: !isCopySource && active?.id === id ? "hidden" : "unset",
         // Replaced with DragOverlay:
@@ -95,13 +100,32 @@ export default function Block({
       }}
       {...listeners}
       {...attributes}
-      className={`block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
+      className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
         forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
       } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""}`}
+      onMouseOver={(event) =>
+        (event.target as Element).closest(".block") === divRef.current &&
+        onMouseOver?.(contextHelpSubjectFromData())
+      }
+      onMouseOut={(event) =>
+        (event.target as Element).closest(".block") === divRef.current &&
+        onMouseOut?.(contextHelpSubjectFromData())
+      }
     >
       {renderData()}
     </div>
   );
+
+  function contextHelpSubjectFromData() {
+    switch (data.type) {
+      case "v":
+      case "h":
+      case "ident":
+        return data.symbol;
+      case "bool":
+        return data.value;
+    }
+  }
 
   function renderData() {
     switch (data.type) {
@@ -111,13 +135,7 @@ export default function Block({
         return (
           <>
             <div className="block-v-heading">
-              <div
-                className="block-v-label"
-                onMouseEnter={() => onSymbolMouseEnter?.(symbol)}
-                onMouseLeave={() => onSymbolMouseLeave?.(symbol)}
-              >
-                {symbol.id}
-              </div>
+              <div className="block-v-label">{symbol.id}</div>
               {heading}
             </div>
 
@@ -131,13 +149,7 @@ export default function Block({
 
         return (
           <>
-            <div
-              className={["block-h-label", definesSymbol ? "block-ident-def" : ""].join(" ")}
-              onMouseEnter={() => onSymbolMouseEnter?.(symbol)}
-              onMouseLeave={() => onSymbolMouseLeave?.(symbol)}
-            >
-              {symbol.id}
-            </div>
+            {!definesSymbol && <div className="block-h-label">{symbol.id}</div>}
 
             {children}
           </>
@@ -153,7 +165,7 @@ export default function Block({
       case "bool": {
         const { value } = data;
 
-        return value ? "true" : "false";
+        return <div>{value ? "true" : "false"}</div>;
       }
 
       case "hole": {

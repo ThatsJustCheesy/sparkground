@@ -42,7 +42,6 @@ export function moveExprInTree(
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, source);
   if (!isHole(destination)) newTree(destination, displaceTo);
-  console.log(destinationTree.location.x);
 }
 
 export function copyExprInTree(

@@ -361,7 +361,7 @@ const emptyIdentifier: ProgSymbol = {
 };
 
 export const library: Expr[] = [
-  s(_.define, hole),
+  s(_.define, hole, hole),
   s(_.if, hole, hole, hole),
 
   true,

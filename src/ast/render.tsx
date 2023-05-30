@@ -14,20 +14,29 @@ import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
+import { ProgSymbol } from "../symbol-table";
 
 export function renderExpr(
   tree: Tree,
   expr: Expr,
   {
     indexPath: indexPath_,
+
     isCopySource,
     isSymbolDefinition,
     forDragOverlay,
+
+    onMouseOver,
+    onMouseOut,
   }: {
     indexPath?: TreeIndexPath;
+
     isCopySource?: boolean;
     isSymbolDefinition?: boolean;
     forDragOverlay?: boolean | Over;
+
+    onMouseOver?: (symbol: ProgSymbol) => void;
+    onMouseOut?: (symbol: ProgSymbol) => void;
   } = {}
 ): JSX.Element {
   const indexPath = indexPath_ ?? rootIndexPath(tree);
@@ -40,18 +49,22 @@ export function renderExpr(
   if (isSExpr(expr)) {
     const { called, args } = expr;
 
-    const renderedArgs = args.map((arg, index) =>
+    const renderedArgs = (isSymbolDefinition ? [called, ...args] : args).map((arg, index) =>
       renderExpr(tree, arg, {
-        indexPath: extendIndexPath(indexPath, index + 1),
+        indexPath: extendIndexPath(indexPath, index + (isSymbolDefinition ? 0 : 1)),
+
         isCopySource: isCopySource,
         isSymbolDefinition:
           isSymbolDefinition ||
           (index === 0 && isProgSymbol(called) && called.special === "define"),
+
+        onMouseOver,
+        onMouseOut,
       })
     );
 
     if (isProgSymbol(called)) {
-      if (!isCopySource && (called.headingArgCount || called.bodyArgHints?.length)) {
+      if (!isSymbolDefinition && (called.headingArgCount || called.bodyArgHints?.length)) {
         const { headingArgCount, bodyArgHints } = called;
 
         const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
@@ -76,8 +89,10 @@ export function renderExpr(
             id={key}
             indexPath={indexPath}
             data={{ type: "v", symbol: called, heading: <>{heading}</> }}
-            isCopySource={isCopySource}
+            isCopySource={isCopySource || isSymbolDefinition}
             forDragOverlay={forDragOverlay}
+            onMouseOver={onMouseOver}
+            onMouseOut={onMouseOut}
           >
             {hintedBody}
           </Block>
@@ -90,9 +105,11 @@ export function renderExpr(
           key={key}
           id={key}
           indexPath={indexPath}
-          data={{ type: "h", symbol: called }}
-          isCopySource={isCopySource}
+          data={{ type: "h", symbol: called, definesSymbol: isSymbolDefinition }}
+          isCopySource={isCopySource || isSymbolDefinition}
           forDragOverlay={forDragOverlay}
+          onMouseOver={onMouseOver}
+          onMouseOut={onMouseOut}
         >
           {renderedArgs}
         </Block>
@@ -108,8 +125,10 @@ export function renderExpr(
         id={key}
         indexPath={indexPath}
         data={{ type: "ident", symbol: expr }}
-        isCopySource={isCopySource}
+        isCopySource={isCopySource || isSymbolDefinition}
         forDragOverlay={forDragOverlay}
+        onMouseOver={onMouseOver}
+        onMouseOut={onMouseOut}
       />
     );
   } else if (isNumericLiteral(expr)) {
@@ -122,8 +141,10 @@ export function renderExpr(
         id={key}
         indexPath={indexPath}
         data={{ type: "bool", value: expr }}
-        isCopySource={isCopySource}
+        isCopySource={isCopySource || isSymbolDefinition}
         forDragOverlay={forDragOverlay}
+        onMouseOver={onMouseOver}
+        onMouseOut={onMouseOut}
       />
     );
   } else if (isQuoteLiteral(expr)) {
@@ -136,8 +157,10 @@ export function renderExpr(
         id={key}
         indexPath={indexPath}
         data={{ type: "hole" }}
-        isCopySource={isCopySource}
+        isCopySource={isCopySource || isSymbolDefinition}
         forDragOverlay={forDragOverlay}
+        onMouseOver={onMouseOver}
+        onMouseOut={onMouseOut}
       />
     );
   } else {

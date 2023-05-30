@@ -10,22 +10,8 @@ import { serializeExpr } from "./ast/serialize";
 import { parseToExpr } from "./ast/parse";
 import { Tree } from "./ast/trees";
 import Editor from "./editor/Editor";
+import { symbols } from "./library/library-defs";
 
-const define: ProgSymbol = {
-  id: "define",
-  doc: "Variable or function definition",
-
-  headingArgCount: 1,
-
-  special: "define",
-};
-const if_: ProgSymbol = {
-  id: "if",
-  doc: "Conditional",
-
-  headingArgCount: 1,
-  bodyArgHints: ["then", "else"],
-};
 const revTail: ProgSymbol = {
   id: "rev-tail",
 
@@ -37,29 +23,16 @@ const l: ProgSymbol = {
 const acc: ProgSymbol = {
   id: "acc",
 };
-const null_: ProgSymbol = {
-  id: "null?",
-  doc: "Whether the argument is an empty list",
-};
-const append: ProgSymbol = {
-  id: "append",
-};
-const list: ProgSymbol = {
-  id: "list",
-};
-const car: ProgSymbol = {
-  id: "car",
-  doc: "Head (first element) of the given list",
-};
-const cdr: ProgSymbol = {
-  id: "cdr",
-  doc: "Tail (all except first element) of the given list",
-};
 
 const defaultExpr = s(
-  define,
+  symbols.define,
   s(revTail, l, acc),
-  s(if_, s(null_, true), acc, s(revTail, s(cdr, l), s(append, s(list, s(car, l)), acc)))
+  s(
+    symbols.if,
+    s(symbols["null?"], true),
+    acc,
+    s(revTail, s(symbols.cdr, l), s(symbols.append, s(symbols.list, s(symbols.car, l)), acc))
+  )
 );
 const defaultTree = newTree(defaultExpr, { x: 0, y: 0 });
 

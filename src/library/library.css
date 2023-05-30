@@ -3,12 +3,13 @@
   flex-flow: row;
   gap: 1em;
 
-  margin: 1em;
+  width: 15%;
+  padding-left: 1em;
+  padding-right: 1em;
   margin-left: auto;
-}
+  overflow: auto;
 
-.divider {
-  border: 0.1em solid rgba(0, 0, 0, 0.422);
+  border-left: 0.1rem solid black;
 }
 
 .library {
@@ -18,10 +19,9 @@
   gap: 0.5em;
 
   width: fit-content;
-  height: 80vh;
-  min-width: 15%;
+  height: fit-content;
   padding: 1em;
-  overflow: auto;
+  margin-top: 1em;
 
   border-radius: 0.5em;
   background: rgb(236, 254, 221);
@@ -35,5 +35,23 @@
 
   font-size: 120%;
 
-  border-bottom: 0.1em solid black;
+  border-bottom: 0.1rem solid black;
+}
+
+.library-subheading {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+
+  font-size: 100%;
+}
+
+.library-context-help {
+  padding-bottom: 0.5em;
+}
+
+.library-context-help-text {
+  padding: 0;
+  margin: 0;
+  margin-top: 0.25em;
 }
