@@ -104,11 +104,11 @@ export default function Block({
         forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
       } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""}`}
       onMouseOver={(event) =>
-        (event.target as Element).closest(".block") === divRef.current &&
+        (event.target as Element).closest(".block:not(.block-hole)") === divRef.current &&
         onMouseOver?.(contextHelpSubjectFromData())
       }
       onMouseOut={(event) =>
-        (event.target as Element).closest(".block") === divRef.current &&
+        (event.target as Element).closest(".block:not(.block-hole)") === divRef.current &&
         onMouseOut?.(contextHelpSubjectFromData())
       }
     >
