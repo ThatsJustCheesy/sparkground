@@ -29,7 +29,7 @@ const defaultExpr = s(
   s(revTail, l, acc),
   s(
     symbols.if,
-    s(symbols["null?"], true),
+    s(symbols["null?"], l),
     acc,
     s(revTail, s(symbols.cdr, l), s(symbols.append, s(symbols.list, s(symbols.car, l)), acc))
   )
