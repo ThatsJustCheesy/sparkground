@@ -57,11 +57,6 @@ export function copyExprInTree(
   const source = exprForIndexPathInTree(sourceTree, sourceIndexPath);
   if (source === sourceTree.root) {
     removeTree(sourceTree);
-  } else {
-    const sourceParent = exprForIndexPathInTree(sourceTree, sourceIndexPath.slice(0, -1));
-    if (!isSExpr(sourceParent)) throw "invalid index path for tree";
-
-    setChildAtIndex(sourceParent, sourceIndexPath.at(-1)!, hole);
   }
 
   const destination = exprForIndexPathInTree(destinationTree, destinationIndexPath);
