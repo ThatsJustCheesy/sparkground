@@ -1,8 +1,7 @@
 import "./library.css";
-import { renderExpr } from "../ast/render";
-import { library } from "./library-defs";
 import { useDroppable } from "@dnd-kit/core";
 import { ProgSymbol } from "../symbol-table";
+import LibraryBlocks from "./LibraryBlocks";
 
 type Props = {
   contextHelpSubject?: ProgSymbol | boolean;
@@ -36,18 +35,7 @@ export default function Library({ contextHelpSubject }: Props) {
         </div>
 
         <h2 className="library-heading">Library</h2>
-        {library.map((symbol, index) =>
-          renderExpr(
-            {
-              id: `library-${index}`,
-              root: symbol,
-              location: { x: 0, y: 0 },
-              zIndex: 1,
-            },
-            symbol,
-            { isCopySource: true }
-          )
-        )}
+        <LibraryBlocks />
       </div>
     </div>
   );

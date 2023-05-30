@@ -21,6 +21,10 @@
   flex: 80%;
 }
 
+.block {
+  touch-action: none;
+}
+
 .block-v {
   display: flex;
   flex-flow: column nowrap;
