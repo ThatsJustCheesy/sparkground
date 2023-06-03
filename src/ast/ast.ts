@@ -1,6 +1,7 @@
 import { Key } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Tree } from "./trees";
+import { isEqual } from "lodash";
 
 export type Expr = SExpr | ProgSymbol | Literal | Hole;
 
@@ -91,4 +92,19 @@ export function exprAtIndexPath({ tree: { root }, path }: TreeIndexPath): Expr {
   }
 
   return root;
+}
+export function isAncestor(ancestor: TreeIndexPath, descendant: TreeIndexPath): boolean {
+  if (descendant.tree !== ancestor.tree) return false;
+  if (descendant.path.length <= ancestor.path.length) return false;
+
+  for (let i = 0; i < ancestor.path.length; ++i) {
+    if (descendant.path[i] !== ancestor.path[i]) return false;
+  }
+  return true;
+}
+export function isSameOrAncestor(ancestor: TreeIndexPath, descendant: TreeIndexPath): boolean {
+  return (
+    (ancestor.tree === descendant.tree && isEqual(ancestor.path, descendant.path)) ||
+    isAncestor(ancestor, descendant)
+  );
 }

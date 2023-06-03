@@ -6,6 +6,7 @@ import {
   hole,
   isHole,
   isSExpr,
+  isSameOrAncestor,
   setChildAtIndex,
 } from "./ast";
 import { Point, Tree, newTree, removeTree } from "./trees";
@@ -19,6 +20,15 @@ export function moveExprInTree(
     // Trying to replace root of a tree
     return;
   }
+  if (
+    isSameOrAncestor(
+      { tree: sourceTree, path: sourceIndexPath },
+      { tree: destinationTree, path: destinationIndexPath }
+    )
+  ) {
+    // Trying to move an expression such that it becomes a descendant of itself
+    return;
+  }
 
   const source = exprForIndexPathInTree(sourceTree, sourceIndexPath);
 
@@ -28,8 +38,6 @@ export function moveExprInTree(
     destinationIndexPath.slice(0, -1)
   );
   if (!isSExpr(destinationParent)) throw "invalid index path for tree";
-
-  if (destination === source || destination === destinationTree.root) return;
 
   if (source === sourceTree.root) {
     removeTree(sourceTree);

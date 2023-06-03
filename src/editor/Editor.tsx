@@ -158,7 +158,9 @@ export default function Editor({ trees, rerender }: Props) {
       /* Dropped on top of nothing */
       !overIndexPath ||
       /* Dropped on root of a tree; just treat like movement */
-      over?.data.current?.indexPath.path.length === 0
+      over?.data.current?.indexPath.path.length === 0 ||
+      /* Dropped on a descendant of itself; just treat like movement */
+      isAncestor(activeIndexPath, overIndexPath)
     ) {
       orphanExpr(
         activeIndexPath,
