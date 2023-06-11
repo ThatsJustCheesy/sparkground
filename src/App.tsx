@@ -15,6 +15,7 @@ import { symbols } from "./library/library-defs";
 const revTail: ProgSymbol = {
   id: "rev-tail",
 
+  minArgCount: 2,
   bodyArgHints: ["l", "acc"],
 };
 const l: ProgSymbol = {

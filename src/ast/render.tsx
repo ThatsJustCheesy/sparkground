@@ -24,6 +24,8 @@ export function renderExpr(
 
     isCopySource,
     isSymbolDefinition,
+
+    activeDrag,
     forDragOverlay,
 
     onMouseOver,
@@ -33,6 +35,8 @@ export function renderExpr(
 
     isCopySource?: boolean;
     isSymbolDefinition?: boolean;
+
+    activeDrag?: TreeIndexPath;
     forDragOverlay?: boolean | Over;
 
     onMouseOver?: (symbol: ProgSymbol) => void;
@@ -47,16 +51,32 @@ export function renderExpr(
   }
 
   if (isSExpr(expr)) {
-    const { called, args } = expr;
+    let { called, args } = expr;
+
+    if (isProgSymbol(called)) {
+      const minArgCount = called.minArgCount ?? 0;
+
+      // Add holes where arguments are required
+      while (args.length < minArgCount) {
+        args.push(undefined);
+      }
+
+      // Remove holes from the end of varargs calls
+      while (args.length > minArgCount && args.at(-1) === undefined) {
+        args.pop();
+      }
+    }
 
     const renderedArgs = (isSymbolDefinition ? [called, ...args] : args).map((arg, index) =>
       renderExpr(tree, arg, {
         indexPath: extendIndexPath(indexPath, index + (isSymbolDefinition ? 0 : 1)),
 
-        isCopySource: isCopySource,
+        isCopySource,
         isSymbolDefinition:
           isSymbolDefinition ||
           (index === 0 && isProgSymbol(called) && called.special === "define"),
+
+        activeDrag,
 
         onMouseOver,
         onMouseOut,
@@ -90,6 +110,7 @@ export function renderExpr(
             indexPath={indexPath}
             data={{ type: "v", symbol: called, heading: <>{heading}</> }}
             isCopySource={isCopySource || isSymbolDefinition}
+            activeDrag={activeDrag}
             forDragOverlay={forDragOverlay}
             onMouseOver={onMouseOver}
             onMouseOut={onMouseOut}
@@ -107,6 +128,7 @@ export function renderExpr(
           indexPath={indexPath}
           data={{ type: "h", symbol: called, definesSymbol: isSymbolDefinition }}
           isCopySource={isCopySource || isSymbolDefinition}
+          activeDrag={activeDrag}
           forDragOverlay={forDragOverlay}
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
@@ -126,6 +148,7 @@ export function renderExpr(
         indexPath={indexPath}
         data={{ type: "ident", symbol: expr }}
         isCopySource={isCopySource || isSymbolDefinition}
+        activeDrag={activeDrag}
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
@@ -142,6 +165,7 @@ export function renderExpr(
         indexPath={indexPath}
         data={{ type: "bool", value: expr }}
         isCopySource={isCopySource || isSymbolDefinition}
+        activeDrag={activeDrag}
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
@@ -158,6 +182,7 @@ export function renderExpr(
         indexPath={indexPath}
         data={{ type: "hole" }}
         isCopySource={isCopySource || isSymbolDefinition}
+        activeDrag={activeDrag}
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}

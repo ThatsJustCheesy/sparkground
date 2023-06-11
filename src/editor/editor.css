@@ -88,6 +88,30 @@
 }
 .block-h-label {
 }
+.block-h-pull-tab-container {
+  width: 0.5em;
+}
+.block-h-pull-tab {
+  display: none;
+
+  position: relative;
+  right: 1.65em;
+  width: 2em;
+  top: 6%;
+  height: 80%;
+
+  background: rgb(191, 200, 209);
+  border: 0.09em solid black;
+  border-radius: 0.65em;
+
+  transition: transform 80ms ease-out;
+}
+.block-h-pull-tab-shown {
+  display: flex;
+}
+.block-h-pull-tab-shown > svg {
+  margin: auto;
+}
 
 .block-ident,
 .block-bool {
@@ -117,7 +141,7 @@
   width: fit-content;
   padding: 0.5em;
 
-  background: rgb(238, 238, 238);
+  background: rgb(220, 228, 234);
   border: 0.09em solid black;
   border-radius: 0.75em;
 }
@@ -128,6 +152,10 @@
 
 .block-dragged-over {
   outline: 0.4em solid #ee59cb;
+}
+.block-dragged-over.block-h-pull-tab {
+  outline-width: 0.3em;
+  transform: translateX(1em);
 }
 
 .block-drop-will-delete {

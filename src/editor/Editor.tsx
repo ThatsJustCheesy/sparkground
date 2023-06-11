@@ -2,7 +2,7 @@ import "./editor.css";
 import { useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { renderExpr } from "../ast/render";
-import { Expr, TreeIndexPath, exprAtIndexPath } from "../ast/ast";
+import { TreeIndexPath, exprAtIndexPath, isAncestor } from "../ast/ast";
 import {
   Active,
   CollisionDescriptor,
@@ -90,7 +90,7 @@ export default function Editor({ trees, rerender }: Props) {
                 zIndex: tree.zIndex,
               }}
             >
-              {renderExpr(tree, tree.root, { onMouseOver, onMouseOut })}
+              {renderExpr(tree, tree.root, { onMouseOver, onMouseOut, activeDrag })}
             </div>
           ))}
         </div>
@@ -139,6 +139,7 @@ export default function Editor({ trees, rerender }: Props) {
 
   function onBlockDragEnd({ active, over }: DragEndEvent) {
     setActiveDrag(undefined);
+    setActiveDragOver(undefined);
 
     const activeIndexPath = indexPathFromDragged(active);
     if (!activeIndexPath) return;

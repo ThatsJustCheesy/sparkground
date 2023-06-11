@@ -2,7 +2,8 @@ import { PropsWithChildren, useRef } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { callEach } from "../util";
-import { TreeIndexPath } from "../ast/ast";
+import { TreeIndexPath, exprAtIndexPath, extendIndexPath, isSExpr } from "../ast/ast";
+import BlockPullTab from "./BlockPullTab";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
@@ -10,6 +11,8 @@ type Props = PropsWithChildren<{
 
   data: Vertical | Horizontal | Identifier | Bool | Hole;
   isCopySource?: boolean;
+
+  activeDrag?: TreeIndexPath;
   forDragOverlay?: boolean | Over;
 
   onMouseOver?: (symbol: ProgSymbol | boolean | undefined) => void;
@@ -45,7 +48,10 @@ export default function Block({
 
   data,
   isCopySource,
+
+  activeDrag,
   forDragOverlay,
+
   children,
 
   onMouseOver,
@@ -88,31 +94,60 @@ export default function Block({
     setNodeRef2 = () => {};
   }
 
+  const expr = (() => {
+    try {
+      return exprAtIndexPath(indexPath);
+    } catch {
+      return undefined;
+    }
+  })();
+
   const divRef = useRef<HTMLElement | null>(null);
 
   return (
     <div
       ref={callEach(setNodeRef1, setNodeRef2, (div) => (divRef.current = div))}
+      {...listeners}
+      {...attributes}
       style={{
+        display: "flex",
+        flexFlow: "row",
+        alignItems: "stretch",
+
         visibility: !isCopySource && active?.id === id ? "hidden" : "unset",
         // Replaced with DragOverlay:
         // transform: CSS.Translate.toString(transform)
       }}
-      {...listeners}
-      {...attributes}
-      className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
-        forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
-      } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""}`}
-      onMouseOver={(event) =>
-        (event.target as Element).closest(".block:not(.block-hole)") === divRef.current &&
-        onMouseOver?.(contextHelpSubjectFromData())
-      }
-      onMouseOut={(event) =>
-        (event.target as Element).closest(".block:not(.block-hole)") === divRef.current &&
-        onMouseOut?.(contextHelpSubjectFromData())
-      }
     >
-      {renderData()}
+      <div
+        ref={(div) => (divRef.current = div)}
+        style={{
+          zIndex: indexPath.tree.zIndex,
+        }}
+        className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
+          forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
+        } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""}`}
+        onMouseOver={(event) =>
+          (event.target as Element).closest(".block:not(.block-hole)") === divRef.current &&
+          onMouseOver?.(contextHelpSubjectFromData())
+        }
+        onMouseOut={(event) =>
+          (event.target as Element).closest(".block:not(.block-hole)") === divRef.current &&
+          onMouseOut?.(contextHelpSubjectFromData())
+        }
+      >
+        {renderData()}
+      </div>
+
+      {data.type === "h" &&
+        isSExpr(expr) &&
+        expr.args.length < (data.symbol.maxArgCount ?? Infinity) && (
+          <BlockPullTab
+            id={`${id}-pull-tab`}
+            indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
+            isCopySource={isCopySource}
+          />
+        )}
     </div>
   );
 

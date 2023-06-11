@@ -23,6 +23,8 @@ export type ProgSymbol = {
   id: string;
   doc?: string | JSX.Element;
 
+  minArgCount?: number;
+  maxArgCount?: number;
   headingArgCount?: number;
   bodyArgHints?: string[];
 
