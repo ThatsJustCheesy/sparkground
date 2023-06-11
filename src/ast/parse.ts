@@ -25,7 +25,7 @@ class Parser {
         return this.parseQuoted(tokens);
       default:
         tokens.shift();
-        if (typeof next === "number") return next;
+        if (typeof next === "number") return { n: next };
         return this.#symbolTable.get(next.identifier);
     }
   }

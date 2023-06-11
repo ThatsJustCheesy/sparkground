@@ -30,6 +30,8 @@ export function renderExpr(
 
     onMouseOver,
     onMouseOut,
+
+    rerender,
   }: {
     indexPath?: TreeIndexPath;
 
@@ -39,8 +41,10 @@ export function renderExpr(
     activeDrag?: TreeIndexPath;
     forDragOverlay?: boolean | Over;
 
-    onMouseOver?: (symbol: ProgSymbol) => void;
-    onMouseOut?: (symbol: ProgSymbol) => void;
+    onMouseOver?: (symbol: ProgSymbol | number | boolean) => void;
+    onMouseOut?: (symbol: ProgSymbol | number | boolean) => void;
+
+    rerender?: () => void;
   } = {}
 ): JSX.Element {
   const indexPath = indexPath_ ?? rootIndexPath(tree);
@@ -80,6 +84,8 @@ export function renderExpr(
 
         onMouseOver,
         onMouseOut,
+
+        rerender,
       })
     );
 
@@ -114,6 +120,7 @@ export function renderExpr(
             forDragOverlay={forDragOverlay}
             onMouseOver={onMouseOver}
             onMouseOut={onMouseOut}
+            rerender={rerender}
           >
             {hintedBody}
           </Block>
@@ -132,6 +139,7 @@ export function renderExpr(
           forDragOverlay={forDragOverlay}
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
+          rerender={rerender}
         >
           {renderedArgs}
         </Block>
@@ -152,10 +160,25 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        rerender={rerender}
       />
     );
   } else if (isNumericLiteral(expr)) {
-    throw "numeric literal not supported yet";
+    const key = keyForIndexPath(indexPath);
+    return (
+      <Block
+        key={key}
+        id={key}
+        indexPath={indexPath}
+        data={{ type: "number", value: expr }}
+        isCopySource={isCopySource || isSymbolDefinition}
+        activeDrag={activeDrag}
+        forDragOverlay={forDragOverlay}
+        onMouseOver={onMouseOver}
+        onMouseOut={onMouseOut}
+        rerender={rerender}
+      />
+    );
   } else if (isBoolLiteral(expr)) {
     const key = keyForIndexPath(indexPath);
     return (
@@ -169,6 +192,7 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        rerender={rerender}
       />
     );
   } else if (isQuoteLiteral(expr)) {
@@ -186,6 +210,7 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        rerender={rerender}
       />
     );
   } else {

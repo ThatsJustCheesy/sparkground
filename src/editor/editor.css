@@ -114,6 +114,7 @@
 }
 
 .block-ident,
+.block-number,
 .block-bool {
   display: flex;
 

@@ -30,9 +30,9 @@ export function isProgSymbol(expr: Expr): expr is ProgSymbol {
 
 export type Literal = NumericLiteral | BoolLiteral | QuoteLiteral;
 
-export type NumericLiteral = number;
+export type NumericLiteral = { n: number };
 export function isNumericLiteral(expr: Expr): expr is NumericLiteral {
-  return typeof expr === "number";
+  return typeof expr === "object" && expr !== null && "n" in expr;
 }
 
 export type BoolLiteral = boolean;
@@ -60,7 +60,7 @@ export function uniqueKeyForExpr(expr: Expr): Key {
       uniqueKeyForExpr(expr.called) + " " + expr.args.map((arg) => uniqueKeyForExpr(arg)).join(" ")
     );
   if (isProgSymbol(expr)) return expr.id;
-  if (isNumericLiteral(expr)) return expr;
+  if (isNumericLiteral(expr)) return expr.n;
   if (isQuoteLiteral(expr))
     return expr === null ? "(null)" : "(quote " + uniqueKeyForExpr(expr.quote) + ")";
   throw "invalid expression";

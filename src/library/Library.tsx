@@ -19,7 +19,12 @@ export default function Library({ contextHelpSubject }: Props) {
         <h2 className="library-heading">Help</h2>
         <div className="library-context-help">
           {contextHelpSubject !== undefined ? (
-            typeof contextHelpSubject === "boolean" ? (
+            typeof contextHelpSubject === "number" ? (
+              <>
+                <h3 className="library-subheading">{"number"}</h3>
+                <p className="library-context-help-text">{"right-click to change value"}</p>
+              </>
+            ) : typeof contextHelpSubject === "boolean" ? (
               <h3 className="library-subheading">
                 {contextHelpSubject ? "true (boolean)" : "false (boolean)"}
               </h3>

@@ -2,21 +2,23 @@ import { PropsWithChildren, useRef } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { callEach } from "../util";
-import { TreeIndexPath, exprAtIndexPath, extendIndexPath, isSExpr } from "../ast/ast";
+import { Expr, SExpr, TreeIndexPath, exprAtIndexPath, extendIndexPath, isSExpr } from "../ast/ast";
 import BlockPullTab from "./BlockPullTab";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
   indexPath: TreeIndexPath;
 
-  data: Vertical | Horizontal | Identifier | Bool | Hole;
+  data: Vertical | Horizontal | Identifier | Number | Bool | Hole;
   isCopySource?: boolean;
 
   activeDrag?: TreeIndexPath;
   forDragOverlay?: boolean | Over;
 
-  onMouseOver?: (symbol: ProgSymbol | boolean | undefined) => void;
-  onMouseOut?: (symbol: ProgSymbol | boolean | undefined) => void;
+  onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+  onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+
+  rerender?: () => void;
 }>;
 
 type Vertical = {
@@ -33,6 +35,10 @@ type Identifier = {
   type: "ident";
   symbol: ProgSymbol;
   definesSymbol?: boolean;
+};
+type Number = {
+  type: "number";
+  value: { n: number };
 };
 type Bool = {
   type: "bool";
@@ -56,6 +62,8 @@ export default function Block({
 
   onMouseOver,
   onMouseOut,
+
+  rerender,
 }: Props) {
   // Drop area, if applicable
   let { isOver, setNodeRef: setNodeRef1 } = useDroppable({
@@ -118,6 +126,14 @@ export default function Block({
         // Replaced with DragOverlay:
         // transform: CSS.Translate.toString(transform)
       }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+
+        if (data.type === "number") {
+          data.value.n = Number(prompt("Value:", `${data.value.n}`) ?? data.value.n);
+          rerender?.();
+        }
+      }}
     >
       <div
         ref={(div) => (divRef.current = div)}
@@ -157,6 +173,8 @@ export default function Block({
       case "h":
       case "ident":
         return data.symbol;
+      case "number":
+        return data.value.n;
       case "bool":
         return data.value;
     }
@@ -195,6 +213,12 @@ export default function Block({
         const { symbol } = data;
 
         return symbol.id;
+      }
+
+      case "number": {
+        const { value } = data;
+
+        return <div>{value.n}</div>;
       }
 
       case "bool": {

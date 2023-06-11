@@ -96,7 +96,7 @@ export default function Editor({ trees, rerender }: Props) {
                 zIndex: tree.zIndex,
               }}
             >
-              {renderExpr(tree, tree.root, { onMouseOver, onMouseOut, activeDrag })}
+              {renderExpr(tree, tree.root, { onMouseOver, onMouseOut, activeDrag, rerender })}
             </div>
           ))}
         </div>
@@ -113,13 +113,13 @@ export default function Editor({ trees, rerender }: Props) {
     </div>
   );
 
-  function onMouseOver(symbol: ProgSymbol | boolean | undefined) {
+  function onMouseOver(symbol: ProgSymbol | number | boolean | undefined) {
     if (symbol === undefined) return;
 
     setContextHelpSubject(symbol);
   }
 
-  function onMouseOut(symbol: ProgSymbol | boolean | undefined) {
+  function onMouseOut(symbol: ProgSymbol | number | boolean | undefined) {
     if (symbol === undefined || activeDrag) return;
 
     if (symbol === contextHelpSubject) {
