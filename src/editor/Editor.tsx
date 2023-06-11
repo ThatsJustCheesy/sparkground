@@ -5,6 +5,7 @@ import { renderExpr } from "../ast/render";
 import { TreeIndexPath, exprAtIndexPath, isAncestor } from "../ast/ast";
 import {
   Active,
+  ClientRect,
   CollisionDescriptor,
   CollisionDetection,
   DndContext,
@@ -31,6 +32,10 @@ function sortCollisionsClosestToZero(
   return Math.abs(a) - Math.abs(b);
 }
 
+function midY(rect: ClientRect) {
+  return (rect.top + rect.bottom) / 2;
+}
+
 const collisionDetection: CollisionDetection = ({
   collisionRect,
   droppableRects,
@@ -46,7 +51,8 @@ const collisionDetection: CollisionDetection = ({
       !(
         rect &&
         (id === "library" ||
-          Math.abs(rect.top - collisionRect.top) <= Math.min(rect.height, collisionRect.height)) &&
+          Math.abs(midY(rect) - midY(collisionRect)) <=
+            Math.max(rect.height / 2, collisionRect.height / 2)) &&
         rect.right >= collisionRect.left
       )
     )
