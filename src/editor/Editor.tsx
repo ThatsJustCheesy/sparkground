@@ -1,8 +1,8 @@
 import "./editor.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { renderExpr } from "../ast/render";
-import { TreeIndexPath, exprAtIndexPath, isAncestor } from "../ast/ast";
+import { TreeIndexPath, exprAtIndexPath, isAncestor, isNumericLiteral } from "../ast/ast";
 import {
   Active,
   ClientRect,
@@ -18,11 +18,14 @@ import {
 import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "../ast/mutate";
 import Library from "../library/Library";
 import { Tree, bringTreeToFront } from "../ast/trees";
+import BiwaScheme from "biwascheme";
+import { serializeExpr } from "../ast/serialize";
 
 export type Props = {
   trees: Tree[];
 
   rerender(): void;
+  renderCounter: number;
 };
 
 function sortCollisionsClosestToZero(
@@ -70,10 +73,64 @@ const collisionDetection: CollisionDetection = ({
   return collisions.sort(sortCollisionsClosestToZero);
 };
 
-export default function Editor({ trees, rerender }: Props) {
-  const [contextHelpSubject, setContextHelpSubject] = useState<ProgSymbol | boolean>();
+export default function Editor({ trees, rerender, renderCounter }: Props) {
+  const [contextHelpSubject, setContextHelpSubject] = useState<ProgSymbol | number | boolean>();
+  const [result, setResult] = useState<any>();
   const [activeDrag, setActiveDrag] = useState<TreeIndexPath>();
   const [activeDragOver, setActiveDragOver] = useState<Over>();
+
+  const [stage, setStage] = useState<{ element: JSX.Element }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const interpreter = new BiwaScheme.Interpreter((error: any) => console.error(error));
+
+      stage.splice(0, stage.length);
+
+      BiwaScheme.define_libfunc("text", 1, 1, ([text]: [any]) => {
+        if (isNumericLiteral(text)) text = text.n;
+
+        const newObject = { element: <>{`${text}`}</> };
+        stage.push(newObject);
+        setStage([...stage]);
+
+        return newObject;
+      });
+      BiwaScheme.define_libfunc(
+        "rotate",
+        2,
+        2,
+        ([degrees, object]: [number, { element: JSX.Element }]) => {
+          BiwaScheme.assert_real(degrees);
+
+          object.element = (
+            <div style={{ position: "relative", transform: `rotate(${degrees}deg)` }}>
+              {object.element}
+            </div>
+          );
+
+          setStage([...stage]);
+
+          return object;
+        }
+      );
+
+      const newResults = await Promise.all(
+        trees.map(async (tree) => {
+          // console.log(evaluate(mainTree.root, new Environment()));
+
+          const source = serializeExpr(tree.root);
+          console.log(source);
+
+          const res = (await new Promise((resolve, reject) => {
+            interpreter.evaluate(source, resolve);
+          })) as any;
+          return res?.toString();
+        })
+      );
+      setResult(newResults.join("\n"));
+    })();
+  }, [activeDrag, renderCounter]);
 
   return (
     <div className="editor">
@@ -84,6 +141,12 @@ export default function Editor({ trees, rerender }: Props) {
         onDragOver={onBlockDragOver}
         onDragEnd={onBlockDragEnd}
       >
+        <div style={{ position: "absolute" }}>
+          {stage.map(({ element }, index) => (
+            <div key={index}>{element}</div>
+          ))}
+        </div>
+
         <div className="blocks">
           {trees.map((tree) => (
             <div
@@ -101,7 +164,7 @@ export default function Editor({ trees, rerender }: Props) {
           ))}
         </div>
 
-        <Library contextHelpSubject={contextHelpSubject} />
+        <Library contextHelpSubject={contextHelpSubject} result={result} />
 
         <DragOverlay dropAnimation={null} zIndex={999999}>
           {activeDrag &&

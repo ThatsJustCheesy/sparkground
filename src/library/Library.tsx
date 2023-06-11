@@ -4,7 +4,7 @@ import { ProgSymbol } from "../symbol-table";
 import LibraryBlocks from "./LibraryBlocks";
 
 type Props = {
-  contextHelpSubject?: ProgSymbol | boolean;
+  contextHelpSubject?: ProgSymbol | number | boolean;
 };
 
 export default function Library({ contextHelpSubject }: Props) {
