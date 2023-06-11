@@ -5,9 +5,12 @@ import LibraryBlocks from "./LibraryBlocks";
 
 type Props = {
   contextHelpSubject?: ProgSymbol | number | boolean;
+
+  // TODO: Very temporary testing
+  result?: string;
 };
 
-export default function Library({ contextHelpSubject }: Props) {
+export default function Library({ contextHelpSubject, result }: Props) {
   const { isOver, setNodeRef } = useDroppable({
     id: "library",
     data: { isLibrary: true },
@@ -38,6 +41,9 @@ export default function Library({ contextHelpSubject }: Props) {
             <span style={{ color: "#444" }}>No selection</span>
           )}
         </div>
+
+        <h2 className="library-heading">Result</h2>
+        {result}
 
         <h2 className="library-heading">Library</h2>
         <LibraryBlocks />

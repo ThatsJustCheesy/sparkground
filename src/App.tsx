@@ -11,6 +11,8 @@ import { parseToExpr } from "./ast/parse";
 import { Tree } from "./ast/trees";
 import Editor from "./editor/Editor";
 import { symbols } from "./library/library-defs";
+// import { Environment, evaluate } from "./interpreter/interpret";
+import BiwaScheme from "biwascheme";
 
 const revTail: ProgSymbol = {
   id: "rev-tail",
@@ -65,9 +67,25 @@ function App() {
         >
           Export
         </MenuBarButton>
+        {/* <MenuBarButton
+          action={() => {
+            // console.log(evaluate(mainTree.root, new Environment()));
+            const source = serializeExpr(mainTree.root) + " (rev-tail '(1 2 3) '())";
+            console.log(source);
+
+            const interpreter = new BiwaScheme.Interpreter((error: any) => console.error(error));
+            interpreter.evaluate(source, (result: any) => console.log(result.toString()));
+          }}
+        >
+          Run
+        </MenuBarButton> */}
       </MenuBar>
 
-      <Editor trees={trees()} rerender={() => setRenderCounter(renderCounter + 1)} />
+      <Editor
+        trees={trees()}
+        rerender={() => setRenderCounter(renderCounter + 1)}
+        renderCounter={renderCounter}
+      />
     </>
   );
 }
