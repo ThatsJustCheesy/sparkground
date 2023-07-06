@@ -21,8 +21,13 @@
   flex: 80%;
 }
 
-.block {
+.block-outer-container {
   touch-action: none;
+  cursor: grab;
+}
+.block-outer-container:hover:not(:has(.block-outer-container:hover))
+  > .block:not(.block-drop-will-delete) {
+  outline: 0.2em solid #1fdcd9;
 }
 
 .block-v {
@@ -37,9 +42,6 @@
   padding-bottom: 0.5em;
 
   border-radius: 0.5em;
-}
-.block-v:hover:not(:has(.block-v:hover)):not(.block-drop-will-delete) {
-  outline: 0.09em solid #aaa;
 }
 .block-v > :not(.block-v-heading) {
   margin-left: 1em;
@@ -149,6 +151,7 @@
 
 .block-dragging {
   box-shadow: 3px 5px 8px 1px rgba(0, 0, 0, 0.5);
+  cursor: grabbing;
 }
 
 .block-dragged-over {

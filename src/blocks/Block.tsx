@@ -126,6 +126,7 @@ export default function Block({
         // Replaced with DragOverlay:
         // transform: CSS.Translate.toString(transform)
       }}
+      className="block-outer-container"
       onContextMenu={(event) => {
         event.preventDefault();
 
