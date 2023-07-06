@@ -12,14 +12,24 @@
   user-select: none;
 }
 
-.blocks {
+.blocks-stage-container {
   display: flex;
-  flex-flow: row wrap;
-  align-items: flex-start;
+  flex-flow: column;
+  justify-content: space-between;
   gap: 1em;
 
   flex: 80%;
 }
+
+/* .blocks {
+  width: 100%;
+  overflow: auto;
+}
+
+.stage {
+  padding: 2em;
+  height: 30vh;
+} */
 
 .block-outer-container {
   touch-action: none;

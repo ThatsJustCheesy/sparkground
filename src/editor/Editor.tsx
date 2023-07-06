@@ -1,8 +1,15 @@
 import "./editor.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { renderExpr } from "../ast/render";
-import { TreeIndexPath, exprAtIndexPath, isAncestor, isNumericLiteral } from "../ast/ast";
+import {
+  SExpr,
+  TreeIndexPath,
+  exprAtIndexPath,
+  isAncestor,
+  isNumericLiteral,
+  setChildAtIndex,
+} from "../ast/ast";
 import {
   Active,
   ClientRect,
@@ -20,6 +27,8 @@ import Library from "../library/Library";
 import { Tree, bringTreeToFront } from "../ast/trees";
 import BiwaScheme from "biwascheme";
 import { serializeExpr } from "../ast/serialize";
+import CodeEditorModal from "./CodeEditorModal";
+import { parseToExpr } from "../ast/parse";
 
 export type Props = {
   trees: Tree[];
@@ -75,6 +84,7 @@ const collisionDetection: CollisionDetection = ({
 
 export default function Editor({ trees, rerender, renderCounter }: Props) {
   const [contextHelpSubject, setContextHelpSubject] = useState<ProgSymbol | number | boolean>();
+  const [codeEditorSubject, setCodeEditorSubject] = useState<TreeIndexPath>();
   const [result, setResult] = useState<any>();
   const [activeDrag, setActiveDrag] = useState<TreeIndexPath>();
   const [activeDragOver, setActiveDragOver] = useState<Over>();
@@ -132,8 +142,12 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
     })();
   }, [activeDrag, renderCounter]);
 
+  const blocksArea = useRef<HTMLDivElement>(null);
+
   return (
     <div className="editor">
+      <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
+
       <DndContext
         autoScroll={false}
         collisionDetection={collisionDetection}
@@ -141,27 +155,39 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
         onDragOver={onBlockDragOver}
         onDragEnd={onBlockDragEnd}
       >
-        <div style={{ position: "absolute" }}>
-          {stage.map(({ element }, index) => (
-            <div key={index}>{element}</div>
-          ))}
-        </div>
+        <div className="blocks-stage-container">
+          <div className="blocks" ref={blocksArea}>
+            {trees.map((tree) => (
+              <div
+                key={tree.id}
+                className="block-pos-container"
+                style={{
+                  position: "absolute", // TODO: relative
+                  width: "fit-content",
+                  top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
+                  left: `calc(max(40px, ${tree.location.x}px))`,
+                  zIndex: tree.zIndex,
+                }}
+              >
+                {renderExpr(tree, tree.root, {
+                  onMouseOver,
+                  onMouseOut,
+                  onContextMenu,
+                  activeDrag,
+                  rerender,
+                })}
+              </div>
+            ))}
+          </div>
 
-        <div className="blocks">
-          {trees.map((tree) => (
-            <div
-              key={tree.id}
-              className="block-pos-container"
-              style={{
-                position: "absolute",
-                top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
-                left: `calc(max(40px, ${tree.location.x}px))`,
-                zIndex: tree.zIndex,
-              }}
-            >
-              {renderExpr(tree, tree.root, { onMouseOver, onMouseOut, activeDrag, rerender })}
+          {/* <div className="stage">
+            i am stage
+            <div style={{ position: "absolute" }}>
+              {stage.map(({ element }, index) => (
+                <div key={index}>{element}</div>
+              ))}
             </div>
-          ))}
+          </div> */}
         </div>
 
         <Library contextHelpSubject={contextHelpSubject} result={result} />
@@ -187,6 +213,32 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
 
     if (symbol === contextHelpSubject) {
       setContextHelpSubject(undefined);
+    }
+  }
+
+  function onContextMenu(indexPath: TreeIndexPath) {
+    setCodeEditorSubject(indexPath);
+  }
+
+  function onCodeEditorClose(newSource?: string) {
+    // Close editor
+    setCodeEditorSubject(undefined);
+
+    if (!newSource || !codeEditorSubject) return;
+
+    const newExpr = parseToExpr(newSource);
+
+    if (!codeEditorSubject.path.length) {
+      codeEditorSubject.tree.root = newExpr;
+    } else {
+      setChildAtIndex(
+        exprAtIndexPath({
+          tree: codeEditorSubject.tree,
+          path: codeEditorSubject.path.slice(0, -1),
+        }) as SExpr,
+        codeEditorSubject.path.at(-1)!,
+        newExpr
+      );
     }
   }
 
@@ -224,6 +276,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
     }
 
     const overIndexPath = indexPathFromDragged(over);
+    // console.log(active!.rect.current.translated!.top, blocksArea.current!.scrollTop);
     if (
       /* Dropped on top of nothing */
       !overIndexPath ||

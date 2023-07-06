@@ -30,6 +30,7 @@ export function renderExpr(
 
     onMouseOver,
     onMouseOut,
+    onContextMenu,
 
     rerender,
   }: {
@@ -41,8 +42,9 @@ export function renderExpr(
     activeDrag?: TreeIndexPath;
     forDragOverlay?: boolean | Over;
 
-    onMouseOver?: (symbol: ProgSymbol | number | boolean) => void;
-    onMouseOut?: (symbol: ProgSymbol | number | boolean) => void;
+    onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+    onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+    onContextMenu?: (indexPath: TreeIndexPath) => void;
 
     rerender?: () => void;
   } = {}
@@ -84,6 +86,7 @@ export function renderExpr(
 
         onMouseOver,
         onMouseOut,
+        onContextMenu,
 
         rerender,
       })
@@ -120,6 +123,7 @@ export function renderExpr(
             forDragOverlay={forDragOverlay}
             onMouseOver={onMouseOver}
             onMouseOut={onMouseOut}
+            onContextMenu={onContextMenu}
             rerender={rerender}
           >
             {hintedBody}
@@ -139,6 +143,7 @@ export function renderExpr(
           forDragOverlay={forDragOverlay}
           onMouseOver={onMouseOver}
           onMouseOut={onMouseOut}
+          onContextMenu={onContextMenu}
           rerender={rerender}
         >
           {renderedArgs}
@@ -160,6 +165,7 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        onContextMenu={onContextMenu}
         rerender={rerender}
       />
     );
@@ -176,6 +182,7 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        onContextMenu={onContextMenu}
         rerender={rerender}
       />
     );
@@ -192,6 +199,7 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        onContextMenu={onContextMenu}
         rerender={rerender}
       />
     );
@@ -210,6 +218,7 @@ export function renderExpr(
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
+        onContextMenu={onContextMenu}
         rerender={rerender}
       />
     );

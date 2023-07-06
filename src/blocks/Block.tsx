@@ -17,6 +17,7 @@ type Props = PropsWithChildren<{
 
   onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
   onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+  onContextMenu?: (indexPath: TreeIndexPath) => void;
 
   rerender?: () => void;
 }>;
@@ -62,6 +63,7 @@ export default function Block({
 
   onMouseOver,
   onMouseOut,
+  onContextMenu,
 
   rerender,
 }: Props) {
@@ -129,11 +131,9 @@ export default function Block({
       className="block-outer-container"
       onContextMenu={(event) => {
         event.preventDefault();
+        event.stopPropagation();
 
-        if (data.type === "number") {
-          data.value.n = Number(prompt("Value:", `${data.value.n}`) ?? data.value.n);
-          rerender?.();
-        }
+        onContextMenu?.(indexPath);
       }}
     >
       <div
