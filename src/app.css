@@ -6,3 +6,16 @@ body {
 #root {
   height: 100%;
 }
+
+body {
+  --bs-body-line-height: normal;
+}
+p,
+:is(.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6):has(+ p) {
+  line-height: 1.5;
+}
+
+:is(.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6) {
+  font-weight: bold;
+  line-height: normal;
+}
