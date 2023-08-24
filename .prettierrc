@@ -1,3 +1,13 @@
 {
-  "printWidth": 100
+  "printWidth": 100,
+
+  "overrides": [
+    {
+      "files": "*.{spec,test}.{js,jsx,ts,tsx}",
+      "options": {
+        "printWidth": 140,
+        "semi": false
+      }
+    }
+  ]
 }

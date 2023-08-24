@@ -38,9 +38,6 @@
     "gh-pages": "^5.0.0",
     "html-webpack-plugin": "^5.5.0",
     "identity-obj-proxy": "^3.0.0",
-    "jest": "^27.4.3",
-    "jest-resolve": "^27.4.2",
-    "jest-watch-typeahead": "^1.0.0",
     "lodash": "^4.17.21",
     "mini-css-extract-plugin": "^2.4.5",
     "monaco-editor": "^0.39.0",
@@ -70,8 +67,12 @@
     "workbox-webpack-plugin": "^6.4.1"
   },
   "devDependencies": {
+    "@types/jest": "^27.5.2",
     "@types/lodash": "^4.14.194",
     "@types/react-dom": "^18.2.4",
+    "jest": "^27.5.1",
+    "jest-resolve": "^27.5.1",
+    "jest-watch-typeahead": "^2.2.2",
     "prettier": "^2.8.8"
   },
   "browserslist": {
