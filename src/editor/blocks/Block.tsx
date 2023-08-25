@@ -1,7 +1,7 @@
 import { PropsWithChildren, useRef } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
-import { callEach } from "../util";
+import { callEach } from "../../util";
 import { Expr, SExpr, TreeIndexPath, exprAtIndexPath, extendIndexPath, isSExpr } from "../ast/ast";
 import BlockPullTab from "./BlockPullTab";
 

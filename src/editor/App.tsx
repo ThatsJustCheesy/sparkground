@@ -9,7 +9,7 @@ import MenuBarTitle from "./menus/MenuBarTitle";
 import { serializeExpr } from "./ast/serialize";
 import { parseToExpr } from "./ast/parse";
 import { Tree } from "./ast/trees";
-import Editor from "./editor/Editor";
+import Editor from "./Editor";
 import { symbols } from "./library/library-defs";
 // import { Environment, evaluate } from "./interpreter/interpret";
 import BiwaScheme from "biwascheme";

@@ -1,7 +1,7 @@
 import "./editor.css";
 import { useEffect, useRef, useState } from "react";
-import { ProgSymbol } from "../symbol-table";
-import { renderExpr } from "../ast/render";
+import { ProgSymbol } from "./symbol-table";
+import { renderExpr } from "./ast/render";
 import {
   SExpr,
   TreeIndexPath,
@@ -9,7 +9,7 @@ import {
   isAncestor,
   isNumericLiteral,
   setChildAtIndex,
-} from "../ast/ast";
+} from "./ast/ast";
 import {
   Active,
   ClientRect,
@@ -22,13 +22,13 @@ import {
   DragStartEvent,
   Over,
 } from "@dnd-kit/core";
-import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "../ast/mutate";
-import Library from "../library/Library";
-import { Tree, bringTreeToFront } from "../ast/trees";
+import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./ast/mutate";
+import Library from "./library/Library";
+import { Tree, bringTreeToFront } from "./ast/trees";
 import BiwaScheme from "biwascheme";
-import { serializeExpr } from "../ast/serialize";
+import { serializeExpr } from "./ast/serialize";
 import CodeEditorModal from "./CodeEditorModal";
-import { parseToExpr } from "../ast/parse";
+import { parseToExpr } from "./ast/parse";
 
 export type Props = {
   trees: Tree[];

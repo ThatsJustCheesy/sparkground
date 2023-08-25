@@ -2,8 +2,8 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Editor from "@monaco-editor/react";
 
-import { TreeIndexPath, exprAtIndexPath } from "../ast/ast";
-import { serializeExpr } from "../ast/serialize";
+import { TreeIndexPath, exprAtIndexPath } from "./ast/ast";
+import { serializeExpr } from "./ast/serialize";
 import { useEffect, useState } from "react";
 
 export type Props = {
