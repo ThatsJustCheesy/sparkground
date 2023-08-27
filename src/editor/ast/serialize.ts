@@ -19,7 +19,7 @@ export function serializeExpr(expr: Expr): string {
   }
 
   if (isProgSymbol(expr)) return expr.id;
-  if (isNumericLiteral(expr)) return `${expr.n}`;
+  if (isNumericLiteral(expr)) return `${expr}`;
   if (isBoolLiteral(expr)) return expr ? "#t" : "#f";
   if (isQuoteLiteral(expr)) return expr === null ? "'()" : "'(" + serializeExpr(expr.quote) + ")";
   if (isHole(expr)) return "<...>";

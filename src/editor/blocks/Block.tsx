@@ -175,7 +175,7 @@ export default function Block({
       case "ident":
         return data.symbol;
       case "number":
-        return data.value.n;
+        return data.value;
       case "bool":
         return data.value;
     }
@@ -219,7 +219,7 @@ export default function Block({
       case "number": {
         const { value } = data;
 
-        return <div>{value.n}</div>;
+        return <div>{value}</div>;
       }
 
       case "bool": {

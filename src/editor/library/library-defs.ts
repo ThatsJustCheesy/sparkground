@@ -339,7 +339,7 @@ export const library: Expr[] = [
   false,
   // TODO: Enable once supported
   // null,
-  { n: 0 },
+  0,
 
   ...Object.values(symbols).map((symbol) => s(symbol)),
 ];

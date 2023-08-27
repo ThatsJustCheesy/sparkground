@@ -1,4 +1,4 @@
-import { BoolLiteral, Expr, QuoteLiteral, SExpr } from "./ast";
+import { Expr, QuoteLiteral, SExpr } from "./ast";
 import { SymbolTable } from "../symbol-table";
 
 export function parseToExpr(source: string): Expr {
@@ -25,7 +25,7 @@ class Parser {
         return this.parseQuoted(tokens);
       default:
         tokens.shift();
-        if (typeof next === "number") return { n: next };
+        if (typeof next === "number") return next;
         return this.#symbolTable.get(next.identifier);
     }
   }

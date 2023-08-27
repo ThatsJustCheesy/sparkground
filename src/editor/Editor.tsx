@@ -98,8 +98,6 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
       stage.splice(0, stage.length);
 
       BiwaScheme.define_libfunc("text", 1, 1, ([text]: [any]) => {
-        if (isNumericLiteral(text)) text = text.n;
-
         const newObject = { element: <>{`${text}`}</> };
         stage.push(newObject);
         setStage([...stage]);
