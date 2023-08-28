@@ -1,29 +1,32 @@
-import {
-  Expr,
-  TreeIndexPath,
-  extendIndexPath,
-  isBoolLiteral,
-  isHole,
-  isNumericLiteral,
-  isProgSymbol,
-  isQuoteLiteral,
-  isSExpr,
-  rootIndexPath,
-} from "./ast";
+import { TreeIndexPath, extendIndexPath, rootIndexPath, hole } from "./ast";
 import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
-import Block from "../blocks/Block";
+import Block, { BlockData } from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
-import { ProgSymbol } from "../symbol-table";
+import { ProgSymbol, SymbolTable } from "../symbol-table";
+import {
+  BoolExpr,
+  Define,
+  Expr,
+  Hole,
+  If,
+  Lambda,
+  NullExpr,
+  NumberExpr,
+  SExpr,
+  StringExpr,
+  Var,
+} from "../../typechecker/ast/ast";
+import { symbols } from "../library/library-defs";
 
-export function renderExpr(
+export function render(
   tree: Tree,
-  expr: Expr,
+  node: Expr,
+  symbolTable: SymbolTable,
   {
     indexPath: indexPath_,
 
     isCopySource,
-    isSymbolDefinition,
 
     activeDrag,
     forDragOverlay,
@@ -37,7 +40,6 @@ export function renderExpr(
     indexPath?: TreeIndexPath;
 
     isCopySource?: boolean;
-    isSymbolDefinition?: boolean;
 
     activeDrag?: TreeIndexPath;
     forDragOverlay?: boolean | Over;
@@ -50,179 +52,177 @@ export function renderExpr(
   } = {}
 ): JSX.Element {
   const indexPath = indexPath_ ?? rootIndexPath(tree);
-  isCopySource ||= isSymbolDefinition;
 
   function keyForIndexPath({ path }: TreeIndexPath) {
     return tree.id + " " + path.join(" ");
   }
 
-  if (isSExpr(expr)) {
+  function block(data: BlockData, body: JSX.Element | JSX.Element[] = []) {
+    return subnodeBlock(data, body, indexPath);
+  }
+  function subnodeBlock(
+    data: BlockData,
+    body: JSX.Element | JSX.Element[],
+    indexPath: TreeIndexPath
+  ) {
+    const key = keyForIndexPath(indexPath);
+    return (
+      <Block
+        key={key}
+        id={key}
+        indexPath={indexPath}
+        data={data}
+        isCopySource={isCopySource}
+        activeDrag={activeDrag}
+        forDragOverlay={forDragOverlay}
+        onMouseOver={onMouseOver}
+        onMouseOut={onMouseOut}
+        onContextMenu={onContextMenu}
+        rerender={rerender}
+      >
+        {body}
+      </Block>
+    );
+  }
+  function renderSubexpr(subexpr: Expr, index: number, options: { isCopySource?: boolean } = {}) {
+    return render(tree, subexpr, symbolTable, {
+      indexPath: extendIndexPath(indexPath, index),
+
+      isCopySource: isCopySource || options.isCopySource,
+
+      activeDrag,
+
+      onMouseOver,
+      onMouseOut,
+      onContextMenu,
+
+      rerender,
+    });
+  }
+
+  function renderAtomic(
+    expr: Hole | NumberExpr | BoolExpr | StringExpr | NullExpr | Var
+  ): JSX.Element {
+    const data = ((): BlockData => {
+      switch (expr.kind) {
+        case "hole":
+          return { type: "hole" };
+        case "number":
+          return { type: "number", value: expr.value };
+        case "bool":
+          return { type: "bool", value: expr.value };
+        case "string":
+        case "null":
+          throw "TODO!";
+        case "var":
+          return { type: "ident", symbol: symbolTable.get(expr.id) };
+      }
+    })();
+
+    return block(data);
+  }
+
+  function hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {
+    return bodyArgs.map((bodyArg, index) => {
+      const hint = hints[index];
+      if (!hint) return bodyArg;
+
+      const argIndexPath = extendIndexPath(indexPath, index);
+      return (
+        <BlockHint key={keyForIndexPath(argIndexPath)} hint={hint}>
+          {bodyArg}
+        </BlockHint>
+      );
+    });
+  }
+
+  function renderSExpr(expr: SExpr): JSX.Element {
     let { called, args } = expr;
 
-    if (isProgSymbol(called)) {
-      const minArgCount = called.minArgCount ?? 0;
+    if (called.kind === "var") {
+      const calledSymbol = symbolTable.get(called.id);
+      const minArgCount = calledSymbol.minArgCount ?? 0;
 
       // Add holes where arguments are required
       while (args.length < minArgCount) {
-        args.push(undefined);
+        args.push(hole);
       }
 
       // Remove holes from the end of varargs calls
-      while (args.length > minArgCount && args.at(-1) === undefined) {
+      while (args.length > minArgCount && args.at(-1)?.kind === "hole") {
         args.pop();
       }
     }
 
-    const renderedArgs = (isSymbolDefinition ? [called, ...args] : args).map((arg, index) =>
-      renderExpr(tree, arg, {
-        indexPath: extendIndexPath(indexPath, index + (isSymbolDefinition ? 0 : 1)),
+    const renderedArgs = args.map((arg, index) => renderSubexpr(arg, index + 1));
 
-        isCopySource,
-        isSymbolDefinition:
-          isSymbolDefinition ||
-          (index === 0 && isProgSymbol(called) && called.special === "define"),
-
-        activeDrag,
-
-        onMouseOver,
-        onMouseOut,
-        onContextMenu,
-
-        rerender,
-      })
-    );
-
-    if (isProgSymbol(called)) {
-      if (!isSymbolDefinition && (called.headingArgCount || called.bodyArgHints?.length)) {
-        const { headingArgCount, bodyArgHints } = called;
+    if (called.kind === "var") {
+      const calledSymbol = symbolTable.get(called.id);
+      if (calledSymbol.headingArgCount || calledSymbol.bodyArgHints?.length) {
+        const { headingArgCount, bodyArgHints } = calledSymbol;
 
         const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
         const body = renderedArgs.slice(headingArgCount);
 
-        const hintedBody = body.map((bodyArg, index) => {
-          const hint = bodyArgHints?.[index];
-          if (!hint) return bodyArg;
-
-          const argIndexPath = extendIndexPath(indexPath, index);
-          return (
-            <BlockHint key={keyForIndexPath(argIndexPath)} hint={hint}>
-              {bodyArg}
-            </BlockHint>
-          );
-        });
-
-        const key = keyForIndexPath(indexPath);
-        return (
-          <Block
-            key={key}
-            id={key}
-            indexPath={indexPath}
-            data={{ type: "v", symbol: called, heading: <>{heading}</> }}
-            isCopySource={isCopySource || isSymbolDefinition}
-            activeDrag={activeDrag}
-            forDragOverlay={forDragOverlay}
-            onMouseOver={onMouseOver}
-            onMouseOut={onMouseOut}
-            onContextMenu={onContextMenu}
-            rerender={rerender}
-          >
-            {hintedBody}
-          </Block>
+        return block(
+          { type: "v", symbol: calledSymbol, heading: <>{heading}</> },
+          hintBodyArgs(body, bodyArgHints)
         );
       }
 
-      const key = keyForIndexPath(indexPath);
-      return (
-        <Block
-          key={key}
-          id={key}
-          indexPath={indexPath}
-          data={{ type: "h", symbol: called, definesSymbol: isSymbolDefinition }}
-          isCopySource={isCopySource || isSymbolDefinition}
-          activeDrag={activeDrag}
-          forDragOverlay={forDragOverlay}
-          onMouseOver={onMouseOver}
-          onMouseOut={onMouseOut}
-          onContextMenu={onContextMenu}
-          rerender={rerender}
-        >
-          {renderedArgs}
-        </Block>
-      );
+      return block({ type: "h", symbol: calledSymbol }, renderedArgs);
+    } else {
+      throw "calling non-identifier is not supported yet";
     }
+  }
 
-    throw "calling non-identifier is not supported yet";
-  } else if (isProgSymbol(expr)) {
-    const key = keyForIndexPath(indexPath);
-    return (
-      <Block
-        key={key}
-        id={key}
-        indexPath={indexPath}
-        data={{ type: "ident", symbol: expr }}
-        isCopySource={isCopySource || isSymbolDefinition}
-        activeDrag={activeDrag}
-        forDragOverlay={forDragOverlay}
-        onMouseOver={onMouseOver}
-        onMouseOut={onMouseOut}
-        onContextMenu={onContextMenu}
-        rerender={rerender}
-      />
+  function renderDefine(expr: Define): JSX.Element {
+    const heading = renderSubexpr(expr.name, 0, { isCopySource: true });
+    const body = renderSubexpr(expr.value, 1);
+
+    return block({ type: "v", symbol: symbols.define, heading }, body);
+  }
+
+  function renderLambda(expr: Lambda): JSX.Element {
+    const heading = (
+      <>{expr.params.map((param, index) => renderSubexpr(param, index, { isCopySource: true }))}</>
     );
-  } else if (isNumericLiteral(expr)) {
-    const key = keyForIndexPath(indexPath);
-    return (
-      <Block
-        key={key}
-        id={key}
-        indexPath={indexPath}
-        data={{ type: "number", value: expr }}
-        isCopySource={isCopySource || isSymbolDefinition}
-        activeDrag={activeDrag}
-        forDragOverlay={forDragOverlay}
-        onMouseOver={onMouseOver}
-        onMouseOut={onMouseOut}
-        onContextMenu={onContextMenu}
-        rerender={rerender}
-      />
+    const body = renderSubexpr(expr.body, expr.params.length);
+
+    return block({ type: "v", symbol: symbols.lambda, heading }, body);
+  }
+
+  function renderIf(expr: If): JSX.Element {
+    return block(
+      { type: "v", symbol: symbols.if, heading: renderSubexpr(expr.if, 0) },
+      hintBodyArgs([renderSubexpr(expr.then, 1), renderSubexpr(expr.else, 2)], ["then", "else"])
     );
-  } else if (isBoolLiteral(expr)) {
-    const key = keyForIndexPath(indexPath);
-    return (
-      <Block
-        key={key}
-        id={key}
-        indexPath={indexPath}
-        data={{ type: "bool", value: expr }}
-        isCopySource={isCopySource || isSymbolDefinition}
-        activeDrag={activeDrag}
-        forDragOverlay={forDragOverlay}
-        onMouseOver={onMouseOver}
-        onMouseOut={onMouseOut}
-        onContextMenu={onContextMenu}
-        rerender={rerender}
-      />
-    );
-  } else if (isQuoteLiteral(expr)) {
-    throw "quote literal not supported yet";
-  } else if (isHole(expr)) {
-    const key = keyForIndexPath(indexPath);
-    return (
-      <Block
-        key={key}
-        id={key}
-        indexPath={indexPath}
-        data={{ type: "hole" }}
-        isCopySource={isCopySource || isSymbolDefinition}
-        activeDrag={activeDrag}
-        forDragOverlay={forDragOverlay}
-        onMouseOver={onMouseOver}
-        onMouseOut={onMouseOut}
-        onContextMenu={onContextMenu}
-        rerender={rerender}
-      />
-    );
-  } else {
-    throw "invalid expression";
+  }
+
+  switch (node.kind) {
+    case "hole":
+    case "number":
+    case "bool":
+    case "string":
+    case "null":
+    case "var":
+      return renderAtomic(node);
+
+    case "sexpr":
+      return renderSExpr(node);
+
+    case "define":
+      return renderDefine(node);
+    case "let":
+      throw "TODO";
+    case "lambda":
+      return renderLambda(node);
+    case "sequence":
+      throw "TODO";
+
+    case "if":
+      return renderIf(node);
+    case "cond":
+      throw "TODO";
   }
 }

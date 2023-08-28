@@ -1,4 +1,7 @@
+import { isHole } from "../../editor/ast/ast";
+
 export type Expr =
+  | Hole
   | NumberExpr
   | BoolExpr
   | StringExpr
@@ -11,6 +14,15 @@ export type Expr =
   | Sequence
   | If
   | Cond;
+
+export type VarSlot = Hole | Var;
+export function getIdentifier(varSlot: VarSlot) {
+  return isHole(varSlot) ? "_" : varSlot.id;
+}
+
+export type Hole = {
+  kind: "hole";
+};
 
 export type NumberExpr = {
   kind: "number";
@@ -41,17 +53,17 @@ export type SExpr = {
 
 export type Define = {
   kind: "define";
-  name: string;
+  name: VarSlot;
   value: Expr;
 };
 export type Let = {
   kind: "let";
-  bindings: [name: string, value: Expr][];
+  bindings: [name: VarSlot, value: Expr][];
   body: Expr;
 };
 export type Lambda = {
   kind: "lambda";
-  params: string[];
+  params: VarSlot[];
   body: Expr;
 };
 export type Sequence = {

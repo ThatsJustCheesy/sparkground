@@ -1,4 +1,4 @@
-import { Expr } from "./ast";
+import { Expr } from "../../typechecker/ast/ast";
 
 export type Point = {
   x: number;

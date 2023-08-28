@@ -1,6 +1,7 @@
 import "./library.css";
-import { renderExpr } from "../ast/render";
+import { render } from "../ast/render";
 import { library } from "./library-defs";
+import { SymbolTable } from "../symbol-table";
 
 type Props = {};
 
@@ -8,7 +9,7 @@ export default function LibraryBlocks({}: Props) {
   return (
     <>
       {library.map((symbol, index) =>
-        renderExpr(
+        render(
           {
             id: `library-${index}`,
             root: symbol,
@@ -16,6 +17,7 @@ export default function LibraryBlocks({}: Props) {
             zIndex: 1,
           },
           symbol,
+          new SymbolTable(),
           { isCopySource: true }
         )
       )}

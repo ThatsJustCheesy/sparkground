@@ -2,14 +2,14 @@ import { PropsWithChildren, useRef } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { callEach } from "../../util";
-import { Expr, SExpr, TreeIndexPath, exprAtIndexPath, extendIndexPath, isSExpr } from "../ast/ast";
+import { TreeIndexPath, exprAtIndexPath, extendIndexPath } from "../ast/ast";
 import BlockPullTab from "./BlockPullTab";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
   indexPath: TreeIndexPath;
 
-  data: Vertical | Horizontal | Identifier | Number | Bool | Hole;
+  data: BlockData;
   isCopySource?: boolean;
 
   activeDrag?: TreeIndexPath;
@@ -21,6 +21,8 @@ type Props = PropsWithChildren<{
 
   rerender?: () => void;
 }>;
+
+export type BlockData = Vertical | Horizontal | Identifier | Number | Bool | Hole;
 
 type Vertical = {
   type: "v";
@@ -39,7 +41,7 @@ type Identifier = {
 };
 type Number = {
   type: "number";
-  value: { n: number };
+  value: number;
 };
 type Bool = {
   type: "bool";
@@ -157,7 +159,8 @@ export default function Block({
       </div>
 
       {data.type === "h" &&
-        isSExpr(expr) &&
+        expr &&
+        expr.kind === "sexpr" &&
         expr.args.length < (data.symbol.maxArgCount ?? Infinity) && (
           <BlockPullTab
             id={`${id}-pull-tab`}

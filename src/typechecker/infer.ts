@@ -3,17 +3,15 @@ import {
   ConcreteInferrableType,
   InferrableType,
   Type,
-  Types,
   Unknown,
   assertNoTypeVar,
-  assertNoUnknown,
   hasNoUnknown,
   isTypeVar,
   isUnknown,
   typeParams,
   typeStructureMap,
 } from "./type";
-import { Expr } from "./ast/ast";
+import { Expr, getIdentifier } from "./ast/ast";
 
 // https://www.cs.utoronto.ca/~trebla/CSCC24-2023-Summer/11-type-inference.html
 
@@ -30,6 +28,9 @@ export class TypeInferrer {
 
   #infer(expr: Expr, env: TypeEnv): InferrableType {
     switch (expr.kind) {
+      case "hole":
+        return this.#newUnknown();
+
       case "number":
         return expr.value === Math.floor(expr.value) ? { tag: "Integer" } : { tag: "Number" };
       case "bool":
@@ -79,9 +80,9 @@ export class TypeInferrer {
       case "define":
         return this.#infer(expr.value, {
           ...env,
-          [expr.name]: this.#infer(expr.value, {
+          [getIdentifier(expr.name)]: this.#infer(expr.value, {
             ...env,
-            [expr.name]: this.#newUnknown(),
+            [getIdentifier(expr.name)]: this.#newUnknown(),
           }),
         });
 
@@ -91,7 +92,7 @@ export class TypeInferrer {
           ...env,
           ...Object.fromEntries(
             expr.bindings.map(([name, value]) => [
-              name,
+              getIdentifier(name),
               this.#generalize(this.#infer(value, env), env),
             ])
           ),
@@ -99,7 +100,7 @@ export class TypeInferrer {
 
       case "lambda":
         const paramTypes = Object.fromEntries(
-          expr.params.map((param) => [param, this.#newUnknown()])
+          expr.params.map((param) => [getIdentifier(param), this.#newUnknown()])
         );
         const bodyType = this.#infer(expr.body, {
           ...env,

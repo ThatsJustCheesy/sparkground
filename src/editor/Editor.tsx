@@ -1,15 +1,8 @@
 import "./editor.css";
 import { useEffect, useRef, useState } from "react";
-import { ProgSymbol } from "./symbol-table";
-import { renderExpr } from "./ast/render";
-import {
-  SExpr,
-  TreeIndexPath,
-  exprAtIndexPath,
-  isAncestor,
-  isNumericLiteral,
-  setChildAtIndex,
-} from "./ast/ast";
+import { ProgSymbol, SymbolTable } from "./symbol-table";
+import { render } from "./ast/render";
+import { TreeIndexPath, exprAtIndexPath, isAncestor, setChildAtIndex } from "./ast/ast";
 import {
   Active,
   ClientRect,
@@ -29,6 +22,7 @@ import BiwaScheme from "biwascheme";
 import { serializeExpr } from "./ast/serialize";
 import CodeEditorModal from "./CodeEditorModal";
 import { parseToExpr } from "./ast/parse";
+import { SExpr } from "../typechecker/ast/ast";
 
 export type Props = {
   trees: Tree[];
@@ -167,7 +161,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
                   zIndex: tree.zIndex,
                 }}
               >
-                {renderExpr(tree, tree.root, {
+                {render(tree, tree.root, new SymbolTable(), {
                   onMouseOver,
                   onMouseOut,
                   onContextMenu,
@@ -192,9 +186,15 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
 
         <DragOverlay dropAnimation={null} zIndex={999999}>
           {activeDrag &&
-            renderExpr(activeDrag.tree, exprAtIndexPath(activeDrag), {
-              forDragOverlay: activeDragOver ?? true,
-            })}
+            render(
+              activeDrag.tree,
+              exprAtIndexPath(activeDrag),
+              // TODO: Do we need to use a better symbol table here?
+              new SymbolTable(),
+              {
+                forDragOverlay: activeDragOver ?? true,
+              }
+            )}
         </DragOverlay>
       </DndContext>
     </div>

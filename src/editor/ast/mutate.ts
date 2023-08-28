@@ -1,15 +1,15 @@
 import { cloneDeep } from "lodash";
 import {
-  Expr,
   TreeIndexPath,
-  exprAtIndexPath,
+  exprAtIndexPath as exprAtIndexPath,
   hole,
   isHole,
-  isSExpr,
   isSameOrAncestor,
   setChildAtIndex,
+  isAtomic,
 } from "./ast";
 import { Point, Tree, newTree, removeTree } from "./trees";
+import { Expr } from "../../typechecker/ast/ast";
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
@@ -37,18 +37,17 @@ export function moveExprInTree(
     destinationTree,
     destinationIndexPath.slice(0, -1)
   );
-  if (!isSExpr(destinationParent)) throw "invalid index path for tree";
 
   if (source === sourceTree.root) {
     removeTree(sourceTree);
   } else {
     const sourceParent = exprForIndexPathInTree(sourceTree, sourceIndexPath.slice(0, -1));
-    if (!isSExpr(sourceParent)) throw "invalid index path for tree";
 
     setChildAtIndex(sourceParent, sourceIndexPath.at(-1)!, hole);
   }
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, source);
+  debugger;
   if (!isHole(destination)) newTree(destination, displaceTo);
 }
 
@@ -72,7 +71,6 @@ export function copyExprInTree(
     destinationTree,
     destinationIndexPath.slice(0, -1)
   );
-  if (!isSExpr(destinationParent)) throw "invalid index path for tree";
 
   if (destination === source || destination === destinationTree.root) return;
 
@@ -84,20 +82,20 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
   const expr = exprForIndexPathInTree(tree, path);
   if (isHole(expr)) return;
 
-  const exprParent = exprForIndexPathInTree(tree, path.slice(0, -1));
+  const parent = exprForIndexPathInTree(tree, path.slice(0, -1));
 
   if (copy) {
     newTree(cloneDeep(expr), placeAt);
     return;
   }
 
-  if (path.length === 0 || !isSExpr(exprParent)) {
+  if (path.length === 0 || isAtomic(parent)) {
     // expr is already the root of a tree
     tree.location = placeAt;
     return;
   }
 
-  setChildAtIndex(exprParent, path.at(-1)!, hole);
+  setChildAtIndex(parent, path.at(-1)!, hole);
   newTree(expr, placeAt);
 }
 
@@ -107,7 +105,7 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
 
   const exprParent = exprForIndexPathInTree(tree, path.slice(0, -1));
 
-  if (path.length === 0 || !isSExpr(exprParent)) {
+  if (path.length === 0 || isAtomic(expr)) {
     // expr is the root of its tree
     removeTree(tree);
   } else {

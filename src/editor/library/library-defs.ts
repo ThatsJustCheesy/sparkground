@@ -1,19 +1,34 @@
 import { keyBy } from "lodash";
-import { Expr, hole, s } from "../ast/ast";
 import { ProgSymbol } from "../symbol-table";
+import { Expr, SExpr } from "../../typechecker/ast/ast";
+
+const revTail: ProgSymbol = {
+  id: "rev-tail",
+
+  minArgCount: 2,
+  bodyArgHints: ["l", "acc"],
+};
 
 // https://inst.eecs.berkeley.edu/~cs61a/sp19/articles/scheme-builtins.html#pair-and-list-manipulation
 // Extracted with ChatGPT, thx lol
 export const symbols = keyBy(
   [
+    revTail,
     {
       id: "define",
-      doc: "Variable or function definition",
+      doc: "Defines a variable",
 
       minArgCount: 2,
+      maxArgCount: 2,
       headingArgCount: 1,
+    },
+    {
+      id: "lambda",
+      doc: "Creates a function",
 
-      special: "define",
+      minArgCount: 2,
+      maxArgCount: 2,
+      headingArgCount: 1,
     },
     {
       id: "if",
@@ -335,11 +350,13 @@ export const symbols = keyBy(
 );
 
 export const library: Expr[] = [
-  true,
-  false,
+  { kind: "bool", value: true },
+  { kind: "bool", value: false },
   // TODO: Enable once supported
-  // null,
-  0,
+  // { kind: "null" },
+  { kind: "number", value: 0 },
 
-  ...Object.values(symbols).map((symbol) => s(symbol)),
+  ...Object.values(symbols).map(
+    (symbol): SExpr => ({ kind: "sexpr", called: { kind: "var", id: symbol.id }, args: [] })
+  ),
 ];
