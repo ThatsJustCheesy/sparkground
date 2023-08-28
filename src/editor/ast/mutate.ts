@@ -105,7 +105,7 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
 
   const exprParent = exprForIndexPathInTree(tree, path.slice(0, -1));
 
-  if (path.length === 0 || isAtomic(expr)) {
+  if (path.length === 0 || isAtomic(exprParent)) {
     // expr is the root of its tree
     removeTree(tree);
   } else {
