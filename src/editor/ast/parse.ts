@@ -1,4 +1,14 @@
-import { Cond, Define, Expr, If, Lambda, Let, SExpr, Var } from "../../typechecker/ast/ast";
+import {
+  Cond,
+  Define,
+  Expr,
+  If,
+  Lambda,
+  Let,
+  SExpr,
+  Sequence,
+  Var,
+} from "../../typechecker/ast/ast";
 import { hole } from "./ast";
 
 export function parseToExpr(source: string): Expr {
@@ -129,7 +139,7 @@ class Parser {
 
     this.eat(")");
 
-    const body = this.parsePrimary();
+    const body = this.parseSequence();
 
     this.eat(")");
 
@@ -138,6 +148,14 @@ class Parser {
       params,
       body,
     };
+  }
+
+  parseSequence(): Sequence {
+    let exprs: Expr[] = [];
+    while (this.tokens[0] !== ")") {
+      exprs.push(this.parsePrimary());
+    }
+    return { kind: "sequence", exprs };
   }
 
   parseIf(): If {

@@ -83,20 +83,6 @@ const TypeDefs = {
   Procedure: ["out"],
 } as const satisfies Record<string, Readonly<string[]>>;
 
-// TODO: Deprecated; remove
-export type FunctionType = {
-  type: "Function";
-
-  argTypes: Type[];
-  retType: Type;
-  minArgCount?: number;
-  maxArgCount?: number;
-
-  headingArgCount?: number;
-  bodyArgHints?: string[];
-  special?: "define";
-};
-
 // For type inference algorithm only.
 export type InferrableType = ConcreteInferrableType | TypeVar;
 export type ConcreteInferrableType = InferrableTypes[keyof InferrableTypes] | Unknown;

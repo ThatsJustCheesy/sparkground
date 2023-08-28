@@ -184,7 +184,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
 
         <Library contextHelpSubject={contextHelpSubject} result={result} />
 
-        <DragOverlay dropAnimation={null} zIndex={999999}>
+        <DragOverlay dropAnimation={null} zIndex={99999}>
           {activeDrag &&
             render(
               activeDrag.tree,

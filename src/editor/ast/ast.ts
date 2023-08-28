@@ -41,7 +41,8 @@ export function setChildAtIndex(expr: Expr, index: number, newChild: Expr): void
       else expr.args[index - 1] = newChild;
       break;
     case "define":
-      if (index === 1) expr.value = expr;
+      if (index === 0) expr.name = newChild as Var;
+      if (index === 1) expr.value = newChild;
       break;
     case "let":
       throw "TODO";

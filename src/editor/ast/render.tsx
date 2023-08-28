@@ -14,6 +14,7 @@ import {
   NullExpr,
   NumberExpr,
   SExpr,
+  Sequence,
   StringExpr,
   Var,
 } from "../../typechecker/ast/ast";
@@ -192,6 +193,11 @@ export function render(
     return block({ type: "v", symbol: symbols.lambda, heading }, body);
   }
 
+  function renderSequence(expr: Sequence): JSX.Element {
+    // TODO: Real editable sequence block!
+    return <>{expr.exprs.map((subexpr, index) => renderSubexpr(subexpr, index))}</>;
+  }
+
   function renderIf(expr: If): JSX.Element {
     return block(
       { type: "v", symbol: symbols.if, heading: renderSubexpr(expr.if, 0) },
@@ -218,7 +224,7 @@ export function render(
     case "lambda":
       return renderLambda(node);
     case "sequence":
-      throw "TODO";
+      return renderSequence(node);
 
     case "if":
       return renderIf(node);

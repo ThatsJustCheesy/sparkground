@@ -12,24 +12,93 @@ import {
   typeStructureMap,
 } from "./type";
 import { Expr, getIdentifier } from "./ast/ast";
+import { serializeType } from "./serialize";
+import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/ast/ast";
+import { Tree, newTree, removeTree } from "../editor/ast/trees";
+import { serializeExpr } from "../editor/ast/serialize";
 
 // https://www.cs.utoronto.ca/~trebla/CSCC24-2023-Summer/11-type-inference.html
 
 export type TypeEnv<T = InferrableType> = Record<string, T>;
 
+class InferenceCache {
+  inferred = new Map<string, InferrableType>();
+
+  get({ tree, path }: TreeIndexPath): InferrableType | undefined {
+    return this.inferred.get(tree.id + "#" + path.join("."));
+  }
+
+  set({ tree, path }: TreeIndexPath, inferredType: InferrableType) {
+    this.inferred.set(tree.id + "#" + path.join("."), inferredType);
+  }
+
+  clear() {
+    this.inferred.clear();
+  }
+}
+
 export class TypeInferrer {
-  infer(expr: Expr, env: TypeEnv = {}): Type {
-    const inferredType = this.#generalize(this.#infer(expr, env), env);
-    console.log("inferred:", inferredType);
+  cache = new InferenceCache();
+
+  infer(tree: Tree, env?: TypeEnv): Type;
+  infer(expr: Expr, env?: TypeEnv): Type;
+  infer(tree: Tree | Expr, env: TypeEnv = {}): Type {
+    let isTempTree = false;
+    if (!("root" in tree)) {
+      isTempTree = true;
+      tree = newTree(tree, { x: -1000, y: -1000 });
+    }
+
+    this.cache.clear();
+
+    console.log("infer:", JSON.stringify(tree.root));
+    const [inferredType] = this.#generalize(this.#infer(tree.root, env, rootIndexPath(tree)), env);
+    console.log("inferred:", serializeType(inferredType));
+
+    if (isTempTree) removeTree(tree);
+
     if (!hasNoUnknown(inferredType))
-      throw `type could not be completely inferred: ${JSON.stringify(inferredType)}`;
+      throw `type could not be completely inferred: ${serializeType(inferredType)}`;
+
     return inferredType;
   }
 
-  #infer(expr: Expr, env: TypeEnv): InferrableType {
+  inferSubexpr(indexPath: TreeIndexPath, env: TypeEnv = {}): Type {
+    this.cache.clear();
+
+    console.log("infer subexpr:", indexPath.path.join("."));
+    const [rootInferredType, generalizedEnv] = this.#generalize(
+      this.#infer(indexPath.tree.root, env, rootIndexPath(indexPath.tree)),
+      env
+    );
+    console.log("inferred:", serializeType(rootInferredType));
+
+    let inferredType = this.cache.get(indexPath);
+    if (!inferredType) {
+      console.error("index path not valid for expr?", indexPath);
+      throw "programmer error! index path not valid for expr?";
+    }
+    inferredType = this.#generalize(inferredType, generalizedEnv)[0];
+
+    if (!hasNoUnknown(inferredType))
+      throw `type could not be completely inferred: ${serializeType(inferredType)}`;
+
+    return inferredType;
+  }
+
+  #infer(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
+    const alreadyInferred = this.cache.get(indexPath);
+    if (alreadyInferred) return alreadyInferred;
+
+    const inferred = this.#infer_(expr, env, indexPath);
+    this.cache.set(indexPath, inferred);
+    return inferred;
+  }
+
+  #infer_(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
     switch (expr.kind) {
       case "hole":
-        return this.#newUnknown();
+        return this.#newUnknown("_");
 
       case "number":
         return expr.value === Math.floor(expr.value) ? { tag: "Integer" } : { tag: "Number" };
@@ -42,12 +111,17 @@ export class TypeInferrer {
 
       case "var":
         const varType = env[expr.id];
-        if (!varType) throw "unbound variable";
+        if (!varType) throw `unbound variable: ${expr.id}`;
         return this.#instantiate(varType, env);
 
       case "sexpr":
-        const calledType = this.#infer(expr.called, env);
-        if (isUnknown(calledType)) throw "call to expression with type that could not be inferred";
+        const calledType = this.#infer(expr.called, env, extendIndexPath(indexPath, 0));
+        if (isUnknown(calledType)) {
+          console.error(env);
+          throw `call to expression with type that could not be inferred: ${serializeType(
+            calledType
+          )}, ${serializeExpr(expr)}`;
+        }
         assertNoTypeVar(calledType);
 
         if (calledType.tag === "Procedure") {
@@ -55,16 +129,22 @@ export class TypeInferrer {
           return calledType.out;
         }
 
-        if (calledType.tag !== "Function") throw "call to expression with non-function type";
+        if (calledType.tag !== "Function")
+          throw `call to expression with non-function type: ${serializeType(calledType)}`;
+
+        if (!expr.args.length) throw "function call requires argument";
 
         let resultType: InferrableType = calledType;
 
         let args = [...expr.args];
+        let i = 0;
         while (args.length) {
           const arg = args.shift()!;
 
-          const argType = this.#infer(arg, env);
-          const newResultType = this.#newUnknown();
+          const argType = this.#infer(arg, env, extendIndexPath(indexPath, i++ + 1));
+          const newResultType = this.#newUnknown(
+            expr.called.kind === "var" ? expr.called.id : "Anonymous"
+          );
 
           this.#unify(resultType, {
             tag: "Function",
@@ -77,75 +157,114 @@ export class TypeInferrer {
 
         return resultType;
 
-      case "define":
-        return this.#infer(expr.value, {
+      case "define": {
+        const defType = this.#newUnknown(getIdentifier(expr.name));
+        const newEnv = {
           ...env,
-          [getIdentifier(expr.name)]: this.#infer(expr.value, {
-            ...env,
-            [getIdentifier(expr.name)]: this.#newUnknown(),
-          }),
-        });
+          [getIdentifier(expr.name)]: defType,
+        };
+
+        const inferredType = this.#infer(expr.value, newEnv, extendIndexPath(indexPath, 1));
+
+        this.#unify(defType, inferredType);
+
+        // Cache inferred type for the defined variable, even if it is not used,
+        // so that the editor can display it
+        this.#infer(expr.name, newEnv, extendIndexPath(indexPath, 0));
+
+        return inferredType;
+      }
 
       case "let":
         // TODO: This has plain `let` behaviour; we probably want `let*` or `letrec`
-        return this.#infer(expr.body, {
+        const newEnv = {
           ...env,
           ...Object.fromEntries(
-            expr.bindings.map(([name, value]) => [
+            expr.bindings.map(([name, value], index) => [
               getIdentifier(name),
-              this.#generalize(this.#infer(value, env), env),
+              this.#generalize(
+                this.#infer(value, env, extendIndexPath(indexPath, 2 * index + 1)),
+                env
+              )[0],
             ])
           ),
+        };
+
+        // Cache inferred types for the defined variables, even if they are not used,
+        // so that they editor can display them
+        expr.bindings.forEach(([name], index) => {
+          this.#infer(name, newEnv, extendIndexPath(indexPath, 2 * index));
         });
 
-      case "lambda":
+        return this.#infer(expr.body, newEnv, extendIndexPath(indexPath, 2 * expr.bindings.length));
+
+      case "lambda": {
         const paramTypes = Object.fromEntries(
-          expr.params.map((param) => [getIdentifier(param), this.#newUnknown()])
+          expr.params.map((param) => [getIdentifier(param), this.#newUnknown(getIdentifier(param))])
         );
-        const bodyType = this.#infer(expr.body, {
+        const newEnv = {
           ...env,
           ...paramTypes,
+        };
+
+        // Cache inferred types for all parameters, even if they are not used in the lambda body,
+        // so that the editor can display them
+        expr.params.forEach((param, index) => {
+          this.#infer(param, newEnv, extendIndexPath(indexPath, index));
         });
 
-        if (isEmpty(paramTypes)) return { tag: "Procedure", out: bodyType };
-
-        return Object.values(paramTypes).reduceRight(
-          (resultType, paramType): InferrableType => ({
-            tag: "Function",
-            in: paramType,
-            out: resultType,
-          }),
-          bodyType
+        // Infer type of lambda body
+        const bodyType = this.#infer(
+          expr.body,
+          newEnv,
+          extendIndexPath(indexPath, expr.params.length)
         );
 
-      case "sequence": {
-        let resultType: InferrableType = this.#newUnknown();
+        return !expr.params.length
+          ? { tag: "Procedure", out: bodyType }
+          : Object.values(paramTypes).reduceRight(
+              (resultType, paramType): InferrableType => ({
+                tag: "Function",
+                in: paramType,
+                out: resultType,
+              }),
+              bodyType
+            );
+      }
 
-        for (const sequencedExpr of expr.exprs) {
-          resultType = this.#infer(sequencedExpr, env);
-        }
+      case "sequence": {
+        let resultType: InferrableType = this.#newUnknown("EmptySequence");
+
+        expr.exprs.forEach((sequencedExpr, index) => {
+          resultType = this.#infer(sequencedExpr, env, extendIndexPath(indexPath, index));
+        });
 
         return resultType;
       }
 
       case "if":
-        const thenType = this.#infer(expr.then, env);
-        const elseType = this.#infer(expr.else, env);
+        this.#infer(expr.if, env, extendIndexPath(indexPath, 0));
+        const thenType = this.#infer(expr.then, env, extendIndexPath(indexPath, 1));
+        const elseType = this.#infer(expr.else, env, extendIndexPath(indexPath, 2));
 
         this.#unify(thenType, elseType);
         return this.#sub(thenType);
 
       case "cond":
-        let overallType: InferrableType = this.#newUnknown();
+        let overallType: InferrableType = this.#newUnknown("Cond");
 
-        for (const [, value] of expr.cases) {
-          const valueType = this.#infer(value, env);
+        expr.cases.forEach(([condition, value], index) => {
+          this.#infer(condition, env, extendIndexPath(indexPath, 2 * index));
+          const valueType = this.#infer(value, env, extendIndexPath(indexPath, 2 * index + 1));
 
           this.#unify(overallType, valueType);
           overallType = this.#sub(valueType);
-        }
+        });
 
         return overallType;
+
+      case "hole":
+        return this.#newUnknown("_");
     }
   }
 
@@ -154,11 +273,13 @@ export class TypeInferrer {
     env: TypeEnv,
     typeVarEnv: TypeEnv<Unknown> = {}
   ): ConcreteInferrableType {
-    if (isEmpty(typeVarEnv)) console.log("instantiate:", JSON.stringify(t));
     if (isUnknown(t)) return t;
     if (isTypeVar(t)) {
-      const unknown = typeVarEnv[t.var] ?? this.#newUnknown();
+      const unknown = typeVarEnv[t.var] ?? this.#newUnknown(t.var);
       typeVarEnv[t.var] = unknown;
+
+      console.log("instantiate", t.var, "as", unknown.unknown);
+
       return unknown;
     }
     return typeStructureMap<InferrableType, ConcreteInferrableType>(t, (type) =>
@@ -166,16 +287,16 @@ export class TypeInferrer {
     );
   }
 
-  #generalize(t: InferrableType, env: TypeEnv): InferrableType {
+  #generalize(t: InferrableType, env: TypeEnv): [InferrableType, TypeEnv] {
+    t = this.#sub(t);
     console.log("generalize:", JSON.stringify(t));
-    const subbedEnv = mapValues(env, (type) => this.#sub(type));
-    return this.#generalizeRecur(t, subbedEnv);
+    const generalizedEnv = mapValues(env, (type) => this.#sub(type));
+    return [this.#generalizeRecur(t, generalizedEnv), generalizedEnv];
   }
 
   #generalizeRecur(t: InferrableType, env: TypeEnv, lastTypeVarName = ["a"]): InferrableType {
     if (isTypeVar(t)) return t;
     if (isUnknown(t)) {
-      console.log(t.unknown, JSON.stringify(env));
       if (t.unknown in env) return env[t.unknown];
 
       const typeVarName = lastTypeVarName[0];
@@ -194,8 +315,8 @@ export class TypeInferrer {
   }
 
   #lastUnknown = 0;
-  #newUnknown(): Unknown {
-    return { unknown: `u${this.#lastUnknown++}` };
+  #newUnknown(prefix?: string): Unknown {
+    return { unknown: `${prefix ? `${prefix}#` : ""}u${this.#lastUnknown++}` };
   }
 
   #unifications: Record<string, InferrableType> = {};
@@ -225,19 +346,17 @@ export class TypeInferrer {
 
       // Normalize the table
       // TODO: For efficiency, should really use a better data structure
-      if (isUnknown(t2)) {
-        for (const key in this.#unifications) {
-          const sub = this.#unifications[key];
-          if (isUnknown(sub) && sub.unknown === t2.unknown) {
-            this.#unifications[key] = this.#unifications[t2.unknown];
-          }
+      for (const key in this.#unifications) {
+        const sub = this.#unifications[key];
+        if (isUnknown(sub) && this.#unifications[sub.unknown]) {
+          this.#unifications[key] = this.#unifications[sub.unknown];
         }
       }
 
       console.log(
         "unifications:",
         JSON.stringify(this.#unifications),
-        "t1:",
+        ", unify t1:",
         JSON.stringify(t1),
         "t2:",
         JSON.stringify(t2)
@@ -250,7 +369,12 @@ export class TypeInferrer {
       assertNoTypeVar(t1);
       assertNoTypeVar(t2);
 
-      if (t1.tag !== t2.tag) throw "type mismatch";
+      // TODO: This is a hack. Do real, general subtype checking.
+      if (t1.tag === "Any" || t2.tag === "Any") return;
+      if (t1.tag === "Integer" && t2.tag === "Number") t2.tag = "Integer" as any;
+      if (t2.tag === "Integer" && t1.tag === "Number") t1.tag = "Integer" as any;
+
+      if (t1.tag !== t2.tag) throw `type mismatch: ${serializeType(t1)}, ${serializeType(t2)}`;
 
       const t1Params = typeParams(t1);
       const t2Params = typeParams(t2);

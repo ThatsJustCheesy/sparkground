@@ -1,4 +1,5 @@
 import { symbols } from "./library/library-defs";
+import { Type } from "../typechecker/type";
 
 export class SymbolTable {
   #symbols: Map<string, ProgSymbol> = new Map();
@@ -23,10 +24,11 @@ export type ProgSymbol = {
   id: string;
   doc?: string | JSX.Element;
 
+  argTypes?: Type[];
+  retType?: Type;
   minArgCount?: number;
   maxArgCount?: number;
+
   headingArgCount?: number;
   bodyArgHints?: string[];
-
-  special?: "define";
 };

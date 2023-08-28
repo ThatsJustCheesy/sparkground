@@ -1,4 +1,5 @@
 import "./app.css";
+import "tippy.js/dist/tippy.css";
 import { useState } from "react";
 import { newTree, trees } from "./ast/trees";
 import MenuBar from "./menus/MenuBar";
