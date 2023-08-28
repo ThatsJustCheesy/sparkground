@@ -128,12 +128,7 @@ export default function Block({
 
   useEffect(() => {
     try {
-      if (indexPath.tree.id.startsWith("library")) {
-        setType(new TypeInferrer().infer(indexPath.tree, symbolsAsTypeEnv(symbols)));
-      } else {
-        console.log(indexPath.tree);
-        setType(new TypeInferrer().inferSubexpr(indexPath, symbolsAsTypeEnv(symbols)));
-      }
+      setType(new TypeInferrer().inferSubexpr(indexPath, symbolsAsTypeEnv(symbols)));
     } catch (error) {
       if (tooltipVisible) console.error(error);
       setType(`${error}`);

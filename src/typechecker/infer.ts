@@ -294,7 +294,16 @@ export class TypeInferrer {
     return [this.#generalizeRecur(t, generalizedEnv), generalizedEnv];
   }
 
-  #generalizeRecur(t: InferrableType, env: TypeEnv, lastTypeVarName = ["a"]): InferrableType {
+  #generalizeRecur(t: InferrableType, env: TypeEnv, lastTypeVarName?: [string]): InferrableType {
+    if (!lastTypeVarName) {
+      lastTypeVarName = ["a"];
+      while (
+        Object.values(env).find((type) => isTypeVar(type) && type.var === lastTypeVarName![0])
+      ) {
+        lastTypeVarName[0] = this.#incrementLetter(lastTypeVarName[0]);
+      }
+    }
+
     if (isTypeVar(t)) return t;
     if (isUnknown(t)) {
       if (t.unknown in env) return env[t.unknown];
@@ -316,7 +325,7 @@ export class TypeInferrer {
 
   #lastUnknown = 0;
   #newUnknown(prefix?: string): Unknown {
-    return { unknown: `${prefix ? `${prefix}#` : ""}u${this.#lastUnknown++}` };
+    return { unknown: `${prefix ?? ""}#u${this.#lastUnknown++}` };
   }
 
   #unifications: Record<string, InferrableType> = {};
