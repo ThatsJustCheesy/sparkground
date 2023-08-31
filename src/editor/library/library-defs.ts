@@ -1,6 +1,7 @@
 import { keyBy } from "lodash";
 import { ProgSymbol } from "../symbol-table";
 import { Expr, SExpr } from "../../typechecker/ast/ast";
+import { hole } from "../ast/ast";
 
 const revTail: ProgSymbol = {
   id: "rev-tail",
@@ -434,6 +435,11 @@ export const library: Expr[] = [
   // TODO: Enable once supported
   // { kind: "null" },
   { kind: "number", value: 0 },
+
+  { kind: "define", name: hole, value: hole },
+  { kind: "lambda", params: [], body: { kind: "sequence", exprs: [hole] } },
+  { kind: "lambda", params: [hole], body: { kind: "sequence", exprs: [hole] } },
+  { kind: "if", if: hole, then: hole, else: hole },
 
   ...Object.values(symbols).map(
     (symbol): SExpr => ({ kind: "sexpr", called: { kind: "var", id: symbol.id }, args: [] })
