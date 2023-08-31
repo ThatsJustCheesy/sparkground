@@ -78,25 +78,24 @@ export function copyExprInTree(
   if (!isHole(destination)) newTree(destination, displaceTo);
 }
 
-export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: boolean) {
+export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: boolean): Tree {
   const expr = exprForIndexPathInTree(tree, path);
-  if (isHole(expr)) return;
+  if (isHole(expr)) return tree;
 
   const parent = exprForIndexPathInTree(tree, path.slice(0, -1));
 
   if (copy) {
-    newTree(cloneDeep(expr), placeAt);
-    return;
+    return newTree(cloneDeep(expr), placeAt);
   }
 
   if (path.length === 0 || isAtomic(parent)) {
     // expr is already the root of a tree
     tree.location = placeAt;
-    return;
+    return tree;
   }
 
   setChildAtIndex(parent, path.at(-1)!, hole);
-  newTree(expr, placeAt);
+  return newTree(expr, placeAt);
 }
 
 export function deleteExpr({ tree, path }: TreeIndexPath) {

@@ -2,7 +2,13 @@ import "./editor.css";
 import { useEffect, useRef, useState } from "react";
 import { ProgSymbol, SymbolTable } from "./symbol-table";
 import { render } from "./ast/render";
-import { TreeIndexPath, exprAtIndexPath, isAncestor, setChildAtIndex } from "./ast/ast";
+import {
+  TreeIndexPath,
+  exprAtIndexPath,
+  isAncestor,
+  rootIndexPath,
+  setChildAtIndex,
+} from "./ast/ast";
 import {
   Active,
   ClientRect,
@@ -260,7 +266,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
     setActiveDrag(undefined);
     setActiveDragOver(undefined);
 
-    const activeIndexPath = indexPathFromDragged(active);
+    let activeIndexPath = indexPathFromDragged(active);
     if (!activeIndexPath) return;
 
     if (over?.data.current?.isLibrary) {
@@ -283,7 +289,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
       /* Dropped on a descendant of itself; just treat like movement */
       isAncestor(activeIndexPath, overIndexPath)
     ) {
-      orphanExpr(
+      const orphanTree = orphanExpr(
         activeIndexPath,
         {
           x: active!.rect.current.translated!.left,
@@ -291,6 +297,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
         },
         active.data.current?.copyOnDrop
       );
+      activeIndexPath = rootIndexPath(orphanTree);
     } else {
       if (active.data.current?.copyOnDrop) {
         copyExprInTree(activeIndexPath, overIndexPath, {
