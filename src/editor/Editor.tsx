@@ -168,11 +168,13 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
                 }}
               >
                 {render(tree, tree.root, new SymbolTable(), {
+                  inferrer: tree.inferrer,
                   onMouseOver,
                   onMouseOut,
                   onContextMenu,
                   activeDrag,
                   rerender,
+                  renderCounter,
                 })}
               </div>
             ))}
@@ -198,6 +200,8 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
               // TODO: Do we need to use a better symbol table here?
               new SymbolTable(),
               {
+                indexPath: activeDrag,
+                inferrer: activeDrag.tree.inferrer,
                 forDragOverlay: activeDragOver ?? true,
               }
             )}

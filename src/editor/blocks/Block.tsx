@@ -7,7 +7,7 @@ import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
 import { Type } from "../../typechecker/type";
-import { TypeInferrer } from "../../typechecker/infer";
+import { TypeInferrer, describeInferenceError } from "../../typechecker/infer";
 import { symbolsAsTypeEnv } from "../typecheck";
 import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
@@ -19,6 +19,9 @@ type Props = PropsWithChildren<{
   data: BlockData;
   isCopySource?: boolean;
 
+  inferrer: TypeInferrer;
+  hasError?: boolean;
+
   activeDrag?: TreeIndexPath;
   forDragOverlay?: boolean | Over;
 
@@ -27,6 +30,7 @@ type Props = PropsWithChildren<{
   onContextMenu?: (indexPath: TreeIndexPath) => void;
 
   rerender?: () => void;
+  renderCounter?: number;
 }>;
 
 export type BlockData = Vertical | Horizontal | Identifier | Number | Bool | Hole;
@@ -65,6 +69,9 @@ export default function Block({
   data,
   isCopySource,
 
+  inferrer,
+  hasError,
+
   activeDrag,
   forDragOverlay,
 
@@ -75,6 +82,7 @@ export default function Block({
   onContextMenu,
 
   rerender,
+  renderCounter,
 }: Props) {
   // Drop area, if applicable
   let { isOver, setNodeRef: setNodeRef1 } = useDroppable({
@@ -128,12 +136,13 @@ export default function Block({
 
   useEffect(() => {
     try {
-      setType(new TypeInferrer().inferSubexpr(indexPath, symbolsAsTypeEnv(symbols)));
+      setType(inferrer.inferSubexpr(indexPath, symbolsAsTypeEnv(symbols)));
     } catch (error) {
-      if (tooltipVisible) console.error(error);
-      setType(`${error}`);
+      console.error(error);
+      setType(inferrer.error ? describeInferenceError(inferrer.error) : `${error}`);
     }
-  }, [tooltipVisible]);
+    rerender?.();
+  }, [tooltipVisible, activeDrag]);
 
   return (
     <Tippy
@@ -175,7 +184,9 @@ export default function Block({
           }}
           className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
             forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
-          } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""}`}
+          } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
+            hasError ? "block-error" : ""
+          }`}
           onMouseOver={(event) => {
             if ((event.target as Element).closest(".block") === divRef.current) {
               setTooltipVisible(true);

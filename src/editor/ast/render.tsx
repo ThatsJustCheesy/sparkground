@@ -1,4 +1,4 @@
-import { TreeIndexPath, extendIndexPath, rootIndexPath, hole } from "./ast";
+import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, exprAtIndexPath } from "./ast";
 import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
@@ -19,6 +19,7 @@ import {
   Var,
 } from "../../typechecker/ast/ast";
 import { symbols } from "../library/library-defs";
+import { TypeInferrer, errorInvolvesExpr } from "../../typechecker/infer";
 
 export function render(
   tree: Tree,
@@ -29,6 +30,8 @@ export function render(
 
     isCopySource,
 
+    inferrer: inferrer_,
+
     activeDrag,
     forDragOverlay,
 
@@ -37,10 +40,13 @@ export function render(
     onContextMenu,
 
     rerender,
+    renderCounter,
   }: {
     indexPath?: TreeIndexPath;
 
     isCopySource?: boolean;
+
+    inferrer?: TypeInferrer;
 
     activeDrag?: TreeIndexPath;
     forDragOverlay?: boolean | Over;
@@ -50,9 +56,14 @@ export function render(
     onContextMenu?: (indexPath: TreeIndexPath) => void;
 
     rerender?: () => void;
+    renderCounter?: number;
   } = {}
 ): JSX.Element {
+  if (node !== tree.root && !indexPath_)
+    throw "programmer error: must provide index path to render a subexpression!";
+
   const indexPath = indexPath_ ?? rootIndexPath(tree);
+  const inferrer = inferrer_ ?? new TypeInferrer();
 
   function keyForIndexPath({ path }: TreeIndexPath) {
     return tree.id + " " + path.join(" ");
@@ -67,6 +78,7 @@ export function render(
     indexPath: TreeIndexPath
   ) {
     const key = keyForIndexPath(indexPath);
+    const expr = exprAtIndexPath(indexPath);
     return (
       <Block
         key={key}
@@ -74,12 +86,15 @@ export function render(
         indexPath={indexPath}
         data={data}
         isCopySource={isCopySource}
+        inferrer={inferrer}
+        hasError={inferrer.error && errorInvolvesExpr(inferrer.error, expr)}
         activeDrag={activeDrag}
         forDragOverlay={forDragOverlay}
         onMouseOver={onMouseOver}
         onMouseOut={onMouseOut}
         onContextMenu={onContextMenu}
         rerender={rerender}
+        renderCounter={renderCounter}
       >
         {body}
       </Block>
@@ -90,6 +105,8 @@ export function render(
       indexPath: extendIndexPath(indexPath, index),
 
       isCopySource: isCopySource || options.isCopySource,
+
+      inferrer,
 
       activeDrag,
 

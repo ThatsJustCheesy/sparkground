@@ -175,3 +175,8 @@
 .block-drop-will-delete {
   outline: 0.4em solid rgba(221, 66, 66, 0.987);
 }
+
+.block-error,
+.block-error + .block-h-pull-tab-container > .block-h-pull-tab {
+  background: #ffa99b;
+}

@@ -11,7 +11,7 @@ import {
   typeParams,
   typeStructureMap,
 } from "./type";
-import { Expr, getIdentifier } from "./ast/ast";
+import { Expr, SExpr, Var, getIdentifier } from "./ast/ast";
 import { serializeType } from "./serialize";
 import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/ast/ast";
 import { Tree, newTree, removeTree } from "../editor/ast/trees";
@@ -38,7 +38,16 @@ class InferenceCache {
 }
 
 export class TypeInferrer {
+  error?: InferenceError;
+
   cache = new InferenceCache();
+
+  #reset() {
+    this.error = undefined;
+    this.cache.clear();
+    this.#unifications = {};
+    this.#lastUnknown = 0;
+  }
 
   infer(tree: Tree, env?: TypeEnv): Type;
   infer(expr: Expr, env?: TypeEnv): Type;
@@ -49,7 +58,7 @@ export class TypeInferrer {
       tree = newTree(tree, { x: -1000, y: -1000 });
     }
 
-    this.cache.clear();
+    this.#reset();
 
     console.log("infer:", JSON.stringify(tree.root));
     const [inferredType] = this.#generalize(this.#infer(tree.root, env, rootIndexPath(tree)), env);
@@ -64,7 +73,7 @@ export class TypeInferrer {
   }
 
   inferSubexpr(indexPath: TreeIndexPath, env: TypeEnv = {}): Type {
-    this.cache.clear();
+    this.#reset();
 
     console.log("infer subexpr:", indexPath.path.join("."));
     const [rootInferredType, generalizedEnv] = this.#generalize(
@@ -90,9 +99,18 @@ export class TypeInferrer {
     const alreadyInferred = this.cache.get(indexPath);
     if (alreadyInferred) return alreadyInferred;
 
-    const inferred = this.#infer_(expr, env, indexPath);
-    this.cache.set(indexPath, inferred);
-    return inferred;
+    this.error = undefined;
+
+    try {
+      const inferred = this.#infer_(expr, env, indexPath);
+      this.cache.set(indexPath, inferred);
+      return inferred;
+    } catch (error) {
+      if (typeof error === "object" && "tag" in error) {
+        this.error = error as InferenceError;
+      }
+      throw error;
+    }
   }
 
   #infer_(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
@@ -111,7 +129,7 @@ export class TypeInferrer {
 
       case "var":
         const varType = env[expr.id];
-        if (!varType) throw `unbound variable: ${expr.id}`;
+        if (!varType) throw { tag: "UnboundVariable", v: expr } satisfies UnboundVariable;
         return this.#instantiate(varType, env);
 
       case "sexpr":
@@ -125,14 +143,27 @@ export class TypeInferrer {
         assertNoTypeVar(calledType);
 
         if (calledType.tag === "Procedure") {
-          if (expr.args.length) throw "procedure does not accept any arguments";
+          if (expr.args.length) {
+            throw {
+              tag: "ArityMismatch",
+              call: expr,
+              calledType: calledType,
+              arity: 0,
+              attemptedCallArity: expr.args.length,
+            } satisfies ArityMismatch;
+          }
           return calledType.out;
         }
 
-        if (calledType.tag !== "Function")
-          throw `call to expression with non-function type: ${serializeType(calledType)}`;
-
-        if (!expr.args.length) throw "function call requires argument";
+        if (!expr.args.length) {
+          throw {
+            tag: "ArityMismatch",
+            call: expr,
+            calledType: calledType,
+            arity: 1,
+            attemptedCallArity: 0,
+          } satisfies ArityMismatch;
+        }
 
         let resultType: InferrableType = calledType;
 
@@ -146,11 +177,16 @@ export class TypeInferrer {
             expr.called.kind === "var" ? expr.called.id : "Anonymous"
           );
 
-          this.#unify(resultType, {
-            tag: "Function",
-            in: argType,
-            out: newResultType,
-          });
+          this.#unify(
+            resultType,
+            {
+              tag: "Function",
+              in: argType,
+              out: newResultType,
+            },
+            expr.called,
+            arg
+          );
 
           resultType = this.#sub(newResultType);
         }
@@ -166,7 +202,7 @@ export class TypeInferrer {
 
         const inferredType = this.#infer(expr.value, newEnv, extendIndexPath(indexPath, 1));
 
-        this.#unify(defType, inferredType);
+        this.#unify(defType, inferredType, expr.name, expr.value);
 
         // Cache inferred type for the defined variable, even if it is not used,
         // so that the editor can display it
@@ -247,7 +283,7 @@ export class TypeInferrer {
         const thenType = this.#infer(expr.then, env, extendIndexPath(indexPath, 1));
         const elseType = this.#infer(expr.else, env, extendIndexPath(indexPath, 2));
 
-        this.#unify(thenType, elseType);
+        this.#unify(thenType, elseType, expr.then, expr.else);
         return this.#sub(thenType);
 
       case "cond":
@@ -257,7 +293,7 @@ export class TypeInferrer {
           this.#infer(condition, env, extendIndexPath(indexPath, 2 * index));
           const valueType = this.#infer(value, env, extendIndexPath(indexPath, 2 * index + 1));
 
-          this.#unify(overallType, valueType);
+          this.#unify(overallType, valueType, expr, value);
           overallType = this.#sub(valueType);
         });
 
@@ -330,7 +366,7 @@ export class TypeInferrer {
 
   #unifications: Record<string, InferrableType> = {};
 
-  #unify(t1: InferrableType, t2: InferrableType): void {
+  #unify(t1: InferrableType, t2: InferrableType, e1: Expr, e2: Expr): void {
     t1 = this.#sub(t1);
     t2 = this.#sub(t2);
 
@@ -340,7 +376,9 @@ export class TypeInferrer {
     if (isUnknown(t2)) [t1, t2] = [t2, t1];
 
     if (isUnknown(t1)) {
-      if (this.#occurs(t1, t2)) throw "occurs check failed";
+      if (this.#occurs(t1, t2)) {
+        throw { tag: "OccursCheckFailure", e1, e2, t1, t2 } satisfies OccursCheckFailure;
+      }
 
       // Unify t1 and t2
       this.#unifications[t1.unknown] = t2;
@@ -383,12 +421,17 @@ export class TypeInferrer {
       if (t1.tag === "Integer" && t2.tag === "Number") t2.tag = "Integer" as any;
       if (t2.tag === "Integer" && t1.tag === "Number") t1.tag = "Integer" as any;
 
-      if (t1.tag !== t2.tag) throw `type mismatch: ${serializeType(t1)}, ${serializeType(t2)}`;
+      if (t1.tag !== t2.tag) throw { tag: "TypeMismatch", e1, e2, t1, t2 } satisfies TypeMismatch;
 
       const t1Params = typeParams(t1);
       const t2Params = typeParams(t2);
       for (const key in t1Params) {
-        this.#unify(t1Params[key as keyof typeof t1Params], t2Params[key as keyof typeof t2Params]);
+        this.#unify(
+          t1Params[key as keyof typeof t1Params],
+          t2Params[key as keyof typeof t2Params],
+          e1,
+          e2
+        );
       }
     }
   }
@@ -415,5 +458,64 @@ export class TypeInferrer {
     if (isUnknown(t)) return this.#unifications[t.unknown] ?? t;
 
     return typeStructureMap(t, (type) => this.#sub(type) as any);
+  }
+}
+
+export type InferenceError = UnboundVariable | TypeMismatch | ArityMismatch | OccursCheckFailure;
+
+export type UnboundVariable = {
+  tag: "UnboundVariable";
+  v: Var;
+};
+
+export type TypeMismatch = {
+  tag: "TypeMismatch";
+  e1: Expr;
+  e2: Expr;
+  t1: InferrableType;
+  t2: InferrableType;
+};
+
+export type ArityMismatch = {
+  tag: "ArityMismatch";
+  call: SExpr;
+  calledType: InferrableType;
+  arity: number;
+  attemptedCallArity: number;
+};
+
+export type OccursCheckFailure = {
+  tag: "OccursCheckFailure";
+  e1: Expr;
+  e2: Expr;
+  t1: InferrableType;
+  t2: InferrableType;
+};
+
+export function describeInferenceError(e: InferenceError): string {
+  switch (e.tag) {
+    case "UnboundVariable":
+      return `unbound variable: ${e.v.id}`;
+    case "TypeMismatch":
+      return `type mismatch: ${serializeType(e.t1)}, ${serializeType(e.t2)}`;
+    case "ArityMismatch":
+      return `wrong number of arguments: got ${e.attemptedCallArity}, expecting ${e.arity}`;
+    case "OccursCheckFailure":
+      return `inferred type is circular: unifying ${serializeType(e.t1)} with ${serializeType(
+        e.t2
+      )}, but the former is used in the latter`;
+  }
+}
+
+export function errorInvolvesExpr(e: InferenceError, expr: Expr): boolean {
+  switch (e.tag) {
+    case "UnboundVariable":
+      return expr === e.v;
+    case "TypeMismatch":
+      return expr === e.e1 || expr === e.e2;
+    case "ArityMismatch":
+      return expr === e.call;
+    case "OccursCheckFailure":
+      return expr === e.e1 || expr === e.e2;
   }
 }
