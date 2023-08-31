@@ -7,7 +7,7 @@ export type Expr =
   | StringExpr
   | NullExpr
   | Var
-  | SExpr
+  | Call
   | Define
   | Let
   | Lambda
@@ -45,8 +45,9 @@ export type Var = {
   id: string;
 };
 
-export type SExpr = {
-  kind: "sexpr";
+// TODO: Rename to `Call`. It's more accurate.
+export type Call = {
+  kind: "call";
   called: Expr;
   args: Expr[];
 };

@@ -13,7 +13,7 @@ import {
   Lambda,
   NullExpr,
   NumberExpr,
-  SExpr,
+  Call,
   Sequence,
   StringExpr,
   Var,
@@ -154,7 +154,7 @@ export function render(
     });
   }
 
-  function renderSExpr(expr: SExpr): JSX.Element {
+  function renderCall(expr: Call): JSX.Element {
     let { called, args } = expr;
 
     if (called.kind === "var") {
@@ -231,8 +231,8 @@ export function render(
     case "var":
       return renderAtomic(node);
 
-    case "sexpr":
-      return renderSExpr(node);
+    case "call":
+      return renderCall(node);
 
     case "define":
       return renderDefine(node);

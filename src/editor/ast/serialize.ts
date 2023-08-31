@@ -14,7 +14,7 @@ export function serializeExpr(expr: Expr): string {
       return "'()";
     case "var":
       return expr.id;
-    case "sexpr":
+    case "call":
       return (
         "(" +
         serializeExpr(expr.called) +

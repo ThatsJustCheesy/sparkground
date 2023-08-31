@@ -11,7 +11,7 @@ import {
   typeParams,
   typeStructureMap,
 } from "./type";
-import { Expr, SExpr, Var, getIdentifier } from "./ast/ast";
+import { Expr, Call, Var, getIdentifier } from "./ast/ast";
 import { serializeType } from "./serialize";
 import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/ast/ast";
 import { Tree, newTree, removeTree } from "../editor/ast/trees";
@@ -132,7 +132,7 @@ export class TypeInferrer {
         if (!varType) throw { tag: "UnboundVariable", v: expr } satisfies UnboundVariable;
         return this.#instantiate(varType, env);
 
-      case "sexpr":
+      case "call":
         const calledType = this.#infer(expr.called, env, extendIndexPath(indexPath, 0));
         if (isUnknown(calledType)) {
           console.error(env);
@@ -478,7 +478,7 @@ export type TypeMismatch = {
 
 export type ArityMismatch = {
   tag: "ArityMismatch";
-  call: SExpr;
+  call: Call;
   calledType: InferrableType;
   arity: number;
   attemptedCallArity: number;

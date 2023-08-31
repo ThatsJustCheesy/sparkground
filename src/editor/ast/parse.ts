@@ -5,7 +5,7 @@ import {
   If,
   Lambda,
   Let,
-  SExpr,
+  Call,
   Sequence,
   Var,
 } from "../../typechecker/ast/ast";
@@ -36,7 +36,7 @@ class Parser {
           case "cond":
             return this.parseCond();
           default:
-            return this.parseSExpr();
+            return this.parseCall();
         }
       case ")":
         throw "extraneous ')'";
@@ -61,7 +61,7 @@ class Parser {
     }
   }
 
-  parseSExpr(): SExpr {
+  parseCall(): Call {
     this.eat("(");
 
     const exprs: Expr[] = [];
@@ -73,7 +73,7 @@ class Parser {
 
     const [called, ...args] = exprs;
     return {
-      kind: "sexpr",
+      kind: "call",
       called,
       args,
     };
@@ -223,7 +223,7 @@ class Parser {
 
   //   if (second === ")") return null;
 
-  //   return { quote: this.parseSExpr(tokens) };
+  //   return { quote: this.parseCall(tokens) };
   // }
 }
 

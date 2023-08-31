@@ -10,7 +10,7 @@ export function isAtomic(node: Expr) {
 
 export function children(expr: Expr): (Expr | undefined)[] {
   switch (expr.kind) {
-    case "sexpr":
+    case "call":
       return [expr.called, ...expr.args];
     case "define":
       return [expr.name, expr.value];
@@ -36,7 +36,7 @@ export function childAtIndex(expr: Expr, index: number): Expr | undefined {
 }
 export function setChildAtIndex(expr: Expr, index: number, newChild: Expr): void {
   switch (expr.kind) {
-    case "sexpr":
+    case "call":
       if (index === 0) expr.called = newChild;
       else expr.args[index - 1] = newChild;
       break;

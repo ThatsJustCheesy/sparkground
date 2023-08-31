@@ -35,13 +35,13 @@ describe("TypeInferrer", () => {
   it("infers procedure types", () => {
     const const42: Lambda = { kind: "lambda", params: [], body: { kind: "number", value: 42 } }
     expect(inferrer.infer(const42)).toEqual<Type>({ tag: "Procedure", out: { tag: "Integer" } })
-    expect(inferrer.infer({ kind: "sexpr", called: const42, args: [] })).toEqual<Type>({ tag: "Integer" })
+    expect(inferrer.infer({ kind: "call", called: const42, args: [] })).toEqual<Type>({ tag: "Integer" })
   })
 
   it("infers unary function types", () => {
     const id: Lambda = { kind: "lambda", params: [{ kind: "var", id: "x" }], body: { kind: "var", id: "x" } }
     expect(inferrer.infer(id)).toEqual<Type>({ tag: "Function", in: { var: "a" }, out: { var: "a" } })
-    expect(inferrer.infer({ kind: "sexpr", called: id, args: [{ kind: "number", value: 1 }] })).toEqual<Type>({ tag: "Integer" })
+    expect(inferrer.infer({ kind: "call", called: id, args: [{ kind: "number", value: 1 }] })).toEqual<Type>({ tag: "Integer" })
   })
 
   it("infers binary function types", () => {
@@ -60,7 +60,7 @@ describe("TypeInferrer", () => {
     })
     expect(
       inferrer.infer({
-        kind: "sexpr",
+        kind: "call",
         called: second,
         args: [
           { kind: "number", value: 0 },

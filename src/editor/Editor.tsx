@@ -28,7 +28,7 @@ import BiwaScheme from "biwascheme";
 import { serializeExpr } from "./ast/serialize";
 import CodeEditorModal from "./CodeEditorModal";
 import { parseToExpr } from "./ast/parse";
-import { SExpr } from "../typechecker/ast/ast";
+import { Call } from "../typechecker/ast/ast";
 
 export type Props = {
   trees: Tree[];
@@ -243,7 +243,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
         exprAtIndexPath({
           tree: codeEditorSubject.tree,
           path: codeEditorSubject.path.slice(0, -1),
-        }) as SExpr,
+        }) as Call,
         codeEditorSubject.path.at(-1)!,
         newExpr
       );

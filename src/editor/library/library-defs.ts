@@ -1,6 +1,6 @@
 import { keyBy } from "lodash";
 import { ProgSymbol } from "../symbol-table";
-import { Expr, SExpr } from "../../typechecker/ast/ast";
+import { Expr, Call } from "../../typechecker/ast/ast";
 import { hole } from "../ast/ast";
 
 const revTail: ProgSymbol = {
@@ -442,6 +442,6 @@ export const library: Expr[] = [
   { kind: "if", if: hole, then: hole, else: hole },
 
   ...Object.values(symbols).map(
-    (symbol): SExpr => ({ kind: "sexpr", called: { kind: "var", id: symbol.id }, args: [] })
+    (symbol): Call => ({ kind: "call", called: { kind: "var", id: symbol.id }, args: [] })
   ),
 ];

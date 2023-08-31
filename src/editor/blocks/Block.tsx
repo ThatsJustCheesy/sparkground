@@ -209,7 +209,7 @@ export default function Block({
 
         {data.type === "h" &&
           expr &&
-          expr.kind === "sexpr" &&
+          expr.kind === "call" &&
           expr.args.length < (data.symbol.maxArgCount ?? Infinity) && (
             <BlockPullTab
               id={`${id}-pull-tab`}
