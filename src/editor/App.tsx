@@ -12,7 +12,8 @@ import Editor from "./Editor";
 import Modal from "react-bootstrap/Modal";
 
 const defaultExpr = parseToExpr(
-  "(define rev-tail (lambda (l acc) (if (null? l) acc (rev-tail (cdr l) (append (list (car l)) acc)))))"
+  "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"
+  // "(define rev-tail (lambda (l acc) (if (null? l) acc (rev-tail (cdr l) (append (list (car l)) acc)))))"
 );
 const defaultTree = newTree(defaultExpr, { x: 0, y: 0 });
 
