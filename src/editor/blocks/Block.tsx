@@ -7,10 +7,11 @@ import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
 import { Type } from "../../typechecker/type";
-import { TypeInferrer, describeInferenceError } from "../../typechecker/infer";
+import { TypeInferrer } from "../../typechecker/infer";
 import { symbolsAsTypeEnv } from "../typecheck";
 import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
+import { describeInferenceError } from "../../typechecker/errors";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;

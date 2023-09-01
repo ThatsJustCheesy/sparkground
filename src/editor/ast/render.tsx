@@ -19,7 +19,8 @@ import {
   Var,
 } from "../../typechecker/ast/ast";
 import { symbols } from "../library/library-defs";
-import { TypeInferrer, errorInvolvesExpr } from "../../typechecker/infer";
+import { TypeInferrer } from "../../typechecker/infer";
+import { errorInvolvesExpr } from "../../typechecker/errors";
 
 export function render(
   tree: Tree,
