@@ -9,7 +9,7 @@ export function serializeExpr(expr: Expr): string {
     case "bool":
       return expr.value ? "#t" : "#f";
     case "string":
-      throw "TODO";
+      return `"${expr.value.replace(/["\\]/g, "\\$&")}"`;
     case "null":
       return "'()";
     case "var":
