@@ -1,4 +1,4 @@
-import { cloneDeep, isEmpty, isEqual, mapValues } from "lodash";
+import { cloneDeep, isEqual, mapValues } from "lodash";
 import {
   ConcreteInferrableType,
   InferrableType,
@@ -16,6 +16,7 @@ import { serializeType } from "./serialize";
 import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/ast/ast";
 import { Tree, newTree, removeTree } from "../editor/ast/trees";
 import { serializeExpr } from "../editor/ast/serialize";
+import { DisjointMaps } from "./disjoint-maps";
 
 // https://www.cs.utoronto.ca/~trebla/CSCC24-2023-Summer/11-type-inference.html
 
@@ -45,7 +46,7 @@ export class TypeInferrer {
   #reset() {
     this.error = undefined;
     this.cache.clear();
-    this.#unifications = {};
+    this.#unifications.reset();
     this.#lastUnknown = 0;
   }
 
@@ -60,9 +61,9 @@ export class TypeInferrer {
 
     this.#reset();
 
-    console.log("infer:", JSON.stringify(tree.root));
-    const [inferredType] = this.#generalize(this.#infer(tree.root, env, rootIndexPath(tree)), env);
-    console.log("inferred:", serializeType(inferredType));
+    // console.log("infer:", JSON.stringify(tree.root));
+    const inferredType = this.#generalize(this.#infer(tree.root, env, rootIndexPath(tree)), env);
+    // console.log("inferred:", serializeType(inferredType));
 
     if (isTempTree) removeTree(tree);
 
@@ -75,19 +76,19 @@ export class TypeInferrer {
   inferSubexpr(indexPath: TreeIndexPath, env: TypeEnv = {}): Type {
     this.#reset();
 
-    console.log("infer subexpr:", indexPath.path.join("."));
-    const [rootInferredType, generalizedEnv] = this.#generalize(
-      this.#infer(indexPath.tree.root, env, rootIndexPath(indexPath.tree)),
-      env
-    );
-    console.log("inferred:", serializeType(rootInferredType));
+    // console.log("infer subexpr:", indexPath.path.join("."));
+    const inferredRootType = this.#infer(indexPath.tree.root, env, rootIndexPath(indexPath.tree));
+    const unificationsWithTypeVars = this.#unifications.clone();
+    const rootInferredType = this.#generalize(inferredRootType, env, unificationsWithTypeVars);
+    // console.log("inferred:", serializeType(rootInferredType));
+    unificationsWithTypeVars.dump();
 
     let inferredType = this.cache.get(indexPath);
     if (!inferredType) {
       console.error("index path not valid for expr?", indexPath);
       throw "programmer error! index path not valid for expr?";
     }
-    inferredType = this.#generalize(inferredType, generalizedEnv)[0];
+    inferredType = this.#sub(inferredType, unificationsWithTypeVars);
 
     if (!hasNoUnknown(inferredType))
       throw `type could not be completely inferred: ${serializeType(inferredType)}`;
@@ -170,9 +171,9 @@ export class TypeInferrer {
         let args = [...expr.args];
         let i = 0;
         while (args.length) {
-          const arg = args.shift()!;
+          const arg = args.pop()!;
 
-          const argType = this.#infer(arg, env, extendIndexPath(indexPath, i++ + 1));
+          const argType = this.#infer(arg, env, extendIndexPath(indexPath, args.length + 1));
           const newResultType = this.#newUnknown(
             expr.called.kind === "var" ? expr.called.id : "Anonymous"
           );
@@ -221,7 +222,7 @@ export class TypeInferrer {
               this.#generalize(
                 this.#infer(value, env, extendIndexPath(indexPath, 2 * index + 1)),
                 env
-              )[0],
+              ),
             ])
           ),
         };
@@ -314,7 +315,7 @@ export class TypeInferrer {
       const unknown = typeVarEnv[t.var] ?? this.#newUnknown(t.var);
       typeVarEnv[t.var] = unknown;
 
-      console.log("instantiate", t.var, "as", unknown.unknown);
+      // console.log("instantiate", t.var, "as", unknown.unknown);
 
       return unknown;
     }
@@ -323,14 +324,24 @@ export class TypeInferrer {
     );
   }
 
-  #generalize(t: InferrableType, env: TypeEnv): [InferrableType, TypeEnv] {
+  #generalize(
+    t: InferrableType,
+    env: TypeEnv,
+    unifications: TypeUnifications = this.#unifications.clone()
+  ): InferrableType {
     t = this.#sub(t);
-    console.log("generalize:", JSON.stringify(t));
-    const generalizedEnv = mapValues(env, (type) => this.#sub(type));
-    return [this.#generalizeRecur(t, generalizedEnv), generalizedEnv];
+    // console.log("generalize:", JSON.stringify(t));
+
+    const subbedEnv = mapValues(env, (type) => this.#sub(type));
+    return this.#generalizeRecur(t, subbedEnv, unifications);
   }
 
-  #generalizeRecur(t: InferrableType, env: TypeEnv, lastTypeVarName?: [string]): InferrableType {
+  #generalizeRecur(
+    t: InferrableType,
+    env: TypeEnv,
+    unifications: TypeUnifications,
+    lastTypeVarName?: [string]
+  ): InferrableType {
     if (!lastTypeVarName) {
       lastTypeVarName = ["a"];
       while (
@@ -342,16 +353,17 @@ export class TypeInferrer {
 
     if (isTypeVar(t)) return t;
     if (isUnknown(t)) {
-      if (t.unknown in env) return env[t.unknown];
+      t = unifications.resolve(t);
+      if (!isUnknown(t)) return t;
 
       const typeVarName = lastTypeVarName[0];
       lastTypeVarName[0] = this.#incrementLetter(lastTypeVarName[0]);
-      env[t.unknown] = { var: typeVarName };
 
-      return env[t.unknown];
+      unifications.unify(t, { var: typeVarName });
+      return unifications.resolve(t);
     }
     return typeStructureMap<InferrableType, InferrableType>(t, (type) =>
-      this.#generalizeRecur(type, env, lastTypeVarName)
+      this.#generalizeRecur(type, env, unifications, lastTypeVarName)
     );
   }
 
@@ -364,7 +376,7 @@ export class TypeInferrer {
     return { unknown: `${prefix ?? ""}#u${this.#lastUnknown++}` };
   }
 
-  #unifications: Record<string, InferrableType> = {};
+  #unifications = new TypeUnifications();
 
   #unify(t1: InferrableType, t2: InferrableType, e1: Expr, e2: Expr): void {
     t1 = this.#sub(t1);
@@ -380,34 +392,16 @@ export class TypeInferrer {
         throw { tag: "OccursCheckFailure", e1, e2, t1, t2 } satisfies OccursCheckFailure;
       }
 
-      // Unify t1 and t2
-      this.#unifications[t1.unknown] = t2;
+      this.#unifications.unify(t1, t2);
 
-      // Update existing t1 references to point to t2 instead
-      for (const key in this.#unifications) {
-        const sub = this.#unifications[key];
-        if (isUnknown(sub) && sub.unknown === t1.unknown) {
-          this.#unifications[key] = t2;
-        }
-      }
-
-      // Normalize the table
-      // TODO: For efficiency, should really use a better data structure
-      for (const key in this.#unifications) {
-        const sub = this.#unifications[key];
-        if (isUnknown(sub) && this.#unifications[sub.unknown]) {
-          this.#unifications[key] = this.#unifications[sub.unknown];
-        }
-      }
-
-      console.log(
-        "unifications:",
-        JSON.stringify(this.#unifications),
-        ", unify t1:",
-        JSON.stringify(t1),
-        "t2:",
-        JSON.stringify(t2)
-      );
+      // console.log(
+      //   "unifications:",
+      //   this.#unifications.dump(),
+      //   ", unify t1:",
+      //   JSON.stringify(t1),
+      //   "t2:",
+      //   JSON.stringify(t2)
+      // );
     } else {
       // If the original t2 was unknown, then it became t1, and the other branch will have run.
       // (Otherwise, the original t2 was not unknown.)
@@ -442,24 +436,83 @@ export class TypeInferrer {
       : Object.values(typeParams(typeExpr)).some((typeParamExpr) => this.#occurs(u, typeParamExpr));
   }
 
-  #sub(t: InferrableType): InferrableType {
-    if (isUnknown(t)) return this.#unifications[t.unknown] ?? t;
+  #sub(t: InferrableType, unifications = this.#unifications): InferrableType {
+    if (isUnknown(t)) t = unifications.resolve(t);
 
     let oldT: InferrableType;
     do {
       oldT = cloneDeep(t);
-      t = this.#subOnce(t);
+      t = this.#subOnce(t, unifications);
     } while (!isEqual(t, oldT));
 
     return t;
   }
 
-  #subOnce(t: InferrableType): InferrableType {
-    if (isUnknown(t)) return this.#unifications[t.unknown] ?? t;
+  #subOnce(t: InferrableType, unifications: TypeUnifications): InferrableType {
+    if (isUnknown(t)) return unifications.resolve(t);
 
-    return typeStructureMap(t, (type) => this.#sub(type) as any);
+    return typeStructureMap(t, (type) => this.#sub(type, unifications) as any);
   }
 }
+
+class TypeUnifications {
+  #maps = new DisjointMaps<string, TypeUnification>((v1, v2) => ({
+    resolved: !isUnknown(v1.resolved) ? v1.resolved : v2.resolved,
+    repr: v1.repr,
+  }));
+
+  constructor() {
+    this.reset();
+  }
+
+  reset(): void {
+    this.#maps.reset();
+  }
+
+  clone(): TypeUnifications {
+    const clone = new TypeUnifications();
+    clone.#maps = this.#maps.clone();
+    return clone;
+  }
+
+  #for(u: Unknown): TypeUnification {
+    const { unknown } = u;
+
+    const rep = this.#maps.representative(unknown);
+    if (rep) return rep;
+
+    this.#maps.addSingleton(unknown, { resolved: u, repr: unknown });
+    return this.#maps.representative(unknown)!;
+  }
+
+  unify(u: Unknown, t: InferrableType): void {
+    const unification = this.#for(u);
+    if (isUnknown(t)) {
+      this.#maps.union(u.unknown, t.unknown);
+    } else {
+      unification.resolved = t;
+    }
+  }
+
+  resolve(t: InferrableType): InferrableType {
+    return isUnknown(t) ? this.#for(t).resolved ?? t : t;
+  }
+
+  dump(): void {
+    this.#maps.dump();
+  }
+}
+
+type TypeUnification = {
+  /**
+   * Resolved type for an unknown-set.
+   * This itself is an `Unknown` only if no better resolution is possible (yet).
+   */
+  resolved: InferrableType;
+
+  // For debugging only
+  repr: string;
+};
 
 export type InferenceError = UnboundVariable | TypeMismatch | ArityMismatch | OccursCheckFailure;
 
