@@ -95,7 +95,7 @@ export class TypeInferrer {
       console.error("index path not valid for expr?", indexPath);
       throw "programmer error! index path not valid for expr?";
     }
-    inferredType = this.#sub(inferredType, unificationsWithTypeVars);
+    inferredType = this.#generalize(inferredType, env, unificationsWithTypeVars);
 
     if (!hasNoUnknown(inferredType))
       throw `type could not be completely inferred: ${serializeType(inferredType)}`;
@@ -346,36 +346,25 @@ export class TypeInferrer {
   #generalizeRecur(
     t: InferrableType,
     env: TypeEnv,
-    unifications: TypeUnifications,
-    lastTypeVarName?: [string]
+    unifications: TypeUnifications
   ): InferrableType {
-    if (!lastTypeVarName) {
-      lastTypeVarName = ["a"];
-      while (
-        Object.values(env).find((type) => isTypeVar(type) && type.var === lastTypeVarName![0])
-      ) {
-        lastTypeVarName[0] = this.#incrementLetter(lastTypeVarName[0]);
-      }
-    }
+    let typeVarName: string;
+    do {
+      typeVarName = unifications.newTypeVarName();
+    } while (Object.values(env).find((type) => isTypeVar(type) && type.var === typeVarName));
+    unifications.nextTypeVarName = typeVarName;
 
     if (isTypeVar(t)) return t;
     if (isUnknown(t)) {
       t = unifications.resolve(t);
       if (!isUnknown(t)) return t;
 
-      const typeVarName = lastTypeVarName[0];
-      lastTypeVarName[0] = this.#incrementLetter(lastTypeVarName[0]);
-
-      unifications.unify(t, { var: typeVarName });
+      unifications.unify(t, { var: unifications.newTypeVarName() });
       return unifications.resolve(t);
     }
     return typeStructureMap<InferrableType, InferrableType>(t, (type) =>
-      this.#generalizeRecur(type, env, unifications, lastTypeVarName)
+      this.#generalizeRecur(type, env, unifications)
     );
-  }
-
-  #incrementLetter(letter: string) {
-    return String.fromCharCode(letter.charCodeAt(0) + 1);
   }
 
   #lastUnknown = 0;
@@ -507,6 +496,14 @@ class TypeUnifications {
 
   dump(): void {
     this.#maps.dump();
+  }
+
+  // TODO: Doesn't exactly belong here, but this is the simplest place for now
+  nextTypeVarName = "a";
+  newTypeVarName() {
+    const next = this.nextTypeVarName;
+    this.nextTypeVarName = String.fromCharCode(next.charCodeAt(0) + 1);
+    return next;
   }
 }
 
