@@ -178,9 +178,9 @@ export class TypeInferrer {
         let args = [...expr.args];
         let i = 0;
         while (args.length) {
-          const arg = args.pop()!;
+          const arg = args.shift()!;
 
-          const argType = this.#infer(arg, env, extendIndexPath(indexPath, args.length + 1));
+          const argType = this.#infer(arg, env, extendIndexPath(indexPath, i++ + 1));
           const newResultType = this.#newUnknown(
             expr.called.kind === "var" ? expr.called.id : "Anonymous"
           );
