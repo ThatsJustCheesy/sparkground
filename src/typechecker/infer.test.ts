@@ -1,3 +1,4 @@
+import { serializeExpr } from "../editor/ast/serialize"
 import { Lambda } from "./ast/ast"
 import { TypeInferrer } from "./infer"
 import { InferrableType, Type } from "./type"
@@ -16,7 +17,8 @@ describe("TypeInferrer", () => {
   })
 
   it("infers variable types", () => {
-    expect(() => inferrer.infer({ kind: "var", id: "x" })).toThrow(/unbound variable/)
+    expect(() => inferrer.infer({ kind: "var", id: "x" })).toThrow()
+    expect(inferrer.error?.tag).toEqual("UnboundVariable")
     expect(inferrer.infer({ kind: "var", id: "x" }, { x: { tag: "Integer" } })).toEqual<Type>({ tag: "Integer" })
   })
 
