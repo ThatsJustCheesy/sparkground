@@ -19,7 +19,7 @@ export default function Library({ contextHelpSubject, result }: Props) {
   return (
     <div ref={setNodeRef} className="library-container">
       <div className="library">
-        <h2 className="library-heading">Help</h2>
+        {/* <h2 className="library-heading">Help</h2>
         <div className="library-context-help">
           {contextHelpSubject !== undefined ? (
             typeof contextHelpSubject === "number" ? (
@@ -40,7 +40,7 @@ export default function Library({ contextHelpSubject, result }: Props) {
           ) : (
             <span style={{ color: "#444" }}>No selection</span>
           )}
-        </div>
+        </div> */}
 
         {/* <h2 className="library-heading">Result</h2>
         {result} */}
