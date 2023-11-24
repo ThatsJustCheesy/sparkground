@@ -180,3 +180,10 @@
 .block-error + .block-h-pull-tab-container > .block-h-pull-tab {
   background: #ffa99b;
 }
+
+.modal {
+  z-index: 99999;
+}
+.modal-backdrop {
+  z-index: 99900;
+}

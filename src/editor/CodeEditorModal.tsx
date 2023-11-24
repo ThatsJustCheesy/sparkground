@@ -20,7 +20,7 @@ export default function CodeEditorModal({ indexPath, onClose }: Props) {
   }, [indexPath]);
 
   return (
-    <Modal show={!!indexPath} onHide={() => onClose()} centered>
+    <Modal show={!!indexPath} onHide={() => onClose()} centered backdropClassName="modal-backdrop">
       <Modal.Header closeButton>
         <Modal.Title>Edit code</Modal.Title>
       </Modal.Header>
