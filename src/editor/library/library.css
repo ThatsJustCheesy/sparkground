@@ -3,13 +3,14 @@
   flex-flow: row;
   gap: 1em;
 
-  width: 15%;
+  flex-grow: 0;
   padding-left: 1em;
   padding-right: 1em;
-  margin-left: auto;
   overflow: auto;
+  z-index: 99900;
 
-  border-left: 0.1rem solid black;
+  border-left: 0.14rem solid black;
+  background: rgb(217, 248, 193)
 }
 
 .library {
@@ -18,13 +19,13 @@
   align-items: flex-start;
   gap: 0.5em;
 
-  width: fit-content;
+  width: 22rem;
   height: fit-content;
   padding: 1em;
   margin-top: 1em;
 
   border-radius: 0.5em;
-  background: rgb(236, 254, 221);
+  /* background: rgb(236, 254, 221); */
 }
 
 .library-heading {
@@ -35,7 +36,7 @@
 
   font-size: 120%;
 
-  border-bottom: 0.1rem solid black;
+  border-bottom: 0.14rem solid black;
 }
 
 .library-subheading {

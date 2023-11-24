@@ -13,6 +13,15 @@ import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
 
+// TODO: Move this somewhere else or make it obsolete
+let isShiftDown = false;
+addEventListener("keydown", (event) => {
+  if (event.shiftKey) isShiftDown = true;
+});
+addEventListener("keyup", (event) => {
+  if (!event.shiftKey) isShiftDown = false;
+});
+
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
   indexPath: TreeIndexPath;
@@ -96,6 +105,8 @@ export default function Block({
     setNodeRef1 = () => {};
   }
 
+  const contextHelpSubject = contextHelpSubjectFromData();
+
   // Draggable, if applicable
   let {
     active,
@@ -110,7 +121,7 @@ export default function Block({
         data: {
           indexPath,
           copyOnDrop: isCopySource,
-          contextHelpSubject: contextHelpSubjectFromData(),
+          contextHelpSubject: contextHelpSubject,
         },
       });
   if (forDragOverlay || data.type === "hole") {
@@ -145,10 +156,49 @@ export default function Block({
     rerender?.();
   }, [tooltipVisible, activeDrag]);
 
+  const tooltipContent = (
+    <>
+      <b>Type:</b>{" "}
+      {typeof type === "string" ? (
+        <span className="text-warning">
+          Error: <i>{type}</i>{" "}
+        </span>
+      ) : (
+        serializeType(type)
+      )}
+      <br />
+      <div className="mt-2">
+        {!isShiftDown ? (
+          <small>
+            For help: <kbd>Shift</kbd>
+          </small>
+        ) : (
+          <>
+            <b>Help:</b>
+            <div className="mt-1 ms-2">
+              {typeof contextHelpSubject === "number" ? (
+                <div>{"right-click to change value"}</div>
+              ) : typeof contextHelpSubject === "boolean" ? (
+                <div className="fst-italic">{contextHelpSubject.toString()}</div>
+              ) : typeof contextHelpSubject === "object" ? (
+                <>
+                  <div className="fst-italic">{contextHelpSubject.id}</div>
+                  <div>{contextHelpSubject.doc}</div>
+                </>
+              ) : (
+                <></>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <Tippy
-      content={typeof type === "string" ? <i>{type}</i> : serializeType(type)}
-      className={typeof type === "string" ? "text-bg-warning" : "text-bg-primary"}
+      content={tooltipContent}
+      className={"text-bg-primary"}
       visible={tooltipVisible && !forDragOverlay}
       arrow={false}
       plugins={[followCursor]}

@@ -17,6 +17,7 @@ body {
   font-size: 14.5px;
   color: #fff;
   background: #0e77cd;
+  border-bottom: 0.14rem solid black;
 
   user-select: none;
 }

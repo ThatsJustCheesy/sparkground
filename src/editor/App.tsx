@@ -1,6 +1,6 @@
 import "./app.css";
 import "tippy.js/dist/tippy.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { newTree, trees } from "./ast/trees";
 import MenuBar from "./menus/MenuBar";
 import MenuBarButton from "./menus/MenuBarButton";
@@ -22,6 +22,19 @@ function App() {
   const [[mainTree], setMainTree] = useState<[Tree]>([defaultTree]);
 
   const [showHelp, setShowHelp] = useState(false);
+
+  useEffect(() => {
+    addEventListener("keydown", () => {
+      setTimeout(() => {
+        setRenderCounter(renderCounter + 1);
+      }, 1);
+    });
+    addEventListener("keyup", () => {
+      setTimeout(() => {
+        setRenderCounter(renderCounter + 1);
+      }, 1);
+    });
+  }, []);
 
   return (
     <>

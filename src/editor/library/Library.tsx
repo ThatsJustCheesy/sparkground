@@ -42,8 +42,8 @@ export default function Library({ contextHelpSubject, result }: Props) {
           )}
         </div>
 
-        <h2 className="library-heading">Result</h2>
-        {result}
+        {/* <h2 className="library-heading">Result</h2>
+        {result} */}
 
         <h2 className="library-heading">Library</h2>
         <LibraryBlocks />
