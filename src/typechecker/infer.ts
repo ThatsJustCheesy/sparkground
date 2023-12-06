@@ -11,7 +11,7 @@ import {
   typeParams,
   typeStructureMap,
 } from "./type";
-import { Expr, getIdentifier } from "./ast/ast";
+import { Expr, Var, getIdentifier } from "./ast/ast";
 import { serializeType } from "./serialize";
 import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/ast/ast";
 import { Tree, newTree, removeTree } from "../editor/ast/trees";
@@ -162,9 +162,10 @@ export class TypeInferrer {
       case "null":
         return { tag: "Null" };
 
+      case "name-binding":
       case "var":
         const varType = env[expr.id];
-        if (!varType) throw { tag: "UnboundVariable", v: expr } satisfies UnboundVariable;
+        if (!varType) throw { tag: "UnboundVariable", v: expr as Var } satisfies UnboundVariable;
         return this.#instantiate(varType, env);
 
       case "call":

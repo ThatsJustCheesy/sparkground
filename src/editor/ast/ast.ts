@@ -1,6 +1,6 @@
 import { Tree } from "./trees";
 import { isEqual } from "lodash";
-import { Expr, Hole, Var } from "../../typechecker/ast/ast";
+import { Expr, Hole, NameBinding, Var } from "../../typechecker/ast/ast";
 
 export function isAtomic(node: Expr) {
   return (["hole", "number", "bool", "string", "null", "var"] satisfies Expr["kind"][]).includes(
@@ -15,8 +15,7 @@ export function children(expr: Expr): (Expr | undefined)[] {
     case "define":
       return [expr.name, expr.value];
     case "let":
-      throw "TODO";
-    //   return [expr.bindings, expr.body]
+      return [...expr.bindings.flat(1), expr.body];
     case "lambda":
       return [...expr.params, expr.body];
     case "sequence":
@@ -41,13 +40,18 @@ export function setChildAtIndex(expr: Expr, index: number, newChild: Expr): void
       else expr.args[index - 1] = newChild;
       break;
     case "define":
-      if (index === 0) expr.name = newChild as Var;
+      if (index === 0) expr.name = newChild as NameBinding;
       if (index === 1) expr.value = newChild;
       break;
     case "let":
-      throw "TODO";
+      if (index < 2 * expr.bindings.length) {
+        const binding = expr.bindings[Math.floor(index / 2)];
+        binding[index % 2] = newChild;
+      }
+      if (index === 2 * expr.bindings.length) expr.body = newChild;
+      break;
     case "lambda":
-      if (index < expr.params.length) expr.params[index] = newChild as Var;
+      if (index < expr.params.length) expr.params[index] = newChild as NameBinding;
       if (index === expr.params.length) expr.body = newChild;
       break;
     case "sequence":

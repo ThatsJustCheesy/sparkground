@@ -1,7 +1,7 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, SyntheticEvent } from "react";
 
 export type Props = PropsWithChildren<{
-  action: () => void;
+  action: (event: SyntheticEvent) => void;
 }>;
 
 export default function MenuBarButton({ children, action }: Props) {

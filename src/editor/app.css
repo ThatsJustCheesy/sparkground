@@ -19,3 +19,32 @@ p,
   font-weight: bold;
   line-height: normal;
 }
+
+.contextmenu {
+  border: 0.09em solid #bdbdbd !important;
+  padding: 0.35em 0 !important;
+}
+.contextmenu__item {
+  padding-top: 0.4em !important;
+  padding-bottom: 0.5em !important;
+  margin-bottom: 0 !important;
+  border-radius: 0.35em;
+}
+.contextmenu__item:hover:not(.contextmenu__item--disabled) {
+  background-color: #d3d3d3 !important;
+}
+.contextmenu__item:not(.menu-item-separator) {
+  margin-left: 0.35em;
+  margin-right: 0.35em;
+}
+.menu-item-separator {
+  cursor: default !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: -0.35em !important;
+}
+.menu-item-separator::after {
+  content: "━━━━━━━━━━━━━━";
+  font-size: 80%;
+  color: #777;
+}

@@ -41,6 +41,9 @@ export function newTree(root: Expr, location: Point): Tree {
 export function removeTree(tree: Tree) {
   trees_ = trees_.filter((tree_) => tree_.id !== tree.id);
 }
+export function deforest() {
+  trees_ = [];
+}
 
 export function bringTreeToFront(tree: Tree) {
   tree.zIndex = ++nextZIndex;

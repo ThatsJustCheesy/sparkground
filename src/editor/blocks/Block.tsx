@@ -1,6 +1,7 @@
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
+import { ContextMenu, ContextMenuItem, ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
 import { TreeIndexPath, exprAtIndexPath, extendIndexPath } from "../ast/ast";
 import BlockPullTab from "./BlockPullTab";
@@ -12,6 +13,7 @@ import { symbolsAsTypeEnv } from "../typecheck";
 import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
+import { ActiveDrag } from "../Editor";
 
 // TODO: Move this somewhere else or make it obsolete
 let isShiftDown = false;
@@ -32,7 +34,7 @@ type Props = PropsWithChildren<{
   inferrer: TypeInferrer;
   hasError?: boolean;
 
-  activeDrag?: TreeIndexPath;
+  activeDrag?: ActiveDrag;
   forDragOverlay?: boolean | Over;
 
   onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
@@ -58,7 +60,7 @@ type Horizontal = {
 type Identifier = {
   type: "ident";
   symbol: ProgSymbol;
-  definesSymbol?: boolean;
+  isNameBinding?: boolean;
 };
 type Number = {
   type: "number";
@@ -168,6 +170,14 @@ export default function Block({
       )}
       <br />
       <div className="mt-2">
+        {data.type === "ident" && data.isNameBinding && (
+          <>
+            <small>
+              Rename: <kbd>Right click</kbd>
+            </small>
+            <br />
+          </>
+        )}
         {!isShiftDown ? (
           <small>
             For help: <kbd>Shift</kbd>
@@ -196,80 +206,86 @@ export default function Block({
   );
 
   return (
-    <Tippy
-      content={tooltipContent}
-      className={"text-bg-primary"}
-      visible={tooltipVisible && !forDragOverlay}
-      arrow={false}
-      plugins={[followCursor]}
-      followCursor={true}
-      offset={[5, 10]}
-      placement="top-start"
-      zIndex={99999 + 1}
-    >
-      <div
-        ref={callEach(setNodeRef1, setNodeRef2)}
-        {...listeners}
-        {...attributes}
-        style={{
-          display: "flex",
-          flexFlow: "row",
-          alignItems: "stretch",
-
-          visibility: !isCopySource && active?.id === id ? "hidden" : "unset",
-          // Replaced with DragOverlay:
-          // transform: CSS.Translate.toString(transform)
-        }}
-        className="block-outer-container"
-        onContextMenu={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-
-          onContextMenu?.(indexPath);
-        }}
-      >
-        <div
-          ref={(div) => (divRef.current = div)}
-          style={{
-            zIndex: indexPath.tree.zIndex,
-          }}
-          className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
-            forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
-          } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
-            hasError ? "block-error" : ""
-          }`}
-          onMouseOver={(event) => {
-            if ((event.target as Element).closest(".block") === divRef.current) {
-              setTooltipVisible(true);
-            }
-            if ((event.target as Element).closest(".block:not(.block-hole)") === divRef.current) {
-              onMouseOver?.(contextHelpSubjectFromData());
-            }
-          }}
-          onMouseOut={(event) => {
-            if ((event.target as Element).closest(".block") === divRef.current) {
-              setTooltipVisible(false);
-            }
-            if ((event.target as Element).closest(".block:not(.block-hole)") === divRef.current) {
-              onMouseOut?.(contextHelpSubjectFromData());
-            }
-          }}
+    <>
+      <ContextMenuTrigger id={`menu`}>
+        <Tippy
+          content={tooltipContent}
+          className={"text-bg-primary"}
+          visible={tooltipVisible && !forDragOverlay}
+          arrow={false}
+          plugins={[followCursor]}
+          followCursor={true}
+          offset={[5, 10]}
+          placement="top-start"
+          zIndex={99999 + 1}
         >
-          {renderData()}
-        </div>
+          <div
+            ref={callEach(setNodeRef1, setNodeRef2)}
+            {...listeners}
+            {...attributes}
+            style={{
+              display: "flex",
+              flexFlow: "row",
+              alignItems: "stretch",
 
-        {data.type === "h" &&
-          expr &&
-          expr.kind === "call" &&
-          expr.args.length < (data.symbol.maxArgCount ?? Infinity) && (
-            <BlockPullTab
-              id={`${id}-pull-tab`}
-              indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
-              isCopySource={isCopySource}
-            />
-          )}
-      </div>
-    </Tippy>
+              visibility:
+                !isCopySource && !activeDrag?.copyOnDrop && active?.id === id ? "hidden" : "unset",
+              // Replaced with DragOverlay:
+              // transform: CSS.Translate.toString(transform)
+            }}
+            className="block-outer-container"
+            onContextMenu={(event) => {
+              onContextMenu?.(indexPath);
+            }}
+          >
+            <div
+              ref={(div) => (divRef.current = div)}
+              style={{
+                zIndex: indexPath.tree.zIndex,
+              }}
+              className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
+                forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
+              } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
+                hasError ? "block-error" : ""
+              }`}
+              onMouseOver={(event) => {
+                if ((event.target as Element).closest(".block") === divRef.current) {
+                  setTooltipVisible(true);
+                }
+                if (
+                  (event.target as Element).closest(".block:not(.block-hole)") === divRef.current
+                ) {
+                  onMouseOver?.(contextHelpSubjectFromData());
+                }
+              }}
+              onMouseOut={(event) => {
+                if ((event.target as Element).closest(".block") === divRef.current) {
+                  setTooltipVisible(false);
+                }
+                if (
+                  (event.target as Element).closest(".block:not(.block-hole)") === divRef.current
+                ) {
+                  onMouseOut?.(contextHelpSubjectFromData());
+                }
+              }}
+            >
+              {renderData()}
+            </div>
+
+            {data.type === "h" &&
+              expr &&
+              expr.kind === "call" &&
+              expr.args.length < (data.symbol.maxArgCount ?? Infinity) && (
+                <BlockPullTab
+                  id={`${id}-pull-tab`}
+                  indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
+                  isCopySource={isCopySource}
+                />
+              )}
+          </div>
+        </Tippy>
+      </ContextMenuTrigger>
+    </>
   );
 
   function contextHelpSubjectFromData() {

@@ -2,6 +2,7 @@ import { isHole } from "../../editor/ast/ast";
 
 export type Expr =
   | Hole
+  | NameBinding
   | NumberExpr
   | BoolExpr
   | StringExpr
@@ -15,13 +16,18 @@ export type Expr =
   | If
   | Cond;
 
-export type VarSlot = Hole | Var;
+export type VarSlot = Hole | NameBinding;
 export function getIdentifier(varSlot: VarSlot) {
   return isHole(varSlot) ? "_" : varSlot.id;
 }
 
 export type Hole = {
   kind: "hole";
+};
+
+export type NameBinding = {
+  kind: "name-binding";
+  id: string;
 };
 
 export type NumberExpr = {
@@ -45,7 +51,6 @@ export type Var = {
   id: string;
 };
 
-// TODO: Rename to `Call`. It's more accurate.
 export type Call = {
   kind: "call";
   called: Expr;

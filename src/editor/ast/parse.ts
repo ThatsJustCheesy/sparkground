@@ -8,14 +8,24 @@ import {
   Call,
   Sequence,
   Var,
+  NameBinding,
 } from "../../typechecker/ast/ast";
 import { hole } from "./ast";
 
-export function parseToExpr(source: string): Expr {
-  return new Parser(tokenize(source)).parsePrimary();
-}
+export class Parser {
+  static parseToExprs(source: string) {
+    const parser = new Parser(tokenize(source));
+    let exprs: Expr[] = [];
+    while (parser.tokens.length) {
+      exprs.push(parser.parsePrimary());
+    }
+    return exprs;
+  }
 
-class Parser {
+  static parseToExpr(source: string): Expr {
+    return new Parser(tokenize(source)).parsePrimary();
+  }
+
   constructor(private tokens: Token[] = []) {}
 
   parsePrimary(): Expr {
@@ -83,7 +93,7 @@ class Parser {
     this.eat("(");
     this.eat("define");
 
-    const name = this.parseVar();
+    const name = this.parseNameBinding();
     const value = this.parsePrimary();
 
     this.eat(")");
@@ -101,11 +111,11 @@ class Parser {
 
     this.eat("(");
 
-    let bindings: [name: Var, value: Expr][] = [];
+    let bindings: [name: NameBinding, value: Expr][] = [];
     while (this.tokens[0] !== ")") {
       this.eat("(");
 
-      const name = this.parseVar();
+      const name = this.parseNameBinding();
       const value = this.parsePrimary();
 
       bindings.push([name, value]);
@@ -132,9 +142,9 @@ class Parser {
 
     this.eat("(");
 
-    let params: Var[] = [];
+    let params: NameBinding[] = [];
     while (this.tokens[0] !== ")") {
-      params.push(this.parseVar());
+      params.push(this.parseNameBinding());
     }
 
     this.eat(")");
@@ -209,7 +219,11 @@ class Parser {
     return { kind: "var", id: identifierToken.identifier };
   }
 
-  eat(required: Token): void {
+  parseNameBinding(): NameBinding {
+    return { kind: "name-binding", id: this.parseVar().id };
+  }
+
+  private eat(required: Token): void {
     if (this.tokens.shift() !== required) throw `expected '${required}'`;
   }
 

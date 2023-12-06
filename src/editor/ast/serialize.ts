@@ -12,6 +12,7 @@ export function serializeExpr(expr: Expr): string {
       return `"${expr.value.replace(/["\\]/g, "\\$&")}"`;
     case "null":
       return "'()";
+    case "name-binding":
     case "var":
       return expr.id;
     case "call":
@@ -27,7 +28,7 @@ export function serializeExpr(expr: Expr): string {
       return (
         "(let (" +
         expr.bindings.map(
-          ([name, valueExpr]) => getIdentifier(name) + " " + serializeExpr(valueExpr)
+          ([name, valueExpr]) => "(" + getIdentifier(name) + " " + serializeExpr(valueExpr) + ")"
         ) +
         ") " +
         serializeExpr(expr.body) +

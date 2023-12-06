@@ -30,6 +30,14 @@ export const symbols = keyBy(
       headingArgCount: 1,
     },
     {
+      id: "let",
+      doc: "Binds variables within a scope",
+
+      minArgCount: 2,
+      maxArgCount: 2,
+      headingArgCount: 1,
+    },
+    {
       id: "lambda",
       doc: "Creates a function",
 
@@ -437,6 +445,7 @@ export const library: Expr[] = [
   { kind: "number", value: 0 },
 
   { kind: "define", name: hole, value: hole },
+  { kind: "let", bindings: [[hole, hole]], body: hole },
   { kind: "lambda", params: [], body: { kind: "sequence", exprs: [hole] } },
   { kind: "lambda", params: [hole], body: { kind: "sequence", exprs: [hole] } },
   { kind: "if", if: hole, then: hole, else: hole },

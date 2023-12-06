@@ -25,15 +25,19 @@ import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./ast/mu
 import Library from "./library/Library";
 import { Tree, bringTreeToFront } from "./ast/trees";
 import BiwaScheme from "biwascheme";
-import { serializeExpr } from "./ast/serialize";
 import CodeEditorModal from "./CodeEditorModal";
-import { parseToExpr } from "./ast/parse";
 import { Call } from "../typechecker/ast/ast";
+import { Parser } from "./ast/parse";
 
 export type Props = {
   trees: Tree[];
 
-  rerender(): void;
+  onBlockContextMenu: (indexPath: TreeIndexPath) => void;
+
+  codeEditorSubject: TreeIndexPath | undefined;
+  setCodeEditorSubject: (indexPath?: TreeIndexPath) => void;
+
+  rerender: () => void;
   renderCounter: number;
 };
 
@@ -82,11 +86,39 @@ const collisionDetection: CollisionDetection = ({
   return collisions.sort(sortCollisionsClosestToZero);
 };
 
-export default function Editor({ trees, rerender, renderCounter }: Props) {
-  const [contextHelpSubject, setContextHelpSubject] = useState<ProgSymbol | number | boolean>();
-  const [codeEditorSubject, setCodeEditorSubject] = useState<TreeIndexPath>();
+export type ActiveDrag = {
+  indexPath: TreeIndexPath;
+  copyOnDrop?: boolean;
+};
+
+let isAltPressed = false;
+
+export default function Editor({
+  trees,
+  onBlockContextMenu,
+  rerender,
+  codeEditorSubject,
+  setCodeEditorSubject,
+  renderCounter,
+}: Props) {
+  useEffect(() => {
+    const handleDocumentMouseDown = (event: MouseEvent) => {
+      isAltPressed = event.altKey;
+    };
+
+    document.addEventListener("mousedown", handleDocumentMouseDown);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentMouseDown);
+    };
+  }, []);
+
+  const [weakRenderCounter, setWeakRenderCounter] = useState(0);
+  function weakRerender() {
+    setWeakRenderCounter(weakRenderCounter + 1);
+  }
+
   const [result, setResult] = useState<any>();
-  const [activeDrag, setActiveDrag] = useState<TreeIndexPath>();
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag>();
   const [activeDragOver, setActiveDragOver] = useState<Over>();
 
   const [stage, setStage] = useState<{ element: JSX.Element }[]>([]);
@@ -126,14 +158,25 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
       const newResults = await Promise.all(
         trees.map(async (tree) => {
           // console.log(evaluate(mainTree.root, new Environment()));
-
-          const source = serializeExpr(tree.root);
-          console.log(source);
-
-          const res = (await new Promise((resolve, reject) => {
-            interpreter.evaluate(source, resolve);
-          })) as any;
-          return res?.toString();
+          /* --- */
+          // const source = serializeExpr(tree.root);
+          // console.log(source);
+          /* --- */
+          // const res = (await new Promise((resolve, reject) => {
+          //   interpreter.evaluate(source, resolve);
+          // })) as any;
+          // return res?.toString();
+          /* --- */
+          // const js = jsifyExpr(tree.root);
+          // console.log(js);
+          /* --- */
+          // try {
+          //   const res = evalInRuntime(js);
+          //   return JSON.stringify(res);
+          // } catch (error) {
+          //   console.error(error);
+          //   return "[error]";
+          // }
         })
       );
       setResult(newResults.join("\n"));
@@ -171,9 +214,9 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
                   inferrer: tree.inferrer,
                   onMouseOver,
                   onMouseOut,
-                  onContextMenu,
+                  onContextMenu: onBlockContextMenu,
                   activeDrag,
-                  rerender,
+                  rerender: weakRerender,
                   renderCounter,
                 })}
               </div>
@@ -190,18 +233,18 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
           </div> */}
         </div>
 
-        <Library contextHelpSubject={contextHelpSubject} result={result} />
+        <Library />
 
         <DragOverlay dropAnimation={null} zIndex={99999}>
           {activeDrag &&
             render(
-              activeDrag.tree,
-              exprAtIndexPath(activeDrag),
+              activeDrag.indexPath.tree,
+              exprAtIndexPath(activeDrag.indexPath),
               // TODO: Do we need to use a better symbol table here?
               new SymbolTable(),
               {
-                indexPath: activeDrag,
-                inferrer: activeDrag.tree.inferrer,
+                indexPath: activeDrag.indexPath,
+                inferrer: activeDrag.indexPath.tree.inferrer,
                 forDragOverlay: activeDragOver ?? true,
               }
             )}
@@ -210,23 +253,9 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
     </div>
   );
 
-  function onMouseOver(symbol: ProgSymbol | number | boolean | undefined) {
-    if (symbol === undefined) return;
+  function onMouseOver(symbol: ProgSymbol | number | boolean | undefined) {}
 
-    setContextHelpSubject(symbol);
-  }
-
-  function onMouseOut(symbol: ProgSymbol | number | boolean | undefined) {
-    if (symbol === undefined || activeDrag) return;
-
-    if (symbol === contextHelpSubject) {
-      setContextHelpSubject(undefined);
-    }
-  }
-
-  function onContextMenu(indexPath: TreeIndexPath) {
-    setCodeEditorSubject(indexPath);
-  }
+  function onMouseOut(symbol: ProgSymbol | number | boolean | undefined) {}
 
   function onCodeEditorClose(newSource?: string) {
     // Close editor
@@ -234,7 +263,7 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
 
     if (!newSource || !codeEditorSubject) return;
 
-    const newExpr = parseToExpr(newSource);
+    const newExpr = Parser.parseToExpr(newSource);
 
     if (!codeEditorSubject.path.length) {
       codeEditorSubject.tree.root = newExpr;
@@ -255,18 +284,22 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
   }
 
   function onBlockDragStart({ active }: DragStartEvent) {
-    const activeIndexPath = indexPathFromDragged(active);
-    if (!activeIndexPath) return;
+    setTimeout(() => {
+      const activeIndexPath = indexPathFromDragged(active);
+      if (!activeIndexPath) return;
 
-    setActiveDrag(activeIndexPath);
-    setContextHelpSubject(active.data.current?.contextHelpSubject);
+      setActiveDrag({
+        indexPath: activeIndexPath,
+        copyOnDrop: isAltPressed,
+      });
+    });
   }
 
   function onBlockDragOver({ over }: DragOverEvent) {
     setActiveDragOver(over ?? undefined);
   }
 
-  function onBlockDragEnd({ active, over }: DragEndEvent) {
+  function onBlockDragEnd({ active, over, activatorEvent }: DragEndEvent) {
     setActiveDrag(undefined);
     setActiveDragOver(undefined);
 
@@ -277,11 +310,14 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
       if (active.data.current?.copyOnDrop) return;
 
       deleteExpr(activeIndexPath);
-      setContextHelpSubject(undefined);
 
       rerender();
       return;
     }
+
+    const shouldCopy =
+      active.data.current?.copyOnDrop ||
+      (activatorEvent instanceof MouseEvent && activatorEvent.altKey);
 
     const overIndexPath = indexPathFromDragged(over);
     // console.log(active!.rect.current.translated!.top, blocksArea.current!.scrollTop);
@@ -299,11 +335,11 @@ export default function Editor({ trees, rerender, renderCounter }: Props) {
           x: active!.rect.current.translated!.left,
           y: active!.rect.current.translated!.top,
         },
-        active.data.current?.copyOnDrop
+        shouldCopy
       );
       activeIndexPath = rootIndexPath(orphanTree);
     } else {
-      if (active.data.current?.copyOnDrop) {
+      if (shouldCopy) {
         copyExprInTree(activeIndexPath, overIndexPath, {
           x: active!.rect.current.translated!.right,
           y: active!.rect.current.translated!.bottom,

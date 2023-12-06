@@ -41,7 +41,7 @@ describe("TypeInferrer", () => {
   })
 
   it("infers unary function types", () => {
-    const id: Lambda = { kind: "lambda", params: [{ kind: "var", id: "x" }], body: { kind: "var", id: "x" } }
+    const id: Lambda = { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } }
     expect(inferrer.infer(id)).toEqual<Type>({ tag: "Function", in: { var: "a" }, out: { var: "a" } })
     expect(inferrer.infer({ kind: "call", called: id, args: [{ kind: "number", value: 1 }] })).toEqual<Type>({ tag: "Integer" })
   })
@@ -50,8 +50,8 @@ describe("TypeInferrer", () => {
     const second: Lambda = {
       kind: "lambda",
       params: [
-        { kind: "var", id: "x" },
-        { kind: "var", id: "y" },
+        { kind: "name-binding", id: "x" },
+        { kind: "name-binding", id: "y" },
       ],
       body: { kind: "var", id: "y" },
     }

@@ -17,10 +17,13 @@ import {
   Sequence,
   StringExpr,
   Var,
+  Let,
+  NameBinding,
 } from "../../typechecker/ast/ast";
 import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
+import { ActiveDrag } from "../Editor";
 
 export function render(
   tree: Tree,
@@ -49,7 +52,7 @@ export function render(
 
     inferrer?: TypeInferrer;
 
-    activeDrag?: TreeIndexPath;
+    activeDrag?: ActiveDrag;
     forDragOverlay?: boolean | Over;
 
     onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
@@ -120,7 +123,7 @@ export function render(
   }
 
   function renderAtomic(
-    expr: Hole | NumberExpr | BoolExpr | StringExpr | NullExpr | Var
+    expr: Hole | NameBinding | NumberExpr | BoolExpr | StringExpr | NullExpr | Var
   ): JSX.Element {
     const data = ((): BlockData => {
       switch (expr.kind) {
@@ -133,8 +136,13 @@ export function render(
         case "string":
         case "null":
           throw "TODO!";
+        case "name-binding":
         case "var":
-          return { type: "ident", symbol: symbolTable.get(expr.id) };
+          return {
+            type: "ident",
+            symbol: symbolTable.get(expr.id),
+            isNameBinding: expr.kind === "name-binding",
+          };
       }
     })();
 
@@ -202,6 +210,22 @@ export function render(
     return block({ type: "v", symbol: symbols.define, heading }, body);
   }
 
+  function renderLet(expr: Let): JSX.Element {
+    const heading = (
+      <>
+        {expr.bindings.map(([name, value], index) => (
+          <>
+            {renderSubexpr(name, 2 * index, { isCopySource: true })}
+            {renderSubexpr(value, 2 * index + 1)}
+          </>
+        ))}
+      </>
+    );
+    const body = renderSubexpr(expr.body, 2 * expr.bindings.length);
+
+    return block({ type: "v", symbol: symbols.let, heading }, body);
+  }
+
   function renderLambda(expr: Lambda): JSX.Element {
     const heading = (
       <>{expr.params.map((param, index) => renderSubexpr(param, index, { isCopySource: true }))}</>
@@ -225,6 +249,7 @@ export function render(
 
   switch (node.kind) {
     case "hole":
+    case "name-binding":
     case "number":
     case "bool":
     case "string":
@@ -238,7 +263,7 @@ export function render(
     case "define":
       return renderDefine(node);
     case "let":
-      throw "TODO";
+      return renderLet(node);
     case "lambda":
       return renderLambda(node);
     case "sequence":
