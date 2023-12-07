@@ -77,7 +77,6 @@ const TypeDefs = {
   Integer: [],
   Boolean: [],
   String: [],
-  Pair: ["car", "cdr"],
   List: ["element"],
   Function: ["in", "out"],
   Procedure: ["out"],

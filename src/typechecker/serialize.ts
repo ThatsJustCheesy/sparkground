@@ -6,7 +6,6 @@ export function serializeType(t: Type | InferrableType): string {
   if (isUnknown(t)) return `${t.unknown}`;
 
   if (t.tag === "Function") return `${serializeType(t.in)} → ${serializeType(t.out)}`;
-  if (t.tag === "Pair") return `(${serializeType(t.car)} . ${serializeType(t.cdr)})`;
   if (t.tag === "List") return `[${serializeType(t.element)}]`;
 
   const params = typeParams(t);
