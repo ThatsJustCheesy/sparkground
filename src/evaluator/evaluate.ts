@@ -1,43 +1,31 @@
 import { Expr, NameBinding, VarSlot } from "../typechecker/ast/ast";
 import { List, Value, isFn, valueAsBool } from "./value";
 
-export type Binding = { name: string; value: Value };
+export type Binding<Codomain> = { name: string; value: Codomain };
 
-type StackFrame = {
-  bindings: Map<string, Binding>;
+type StackFrame<Codomain> = {
+  bindings: Map<string, Binding<Codomain>>;
 };
 
-export class Environment {
-  #stack: StackFrame[] = [];
-  get #top(): StackFrame {
+export class Environment<Codomain> {
+  #stack: StackFrame<Codomain>[] = [];
+  get #top(): StackFrame<Codomain> {
     return this.#stack[this.#stack.length - 1];
   }
 
   /**
    * @param globalBindings Shortcut to add bindings to outer global scope; for use by unit tests
    */
-  constructor(globalBindings: Record<string, Value> = {}) {
+  constructor(globalBindings: Record<string, Codomain> = {}) {
     this.push();
     Object.entries(globalBindings).forEach(([name, value]) => {
       this.bind({ name, value });
     });
 
-    this.bind({
-      name: "cons",
-      value: {
-        params: ["car", "cdr"],
-        body: (env) => {
-          const car = env.get("car")!.value;
-          const cdr = env.get("cdr")!.value as List; // TODO: Dynamic type checking
-          return [car, ...cdr];
-        },
-      },
-    });
-
     this.push();
   }
 
-  get(identifier: string): Binding | undefined {
+  get(identifier: string): Binding<Codomain> | undefined {
     for (let i = this.#stack.length - 1; i >= 0; --i) {
       const binding = this.#stack[i].bindings.get(identifier);
       if (binding) return binding;
@@ -46,7 +34,7 @@ export class Environment {
     return undefined;
   }
 
-  bind(binding: Binding) {
+  bind(binding: Binding<Codomain>) {
     this.#top.bindings.set(binding.name, binding);
   }
 
@@ -61,10 +49,24 @@ export class Environment {
 
 /** Applicative order evaluator */
 export class Evaluator {
-  env!: Environment;
+  env!: Environment<Value>;
 
-  eval(expr: Expr, env: Environment = new Environment()): Value {
+  eval(expr: Expr, env: Environment<Value> = new Environment()): Value {
     this.env = env;
+
+    // TODO: Move this
+    env.bind({
+      name: "cons",
+      value: {
+        params: ["car", "cdr"],
+        body: (env) => {
+          const car = env.get("car")!.value;
+          const cdr = env.get("cdr")!.value as List; // TODO: Dynamic type checking
+          return [car, ...cdr];
+        },
+      },
+    });
+
     return this.#eval(expr);
   }
 
