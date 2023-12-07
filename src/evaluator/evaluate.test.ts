@@ -1,6 +1,7 @@
+import { Parser } from "../editor/ast/parse"
 import { Lambda } from "../typechecker/ast/ast"
 import { Environment, Evaluator } from "./evaluate"
-import { Fn } from "./value"
+import { Fn, List } from "./value"
 
 describe("evaluate", () => {
   let evaluator: Evaluator
@@ -17,7 +18,6 @@ describe("evaluate", () => {
 
   it("evals variables", () => {
     expect(() => evaluator.eval({ kind: "var", id: "x" })).toThrow()
-    // expect(inferrer.error?.tag).toEqual("UnboundVariable")
     expect(evaluator.eval({ kind: "var", id: "x" }, new Environment({ x: 42 }))).toEqual(42)
   })
 
@@ -68,5 +68,9 @@ describe("evaluate", () => {
         ],
       })
     ).toEqual("")
+  })
+
+  it("evals calls to builtins", () => {
+    expect(evaluator.eval(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 '())))"))).toEqual<List>([3, 2, 1])
   })
 })

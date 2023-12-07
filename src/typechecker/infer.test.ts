@@ -1,7 +1,6 @@
-import { serializeExpr } from "../editor/ast/serialize"
 import { Lambda } from "./ast/ast"
 import { TypeInferrer } from "./infer"
-import { InferrableType, Type } from "./type"
+import { Type } from "./type"
 
 describe("TypeInferrer", () => {
   let inferrer: TypeInferrer
