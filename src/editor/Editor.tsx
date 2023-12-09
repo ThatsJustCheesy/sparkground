@@ -306,18 +306,18 @@ export default function Editor({
     let activeIndexPath = indexPathFromDragged(active);
     if (!activeIndexPath) return;
 
+    const shouldCopy =
+      active.data.current?.copyOnDrop ||
+      (activatorEvent instanceof MouseEvent && activatorEvent.altKey);
+
     if (over?.data.current?.isLibrary) {
-      if (active.data.current?.copyOnDrop) return;
+      if (shouldCopy) return;
 
       deleteExpr(activeIndexPath);
 
       rerender();
       return;
     }
-
-    const shouldCopy =
-      active.data.current?.copyOnDrop ||
-      (activatorEvent instanceof MouseEvent && activatorEvent.altKey);
 
     const overIndexPath = indexPathFromDragged(over);
     // console.log(active!.rect.current.translated!.top, blocksArea.current!.scrollTop);
