@@ -1,6 +1,7 @@
 import { Parser } from "../editor/ast/parse"
 import { Lambda } from "../typechecker/ast/ast"
-import { Environment, Evaluator } from "./evaluate"
+import { Environment } from "./environment"
+import { Evaluator } from "./evaluate"
 import { Fn, List } from "./value"
 
 describe("evaluate", () => {

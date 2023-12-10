@@ -1,51 +1,6 @@
 import { Expr, NameBinding, VarSlot } from "../typechecker/ast/ast";
+import { Environment } from "./environment";
 import { List, Value, isFn, valueAsBool } from "./value";
-
-export type Binding<Codomain> = { name: string; value: Codomain };
-
-type StackFrame<Codomain> = {
-  bindings: Map<string, Binding<Codomain>>;
-};
-
-export class Environment<Codomain> {
-  #stack: StackFrame<Codomain>[] = [];
-  get #top(): StackFrame<Codomain> {
-    return this.#stack[this.#stack.length - 1];
-  }
-
-  /**
-   * @param globalBindings Shortcut to add bindings to outer global scope; for use by unit tests
-   */
-  constructor(globalBindings: Record<string, Codomain> = {}) {
-    this.push();
-    Object.entries(globalBindings).forEach(([name, value]) => {
-      this.bind({ name, value });
-    });
-
-    this.push();
-  }
-
-  get(identifier: string): Binding<Codomain> | undefined {
-    for (let i = this.#stack.length - 1; i >= 0; --i) {
-      const binding = this.#stack[i].bindings.get(identifier);
-      if (binding) return binding;
-    }
-
-    return undefined;
-  }
-
-  bind(binding: Binding<Codomain>) {
-    this.#top.bindings.set(binding.name, binding);
-  }
-
-  push() {
-    this.#stack.push({ bindings: new Map() });
-  }
-
-  pop() {
-    this.#stack.pop();
-  }
-}
 
 /** Applicative order evaluator */
 export class Evaluator {
@@ -108,7 +63,7 @@ export class Evaluator {
         let result: Value = [];
         if (typeof calledValue.body === "function") {
           // Builtin
-          result = calledValue.body(this.env);
+          result = calledValue.body(this.env, ({ value }) => value);
         } else {
           result = this.#eval(calledValue.body);
         }

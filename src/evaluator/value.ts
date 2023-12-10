@@ -1,13 +1,11 @@
 import { Expr } from "../typechecker/ast/ast";
-import { Environment } from "./evaluate";
+import { Builtin } from "./environment";
 
 export type Value = Fn | List | number | boolean | string;
 
-type Builtin = (env: Environment) => Value;
-
 export type Fn = {
   params: string[];
-  body: Builtin | Expr;
+  body: Builtin<Value, Value> | Expr;
 };
 export function isFn(value: Value): value is Fn {
   return typeof value === "object" && "params" in value;
