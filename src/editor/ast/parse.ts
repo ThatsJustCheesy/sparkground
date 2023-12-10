@@ -9,6 +9,7 @@ import {
   Sequence,
   Var,
   NameBinding,
+  NullExpr,
 } from "../../typechecker/ast/ast";
 import { hole } from "./ast";
 
@@ -55,8 +56,7 @@ export class Parser {
         this.tokens.shift();
         return { kind: "bool", value: next === "#t" };
       case "'":
-        throw "TODO";
-      // return this.parseQuoted(tokens);
+        return this.parseQuoted();
       case "define":
       case "let":
       case "lambda":
@@ -227,18 +227,19 @@ export class Parser {
     if (this.tokens.shift() !== required) throw `expected '${required}'`;
   }
 
-  // TODO: Reenable this
-  // parseQuoted(tokens: Token[]): QuoteLiteral {
-  //   tokens.shift(); // '
+  parseQuoted(): NullExpr {
+    this.eat("'");
+    this.eat("(");
 
-  //   const [first, second] = tokens;
+    if (this.tokens[0] === ")") {
+      this.eat(")");
+      return { kind: "null" };
+    }
 
-  //   if (!(first && second && first === "(")) throw "invalid quoted expression";
-
-  //   if (second === ")") return null;
-
-  //   return { quote: this.parseCall(tokens) };
-  // }
+    // TODO: Reenable this
+    throw "TODO";
+    // return { quote: this.parseCall(tokens) };
+  }
 }
 
 type Token =
@@ -288,7 +289,7 @@ function tokenize(source: string): Token[] {
     }
 
     // TODO: Real number parsing
-    let match = source.match(/^\d+(\s|$)/);
+    let match = source.match(/^\d+/);
     if (match) {
       const [matchText] = match;
       source = source.slice(matchText.length);
