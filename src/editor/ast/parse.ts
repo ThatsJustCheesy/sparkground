@@ -297,7 +297,7 @@ function tokenize(source: string): Token[] {
       continue;
     }
 
-    match = source.match(/^[^\s()']+/);
+    match = source.match(/^[a-zA-Z!$%&*\/:<=>?^_~][a-zA-Z!$%&*\/:<=>?^_~0-9+\-\.@]*|\+|\-|\.\.\./);
     if (match) {
       const [matchText] = match;
       source = source.slice(matchText.length);
