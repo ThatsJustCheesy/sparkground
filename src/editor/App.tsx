@@ -1,15 +1,15 @@
 import "./app.css";
 import "tippy.js/dist/tippy.css";
 import { SyntheticEvent, useState } from "react";
-import { newTree, trees } from "./ast/trees";
+import { newTree, trees } from "./trees/trees";
 import Editor from "./Editor";
 import AppMenuBar from "./ui/menus/AppMenuBar";
 import HelpDialog from "./ui/HelpDialog";
-import { Parser } from "./ast/parse";
+import { Parser } from "../expr/parse";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
-import { deleteExpr, orphanExpr } from "./ast/mutate";
-import { TreeIndexPath, exprAtIndexPath, hole, rootIndexPath } from "./ast/ast";
+import { deleteExpr, orphanExpr } from "./trees/mutate";
+import { TreeIndexPath, exprAtIndexPath, hole, rootIndexPath } from "./trees/tree";
 
 const defaultExpr = Parser.parseToExpr(
   "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"

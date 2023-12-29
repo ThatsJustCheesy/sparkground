@@ -1,4 +1,4 @@
-import { Expr } from "../../typechecker/ast/ast";
+import { Expr } from "../../expr/expr";
 import { TypeInferrer } from "../../typechecker/infer";
 
 export type Point = {

@@ -1,7 +1,7 @@
 import { keyBy } from "lodash";
 import { ProgSymbol } from "../symbol-table";
-import { Expr, Call } from "../../typechecker/ast/ast";
-import { hole } from "../ast/ast";
+import { Expr, Call } from "../../expr/expr";
+import { hole } from "../trees/tree";
 
 const revTail: ProgSymbol = {
   id: "rev-tail",

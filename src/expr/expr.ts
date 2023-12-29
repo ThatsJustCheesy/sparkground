@@ -1,5 +1,5 @@
-import { isHole } from "../../editor/ast/ast";
-import { Datum } from "../../editor/datum/datum";
+import { isHole } from "../editor/trees/tree";
+import { Datum } from "../datum/datum";
 
 export type Expr =
   | Hole

@@ -1,10 +1,10 @@
-import { Parser } from "../editor/ast/parse"
-import { Parser as DatumParser } from "../editor/datum/parse"
-import { Lambda } from "../typechecker/ast/ast"
+import { Parser } from "../expr/parse"
+import { Parser as DatumParser } from "../datum/parse"
+import { Lambda } from "../expr/expr"
 import { Environment } from "./environment"
 import { Evaluator } from "./evaluate"
-import { Value } from "../editor/datum/value"
-import { datumEqual } from "../editor/datum/equality"
+import { Value } from "./value"
+import { datumEqual } from "../datum/equality"
 
 describe("evaluate", () => {
   let evaluator: Evaluator

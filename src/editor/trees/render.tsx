@@ -1,4 +1,4 @@
-import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, exprAtIndexPath } from "./ast";
+import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, exprAtIndexPath } from "./tree";
 import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
@@ -18,7 +18,7 @@ import {
   Var,
   Let,
   NameBinding,
-} from "../../typechecker/ast/ast";
+} from "../../expr/expr";
 import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";

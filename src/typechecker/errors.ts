@@ -1,4 +1,4 @@
-import { Var, Expr, Call } from "./ast/ast";
+import { Var, Expr, Call } from "../expr/expr";
 import { serializeType } from "./serialize";
 import { InferrableType } from "./type";
 

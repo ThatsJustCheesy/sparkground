@@ -1,4 +1,4 @@
-import { Expr } from "../../typechecker/ast/ast"
+import { Expr } from "./expr"
 import { Parser } from "./parse"
 
 describe("evaluate", () => {

@@ -3,7 +3,7 @@ import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenu, ContextMenuItem, ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
-import { TreeIndexPath, exprAtIndexPath, extendIndexPath } from "../ast/ast";
+import { TreeIndexPath, exprAtIndexPath, extendIndexPath } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";

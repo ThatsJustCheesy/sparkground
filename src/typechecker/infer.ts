@@ -11,11 +11,11 @@ import {
   typeParams,
   typeStructureMap,
 } from "./type";
-import { Expr, Var, getIdentifier } from "./ast/ast";
+import { Expr, Var, getIdentifier } from "../expr/expr";
 import { serializeType } from "./serialize";
-import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/ast/ast";
-import { Tree, newTree, removeTree } from "../editor/ast/trees";
-import { serializeExpr } from "../editor/ast/serialize";
+import { TreeIndexPath, extendIndexPath, rootIndexPath } from "../editor/trees/tree";
+import { Tree, newTree, removeTree } from "../editor/trees/trees";
+import { serializeExpr } from "../editor/trees/serialize";
 import { DisjointSetsMap } from "./disjoint-sets-map";
 import {
   InferenceError,
@@ -24,7 +24,7 @@ import {
   OccursCheckFailure,
   TypeMismatch,
 } from "./errors";
-import { Datum } from "../editor/datum/datum";
+import { Datum } from "../datum/datum";
 
 // https://www.cs.utoronto.ca/~trebla/CSCC24-2023-Summer/11-type-inference.html
 

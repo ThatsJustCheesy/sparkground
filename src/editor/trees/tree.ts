@@ -1,6 +1,6 @@
 import { Tree } from "./trees";
 import { isEqual } from "lodash";
-import { Expr, Hole, NameBinding, Var } from "../../typechecker/ast/ast";
+import { Expr, Hole, NameBinding } from "../../expr/expr";
 
 export function isAtomic(node: Expr) {
   return (["hole", "number", "bool", "string", "var"] satisfies Expr["kind"][]).includes(

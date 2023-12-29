@@ -1,5 +1,5 @@
-import { Expr, getIdentifier } from "../../typechecker/ast/ast";
-import { serializeDatum } from "../datum/serialize";
+import { Expr, getIdentifier } from "../../expr/expr";
+import { serializeDatum } from "../../datum/serialize";
 
 export function serializeExpr(expr: Expr): string {
   switch (expr.kind) {

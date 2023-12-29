@@ -10,10 +10,10 @@ import {
   Cond,
   Var,
   QuoteExpr,
-} from "../../typechecker/ast/ast";
+} from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
-import { hole } from "./ast";
+import { hole } from "../editor/trees/tree";
 
 export class Parser {
   static parseToExprs(source: string) {

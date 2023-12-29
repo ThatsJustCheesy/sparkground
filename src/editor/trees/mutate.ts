@@ -7,9 +7,9 @@ import {
   isSameOrAncestor,
   setChildAtIndex,
   isAtomic,
-} from "./ast";
+} from "./tree";
 import { Point, Tree, newTree, removeTree } from "./trees";
-import { Expr } from "../../typechecker/ast/ast";
+import { Expr } from "../../expr/expr";
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,

@@ -1,5 +1,5 @@
 import "./library.css";
-import { render } from "../ast/render";
+import { render } from "../trees/render";
 import { library } from "./library-defs";
 import { SymbolTable } from "../symbol-table";
 import { TypeInferrer } from "../../typechecker/infer";

@@ -1,7 +1,7 @@
 import { SyntheticEvent } from "react";
-import { Parser } from "../../ast/parse";
-import { serializeExpr } from "../../ast/serialize";
-import { deforest, Point, newTree, trees } from "../../ast/trees";
+import { Parser } from "../../../expr/parse";
+import { serializeExpr } from "../../trees/serialize";
+import { deforest, Point, newTree, trees } from "../../trees/trees";
 import MenuBar from "./MenuBar";
 import MenuBarButton from "./MenuBarButton";
 import MenuBarTitle from "./MenuBarTitle";

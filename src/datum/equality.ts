@@ -1,5 +1,5 @@
 import { Datum, ListDatum } from "./datum";
-import { Value, ListValue } from "./value";
+import { Value, ListValue } from "../evaluator/value";
 
 export function datumEqual(left: Datum | Value, right: Datum | Value): boolean {
   if (left.kind !== right.kind) return false;

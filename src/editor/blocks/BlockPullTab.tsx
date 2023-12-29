@@ -1,6 +1,6 @@
 import { UniqueIdentifier, useDroppable } from "@dnd-kit/core";
 import { PropsWithChildren } from "react";
-import { TreeIndexPath } from "../ast/ast";
+import { TreeIndexPath } from "../trees/tree";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;

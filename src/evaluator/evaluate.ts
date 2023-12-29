@@ -1,7 +1,7 @@
-import { ListDatum } from "../editor/datum/datum";
-import { Expr, NameBinding, VarSlot } from "../typechecker/ast/ast";
+import { ListDatum } from "../datum/datum";
+import { Expr, NameBinding, VarSlot } from "../expr/expr";
 import { Environment } from "./environment";
-import { ListValue, Value, valueAsBool } from "../editor/datum/value";
+import { ListValue, Value, valueAsBool } from "./value";
 
 /** Call-by-value evaluator */
 export class Evaluator {

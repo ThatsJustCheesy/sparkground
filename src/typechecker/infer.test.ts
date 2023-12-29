@@ -1,4 +1,4 @@
-import { Lambda } from "./ast/ast"
+import { Lambda } from "../expr/expr"
 import { TypeInferrer } from "./infer"
 import { Type } from "./type"
 

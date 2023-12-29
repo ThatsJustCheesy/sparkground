@@ -1,5 +1,5 @@
-import { Expr } from "../../typechecker/ast/ast";
-import { Builtin } from "../../evaluator/environment";
+import { Expr } from "../expr/expr";
+import { Builtin } from "./environment";
 
 export type Value = BoolValue | NumberValue | StringValue | SymbolValue | ListValue | FnValue;
 
