@@ -3,9 +3,9 @@ import { isEqual } from "lodash";
 import { Expr, Hole, NameBinding } from "../../expr/expr";
 
 export function isAtomic(node: Expr) {
-  return (["hole", "number", "bool", "string", "var"] satisfies Expr["kind"][]).includes(
-    node.kind as any
-  );
+  return (
+    ["hole", "number", "bool", "string", "var", "name-binding"] satisfies Expr["kind"][]
+  ).includes(node.kind as any);
 }
 
 export function children(expr: Expr): (Expr | undefined)[] {

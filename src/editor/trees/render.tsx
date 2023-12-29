@@ -24,106 +24,143 @@ import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
 import { ActiveDrag } from "../Editor";
 
-export function render(
-  tree: Tree,
-  node: Expr,
-  symbolTable: SymbolTable,
-  {
-    indexPath: indexPath_,
+export class Renderer {
+  indexPath!: TreeIndexPath;
+  isCopySource?: boolean;
 
-    isCopySource,
+  activeDrag?: ActiveDrag;
+  forDragOverlay?: boolean | Over;
 
-    inferrer: inferrer_,
+  onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+  onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+  onContextMenu?: (indexPath: TreeIndexPath) => void;
 
-    activeDrag,
-    forDragOverlay,
+  rerender?: () => void;
+  renderCounter?: number;
 
-    onMouseOver,
-    onMouseOut,
-    onContextMenu,
+  constructor(
+    private tree: Tree,
+    private symbolTable: SymbolTable,
+    private inferrer: TypeInferrer,
+    options: {
+      activeDrag?: ActiveDrag;
+      forDragOverlay?: boolean | Over;
 
-    rerender,
-    renderCounter,
-  }: {
-    indexPath?: TreeIndexPath;
+      onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+      onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
+      onContextMenu?: (indexPath: TreeIndexPath) => void;
 
-    isCopySource?: boolean;
-
-    inferrer?: TypeInferrer;
-
-    activeDrag?: ActiveDrag;
-    forDragOverlay?: boolean | Over;
-
-    onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-    onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-    onContextMenu?: (indexPath: TreeIndexPath) => void;
-
-    rerender?: () => void;
-    renderCounter?: number;
-  } = {}
-): JSX.Element {
-  if (node !== tree.root && !indexPath_)
-    throw "programmer error: must provide index path to render a subexpression!";
-
-  const indexPath = indexPath_ ?? rootIndexPath(tree);
-  const inferrer = inferrer_ ?? new TypeInferrer();
-
-  function keyForIndexPath({ path }: TreeIndexPath) {
-    return tree.id + " " + path.join(" ");
-  }
-
-  function block(data: BlockData, body: JSX.Element | JSX.Element[] = []) {
-    return subnodeBlock(data, body, indexPath);
-  }
-  function subnodeBlock(
-    data: BlockData,
-    body: JSX.Element | JSX.Element[],
-    indexPath: TreeIndexPath
+      rerender?: () => void;
+      renderCounter?: number;
+    }
   ) {
-    const key = keyForIndexPath(indexPath);
-    const expr = exprAtIndexPath(indexPath);
+    this.activeDrag = options.activeDrag;
+    this.forDragOverlay = options.forDragOverlay;
+
+    this.onMouseOver = options.onMouseOver;
+    this.onMouseOut = options.onMouseOut;
+    this.onContextMenu = options.onContextMenu;
+
+    this.rerender = options.rerender;
+    this.renderCounter = options.renderCounter;
+  }
+
+  render(
+    node: Expr,
+    {
+      indexPath,
+      isCopySource,
+    }: {
+      indexPath?: TreeIndexPath;
+      isCopySource?: boolean;
+    } = {}
+  ) {
+    if (indexPath) this.indexPath = indexPath;
+    if (!this.indexPath) {
+      if (node !== this.tree.root) {
+        throw "programmer error: must provide index path to render a subexpression!";
+      }
+      this.indexPath = rootIndexPath(this.tree);
+    }
+
+    if (isCopySource) this.isCopySource = isCopySource;
+
+    switch (node.kind) {
+      case "hole":
+      case "name-binding":
+      case "number":
+      case "bool":
+      case "string":
+      case "var":
+        return this.#renderAtomic(node);
+
+      case "quote":
+        throw "TODO";
+      // return renderQuote(node);
+
+      case "call":
+        return this.#renderCall(node);
+
+      case "define":
+        return this.#renderDefine(node);
+      case "let":
+        return this.#renderLet(node);
+      case "lambda":
+        return this.#renderLambda(node);
+      case "sequence":
+        return this.#renderSequence(node);
+
+      case "if":
+        return this.#renderIf(node);
+      case "cond":
+        throw "TODO";
+    }
+  }
+
+  #block(data: BlockData, body: JSX.Element | JSX.Element[]) {
+    return this.#subnodeBlock(data, body);
+  }
+
+  #subnodeBlock(data: BlockData, body: JSX.Element | JSX.Element[]) {
+    const key = this.#keyForIndexPath(this.indexPath);
+    const expr = exprAtIndexPath(this.indexPath);
     return (
       <Block
         key={key}
         id={key}
-        indexPath={indexPath}
+        indexPath={this.indexPath}
         data={data}
-        isCopySource={isCopySource}
-        inferrer={inferrer}
-        hasError={inferrer.error && errorInvolvesExpr(inferrer.error, expr)}
-        activeDrag={activeDrag}
-        forDragOverlay={forDragOverlay}
-        onMouseOver={onMouseOver}
-        onMouseOut={onMouseOut}
-        onContextMenu={onContextMenu}
-        rerender={rerender}
-        renderCounter={renderCounter}
+        isCopySource={this.isCopySource}
+        inferrer={this.inferrer}
+        hasError={this.inferrer.error && errorInvolvesExpr(this.inferrer.error, expr)}
+        activeDrag={this.activeDrag}
+        forDragOverlay={this.forDragOverlay}
+        onMouseOver={this.onMouseOver}
+        onMouseOut={this.onMouseOut}
+        onContextMenu={this.onContextMenu}
+        rerender={this.rerender}
+        renderCounter={this.renderCounter}
       >
         {body}
       </Block>
     );
   }
-  function renderSubexpr(subexpr: Expr, index: number, options: { isCopySource?: boolean } = {}) {
-    return render(tree, subexpr, symbolTable, {
-      indexPath: extendIndexPath(indexPath, index),
 
-      isCopySource: isCopySource || options.isCopySource,
+  #renderSubexpr(subexpr: Expr, index: number, { isCopySource }: { isCopySource?: boolean } = {}) {
+    const parentIndexPath = this.indexPath;
+    const parentIsCopySource = this.isCopySource;
 
-      inferrer,
+    this.indexPath = extendIndexPath(this.indexPath, index);
+    this.isCopySource = this.isCopySource || isCopySource;
 
-      activeDrag,
+    const rendered = this.render(subexpr);
 
-      onMouseOver,
-      onMouseOut,
-      onContextMenu,
-
-      rerender,
-    });
+    this.indexPath = parentIndexPath;
+    this.isCopySource = parentIsCopySource;
+    return rendered;
   }
 
-  function renderAtomic(
-    expr: Hole | NameBinding | NumberExpr | BoolExpr | StringExpr | Var
-  ): JSX.Element {
+  #renderAtomic(expr: Hole | NameBinding | NumberExpr | BoolExpr | StringExpr | Var): JSX.Element {
     const data = ((): BlockData => {
       switch (expr.kind) {
         case "hole":
@@ -138,34 +175,34 @@ export function render(
         case "var":
           return {
             type: "ident",
-            symbol: symbolTable.get(expr.id),
+            symbol: this.symbolTable.get(expr.id),
             isNameBinding: expr.kind === "name-binding",
           };
       }
     })();
 
-    return block(data);
+    return this.#block(data, []);
   }
 
-  function hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {
+  #hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {
     return bodyArgs.map((bodyArg, index) => {
       const hint = hints[index];
       if (!hint) return bodyArg;
 
-      const argIndexPath = extendIndexPath(indexPath, index);
+      const argIndexPath = extendIndexPath(this.indexPath, index);
       return (
-        <BlockHint key={keyForIndexPath(argIndexPath)} hint={hint}>
+        <BlockHint key={this.#keyForIndexPath(argIndexPath)} hint={hint}>
           {bodyArg}
         </BlockHint>
       );
     });
   }
 
-  function renderCall(expr: Call): JSX.Element {
+  #renderCall(expr: Call): JSX.Element {
     let { called, args } = expr;
 
     if (called.kind === "var") {
-      const calledSymbol = symbolTable.get(called.id);
+      const calledSymbol = this.symbolTable.get(called.id);
       const minArgCount = calledSymbol.minArgCount ?? 0;
 
       // Add holes where arguments are required
@@ -179,100 +216,80 @@ export function render(
       }
     }
 
-    const renderedArgs = args.map((arg, index) => renderSubexpr(arg, index + 1));
+    const renderedArgs = args.map((arg, index) => this.#renderSubexpr(arg, index + 1));
 
     if (called.kind === "var") {
-      const calledSymbol = symbolTable.get(called.id);
+      const calledSymbol = this.symbolTable.get(called.id);
       if (calledSymbol.headingArgCount || calledSymbol.bodyArgHints?.length) {
         const { headingArgCount, bodyArgHints } = calledSymbol;
 
         const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
         const body = renderedArgs.slice(headingArgCount);
 
-        return block(
+        return this.#block(
           { type: "v", symbol: calledSymbol, heading: <>{heading}</> },
-          hintBodyArgs(body, bodyArgHints)
+          this.#hintBodyArgs(body, bodyArgHints)
         );
       }
 
-      return block({ type: "h", symbol: calledSymbol }, renderedArgs);
+      return this.#block({ type: "h", symbol: calledSymbol }, renderedArgs);
     } else {
       throw "calling non-identifier is not supported yet";
     }
   }
 
-  function renderDefine(expr: Define): JSX.Element {
-    const heading = renderSubexpr(expr.name, 0, { isCopySource: true });
-    const body = renderSubexpr(expr.value, 1);
+  #renderDefine(expr: Define): JSX.Element {
+    const heading = this.#renderSubexpr(expr.name, 0, { isCopySource: true });
+    const body = this.#renderSubexpr(expr.value, 1);
 
-    return block({ type: "v", symbol: symbols.define, heading }, body);
+    return this.#block({ type: "v", symbol: symbols.define, heading }, body);
   }
 
-  function renderLet(expr: Let): JSX.Element {
+  #renderLet(expr: Let): JSX.Element {
     const heading = (
       <>
         {expr.bindings.map(([name, value], index) => (
           <>
-            {renderSubexpr(name, 2 * index, { isCopySource: true })}
-            {renderSubexpr(value, 2 * index + 1)}
+            {this.#renderSubexpr(name, 2 * index, { isCopySource: true })}
+            {this.#renderSubexpr(value, 2 * index + 1)}
           </>
         ))}
       </>
     );
-    const body = renderSubexpr(expr.body, 2 * expr.bindings.length);
+    const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length);
 
-    return block({ type: "v", symbol: symbols.let, heading }, body);
+    return this.#block({ type: "v", symbol: symbols.let, heading }, body);
   }
 
-  function renderLambda(expr: Lambda): JSX.Element {
+  #renderLambda(expr: Lambda): JSX.Element {
     const heading = (
-      <>{expr.params.map((param, index) => renderSubexpr(param, index, { isCopySource: true }))}</>
+      <>
+        {expr.params.map((param, index) =>
+          this.#renderSubexpr(param, index, { isCopySource: true })
+        )}
+      </>
     );
-    const body = renderSubexpr(expr.body, expr.params.length);
+    const body = this.#renderSubexpr(expr.body, expr.params.length);
 
-    return block({ type: "v", symbol: symbols.lambda, heading }, body);
+    return this.#block({ type: "v", symbol: symbols.lambda, heading }, body);
   }
 
-  function renderSequence(expr: Sequence): JSX.Element {
+  #renderSequence(expr: Sequence): JSX.Element {
     // TODO: Real editable sequence block!
-    return <>{expr.exprs.map((subexpr, index) => renderSubexpr(subexpr, index))}</>;
+    return <>{expr.exprs.map((subexpr, index) => this.#renderSubexpr(subexpr, index))}</>;
   }
 
-  function renderIf(expr: If): JSX.Element {
-    return block(
-      { type: "v", symbol: symbols.if, heading: renderSubexpr(expr.if, 0) },
-      hintBodyArgs([renderSubexpr(expr.then, 1), renderSubexpr(expr.else, 2)], ["then", "else"])
+  #renderIf(expr: If): JSX.Element {
+    return this.#block(
+      { type: "v", symbol: symbols.if, heading: this.#renderSubexpr(expr.if, 0) },
+      this.#hintBodyArgs(
+        [this.#renderSubexpr(expr.then, 1), this.#renderSubexpr(expr.else, 2)],
+        ["then", "else"]
+      )
     );
   }
 
-  switch (node.kind) {
-    case "hole":
-    case "name-binding":
-    case "number":
-    case "bool":
-    case "string":
-    case "var":
-      return renderAtomic(node);
-
-    case "quote":
-      throw "TODO";
-    // return renderQuote(node);
-
-    case "call":
-      return renderCall(node);
-
-    case "define":
-      return renderDefine(node);
-    case "let":
-      return renderLet(node);
-    case "lambda":
-      return renderLambda(node);
-    case "sequence":
-      return renderSequence(node);
-
-    case "if":
-      return renderIf(node);
-    case "cond":
-      throw "TODO";
+  #keyForIndexPath({ path }: TreeIndexPath) {
+    return this.tree.id + " " + path.join(" ");
   }
 }

@@ -1,7 +1,7 @@
 import "./editor.css";
 import { useEffect, useRef, useState } from "react";
 import { ProgSymbol, SymbolTable } from "./symbol-table";
-import { render } from "./trees/render";
+import { Renderer } from "./trees/render";
 import {
   TreeIndexPath,
   exprAtIndexPath,
@@ -210,15 +210,16 @@ export default function Editor({
                   zIndex: tree.zIndex,
                 }}
               >
-                {render(tree, tree.root, new SymbolTable(), {
-                  inferrer: tree.inferrer,
+                {new Renderer(tree, new SymbolTable(), tree.inferrer, {
+                  activeDrag,
+
                   onMouseOver,
                   onMouseOut,
                   onContextMenu: onBlockContextMenu,
-                  activeDrag,
+
                   rerender: weakRerender,
                   renderCounter,
-                })}
+                }).render(tree.root, {})}
               </div>
             ))}
           </div>
@@ -237,17 +238,15 @@ export default function Editor({
 
         <DragOverlay dropAnimation={null} zIndex={99999}>
           {activeDrag &&
-            render(
+            new Renderer(
               activeDrag.indexPath.tree,
-              exprAtIndexPath(activeDrag.indexPath),
               // TODO: Do we need to use a better symbol table here?
               new SymbolTable(),
+              activeDrag.indexPath.tree.inferrer,
               {
-                indexPath: activeDrag.indexPath,
-                inferrer: activeDrag.indexPath.tree.inferrer,
                 forDragOverlay: activeDragOver ?? true,
               }
-            )}
+            ).render(exprAtIndexPath(activeDrag.indexPath), { indexPath: activeDrag.indexPath })}
         </DragOverlay>
       </DndContext>
     </div>
