@@ -3,7 +3,7 @@ import { isEqual } from "lodash";
 import { Expr, Hole, NameBinding, Var } from "../../typechecker/ast/ast";
 
 export function isAtomic(node: Expr) {
-  return (["hole", "number", "bool", "string", "null", "var"] satisfies Expr["kind"][]).includes(
+  return (["hole", "number", "bool", "string", "var"] satisfies Expr["kind"][]).includes(
     node.kind as any
   );
 }

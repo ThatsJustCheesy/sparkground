@@ -1,4 +1,5 @@
 import { isHole } from "../../editor/ast/ast";
+import { Datum } from "../../editor/datum/datum";
 
 export type Expr =
   | Hole
@@ -6,7 +7,7 @@ export type Expr =
   | NumberExpr
   | BoolExpr
   | StringExpr
-  | NullExpr
+  | QuoteExpr
   | Var
   | Call
   | Define
@@ -42,8 +43,9 @@ export type StringExpr = {
   kind: "string";
   value: string;
 };
-export type NullExpr = {
-  kind: "null";
+export type QuoteExpr = {
+  kind: "quote";
+  value: Datum;
 };
 
 export type Var = {

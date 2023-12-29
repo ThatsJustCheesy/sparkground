@@ -1,8 +1,9 @@
+import { ListDatum } from "../editor/datum/datum";
 import { Expr, NameBinding, VarSlot } from "../typechecker/ast/ast";
 import { Environment } from "./environment";
-import { List, Value, isFn, valueAsBool } from "./value";
+import { ListValue, Value, valueAsBool } from "../editor/datum/value";
 
-/** Applicative order evaluator */
+/** Call-by-value evaluator */
 export class Evaluator {
   env!: Environment<Value>;
 
@@ -10,17 +11,37 @@ export class Evaluator {
     this.env = env;
 
     // TODO: Move this
-    env.bind({
-      name: "cons",
-      value: {
-        params: ["car", "cdr"],
-        body: (env) => {
-          const car = env.get("car")!.value;
-          const cdr = env.get("cdr")!.value as List; // TODO: Dynamic type checking
-          return [car, ...cdr];
+    env.bind(
+      {
+        name: "null",
+        value: {
+          kind: "fn",
+          params: [],
+          body: (env): ListValue => {
+            return {
+              kind: "list",
+              heads: [],
+            };
+          },
         },
       },
-    });
+      {
+        name: "cons",
+        value: {
+          kind: "fn",
+          params: ["car", "cdr"],
+          body: (env): ListValue => {
+            const car = env.get("car")!.value;
+            const cdr = env.get("cdr")!.value as ListDatum; // TODO: Dynamic type checking
+            return {
+              kind: "list",
+              heads: [car],
+              tail: cdr,
+            };
+          },
+        },
+      }
+    );
 
     return this.#eval(expr);
   }
@@ -30,10 +51,10 @@ export class Evaluator {
       case "number":
       case "bool":
       case "string":
-        return expr.value;
+        return expr;
 
-      case "null":
-        return [];
+      case "quote":
+        return expr.value;
 
       case "var": {
         const binding = this.env.get(expr.id);
@@ -46,7 +67,7 @@ export class Evaluator {
         const { called, args } = expr;
 
         const calledValue = this.#eval(called);
-        if (!isFn(calledValue)) throw "cannot call non-function";
+        if (calledValue.kind !== "fn") throw "cannot call non-function";
 
         const argValues = args.map((arg) => this.#eval(arg));
 
@@ -60,7 +81,7 @@ export class Evaluator {
           });
         }
 
-        let result: Value = [];
+        let result: Value;
         if (typeof calledValue.body === "function") {
           // Builtin
           result = calledValue.body(this.env, ({ value }) => value);
@@ -99,12 +120,13 @@ export class Evaluator {
 
       case "lambda":
         return {
+          kind: "fn",
           params: expr.params.map((param) => (param as NameBinding).id),
           body: expr.body,
         };
 
       case "sequence": {
-        let result: Value = [];
+        let result: Value = { kind: "list", heads: [] };
         expr.exprs.forEach((expr) => {
           result = this.#eval(expr);
         });

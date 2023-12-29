@@ -30,7 +30,7 @@ describe("evaluate", () => {
   })
 
   it("parses nested calls", () => {
-    expect(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 '())))")).toStrictEqual({
+    expect(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 (quote ()))))")).toStrictEqual<Expr>({
       kind: "call",
       called: { kind: "var", id: "cons" },
       args: [
@@ -43,7 +43,10 @@ describe("evaluate", () => {
             {
               kind: "call",
               called: { kind: "var", id: "cons" },
-              args: [{ kind: "number", value: 1 }, { kind: "null" }],
+              args: [
+                { kind: "number", value: 1 },
+                { kind: "quote", value: { kind: "list", heads: [] } },
+              ],
             },
           ],
         },

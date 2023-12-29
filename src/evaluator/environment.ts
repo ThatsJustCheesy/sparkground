@@ -1,5 +1,3 @@
-import { Value } from "./value";
-
 export type Binding<Domain> = { name: string; value: Domain };
 
 type StackFrame<Domain> = {
@@ -33,8 +31,10 @@ export class Environment<Domain> {
     return undefined;
   }
 
-  bind(binding: Binding<Domain>) {
-    this.#top.bindings.set(binding.name, binding);
+  bind(...bindings: Binding<Domain>[]) {
+    for (const binding of bindings) {
+      this.#top.bindings.set(binding.name, binding);
+    }
   }
 
   push() {

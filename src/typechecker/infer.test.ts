@@ -12,7 +12,6 @@ describe("TypeInferrer", () => {
     expect(inferrer.infer({ kind: "number", value: 42 })).toEqual<Type>({ tag: "Integer" })
     expect(inferrer.infer({ kind: "bool", value: true })).toEqual<Type>({ tag: "Boolean" })
     expect(inferrer.infer({ kind: "string", value: "hello" })).toEqual<Type>({ tag: "String" })
-    expect(inferrer.infer({ kind: "null" })).toEqual<Type>({ tag: "Null" })
   })
 
   it("infers variable types", () => {

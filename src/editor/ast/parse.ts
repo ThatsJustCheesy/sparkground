@@ -1,87 +1,86 @@
 import {
-  Cond,
   Define,
   Expr,
-  If,
-  Lambda,
   Let,
   Call,
-  Sequence,
-  Var,
   NameBinding,
-  NullExpr,
+  Lambda,
+  Sequence,
+  If,
+  Cond,
+  Var,
+  QuoteExpr,
 } from "../../typechecker/ast/ast";
+import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
+import { Parser as DatumParser } from "../datum/parse";
 import { hole } from "./ast";
 
 export class Parser {
   static parseToExprs(source: string) {
-    const parser = new Parser(tokenize(source));
-    let exprs: Expr[] = [];
-    while (parser.tokens.length) {
-      exprs.push(parser.parsePrimary());
-    }
-    return exprs;
+    const parser = new Parser();
+    return DatumParser.parseToData(source).map((datum) => parser.parsePrimary(flattenDatum(datum)));
   }
 
   static parseToExpr(source: string): Expr {
-    return new Parser(tokenize(source)).parsePrimary();
+    return new Parser().parsePrimary(flattenDatum(DatumParser.parseToDatum(source)));
   }
 
-  constructor(private tokens: Token[] = []) {}
+  parsePrimary(datum: FlattenedDatum): Expr {
+    switch (datum.kind) {
+      case "bool":
+      case "number":
+      case "string":
+        return datum;
 
-  parsePrimary(): Expr {
-    if (!this.tokens.length) throw "expected expression, but found end of input";
-
-    const next = this.tokens[0];
-    switch (next) {
-      case "(":
-        switch (this.tokens[1]) {
+      case "symbol":
+        const symbol = datum.value;
+        switch (symbol) {
+          case "quote":
           case "define":
-            return this.parseDefine();
           case "let":
-            return this.parseLet();
           case "lambda":
-            return this.parseLambda();
           case "if":
-            return this.parseIf();
           case "cond":
-            return this.parseCond();
+            throw `misplaced keyword '${symbol}'`;
           default:
-            return this.parseCall();
+            if (symbol === "_") return hole;
+            return { kind: "var", id: symbol };
         }
-      case ")":
-        throw "extraneous ')'";
-      case "#t":
-      case "#f":
-        this.tokens.shift();
-        return { kind: "bool", value: next === "#t" };
-      case "'":
-        return this.parseQuoted();
-      case "define":
-      case "let":
-      case "lambda":
-      case "if":
-      case "cond":
-        throw `misplaced keyword '${next}'`;
-      default:
-        this.tokens.shift();
-        if (typeof next === "number") return { kind: "number", value: next };
-        if (next.identifier === "_") return hole;
-        return { kind: "var", id: next.identifier };
+
+      case "list":
+        const called = datum.heads[0];
+        if (called.kind === "symbol") {
+          // Determine which syntactic keyword this is, if any
+
+          switch (called.value) {
+            case "define":
+              return this.parseDefine(datum);
+            case "let":
+              return this.parseLet(datum);
+            case "lambda":
+              return this.parseLambda(datum);
+            case "if":
+              return this.parseIf(datum);
+            case "cond":
+              return this.parseCond(datum);
+            default:
+              return this.parseCall(datum);
+          }
+        }
+
+        return {
+          kind: "call",
+          called: this.parsePrimary(called),
+          args: datum.heads.slice(1).map((head) => this.parsePrimary(head)),
+        };
+
+      case "quote":
+        return datum satisfies QuoteExpr;
     }
   }
 
-  parseCall(): Call {
-    this.eat("(");
-
-    const exprs: Expr[] = [];
-    while (this.tokens.length && this.tokens[0] !== ")") {
-      exprs.push(this.parsePrimary());
-    }
-
-    this.eat(")");
-
-    const [called, ...args] = exprs;
+  parseCall(datum: FlattenedListDatum): Call {
+    const [called, ...args] = datum.heads.map((head) => this.parsePrimary(head));
     return {
       kind: "call",
       called,
@@ -89,14 +88,11 @@ export class Parser {
     };
   }
 
-  parseDefine(): Define {
-    this.eat("(");
-    this.eat("define");
+  parseDefine(datum: FlattenedListDatum): Define {
+    this.requireLength(datum, 3);
 
-    const name = this.parseNameBinding();
-    const value = this.parsePrimary();
-
-    this.eat(")");
+    const name = this.parseNameBinding(datum.heads[1]);
+    const value = this.parsePrimary(datum.heads[2]);
 
     return {
       kind: "define",
@@ -105,29 +101,27 @@ export class Parser {
     };
   }
 
-  parseLet(): Let {
-    this.eat("(");
-    this.eat("let");
+  parseLet(datum: FlattenedListDatum): Let {
+    this.requireLength(datum, 3);
 
-    this.eat("(");
-
-    let bindings: [name: NameBinding, value: Expr][] = [];
-    while (this.tokens[0] !== ")") {
-      this.eat("(");
-
-      const name = this.parseNameBinding();
-      const value = this.parsePrimary();
-
-      bindings.push([name, value]);
-
-      this.eat(")");
+    const bindingList = datum.heads[1];
+    if (bindingList.kind !== "list") {
+      throw "expecting binding list";
     }
 
-    this.eat(")");
+    const bindings: [name: NameBinding, value: Expr][] = bindingList.heads.map((binding) => {
+      if (binding.kind !== "list") {
+        throw "expecting binding";
+      }
+      this.requireLength(binding, 2);
 
-    const body = this.parsePrimary();
+      const name = this.parseNameBinding(binding.heads[0]);
+      const value = this.parsePrimary(binding.heads[1]);
 
-    this.eat(")");
+      return [name, value];
+    });
+
+    const body = this.parsePrimary(datum.heads[2]);
 
     return {
       kind: "let",
@@ -136,22 +130,16 @@ export class Parser {
     };
   }
 
-  parseLambda(): Lambda {
-    this.eat("(");
-    this.eat("lambda");
+  parseLambda(datum: FlattenedListDatum): Lambda {
+    this.requireLength(datum, 3);
 
-    this.eat("(");
-
-    let params: NameBinding[] = [];
-    while (this.tokens[0] !== ")") {
-      params.push(this.parseNameBinding());
+    const bindingList = datum.heads[1];
+    if (bindingList.kind !== "list") {
+      throw "expecting binding list";
     }
 
-    this.eat(")");
-
-    const body = this.parseSequence();
-
-    this.eat(")");
+    const params: NameBinding[] = bindingList.heads.map((name) => this.parseNameBinding(name));
+    const body = this.parseSequence(datum.heads.slice(2));
 
     return {
       kind: "lambda",
@@ -160,23 +148,17 @@ export class Parser {
     };
   }
 
-  parseSequence(): Sequence {
-    let exprs: Expr[] = [];
-    while (this.tokens[0] !== ")") {
-      exprs.push(this.parsePrimary());
-    }
+  parseSequence(heads: FlattenedDatum[]): Sequence {
+    const exprs = heads.map((head) => this.parsePrimary(head));
     return { kind: "sequence", exprs };
   }
 
-  parseIf(): If {
-    this.eat("(");
-    this.eat("if");
+  parseIf(datum: FlattenedListDatum): If {
+    this.requireLength(datum, 4);
 
-    const if_ = this.parsePrimary();
-    const then = this.parsePrimary();
-    const else_ = this.parsePrimary();
-
-    this.eat(")");
+    const if_ = this.parsePrimary(datum.heads[1]);
+    const then = this.parsePrimary(datum.heads[2]);
+    const else_ = this.parsePrimary(datum.heads[3]);
 
     return {
       kind: "if",
@@ -186,26 +168,25 @@ export class Parser {
     };
   }
 
-  parseCond(): Cond {
-    this.eat("(");
-    this.eat("cond");
+  parseCond(datum: FlattenedListDatum): Cond {
+    this.requireLength(datum, 2);
 
-    this.eat("(");
-
-    let cases: [condition: Expr, value: Expr][] = [];
-    while (this.tokens[0] !== ")") {
-      this.eat("(");
-
-      const condition = this.parsePrimary();
-      const value = this.parsePrimary();
-
-      cases.push([condition, value]);
-
-      this.eat(")");
+    const caseList = datum.heads[1];
+    if (caseList.kind !== "list") {
+      throw "expecting cond case list";
     }
 
-    this.eat(")");
-    this.eat(")");
+    const cases: [condition: Expr, value: Expr][] = caseList.heads.map((case_) => {
+      if (case_.kind !== "list") {
+        throw "expecting cond case";
+      }
+      this.requireLength(case_, 2);
+
+      const condition = this.parsePrimary(case_.heads[0]);
+      const value = this.parsePrimary(case_.heads[1]);
+
+      return [condition, value];
+    });
 
     return {
       kind: "cond",
@@ -213,113 +194,18 @@ export class Parser {
     };
   }
 
-  parseVar(): Var {
-    const identifierToken = this.tokens.shift();
-    if (typeof identifierToken !== "object") throw "expected identifier";
-    return { kind: "var", id: identifierToken.identifier };
+  parseVar(datum: FlattenedDatum): Var {
+    if (datum.kind !== "symbol") throw "expected identifier";
+    return { kind: "var", id: datum.value };
   }
 
-  parseNameBinding(): NameBinding {
-    return { kind: "name-binding", id: this.parseVar().id };
+  parseNameBinding(datum: FlattenedDatum): NameBinding {
+    return { kind: "name-binding", id: this.parseVar(datum).id };
   }
 
-  private eat(required: Token): void {
-    if (this.tokens.shift() !== required) throw `expected '${required}'`;
-  }
-
-  parseQuoted(): NullExpr {
-    this.eat("'");
-    this.eat("(");
-
-    if (this.tokens[0] === ")") {
-      this.eat(")");
-      return { kind: "null" };
-    }
-
-    // TODO: Reenable this
-    throw "TODO";
-    // return { quote: this.parseCall(tokens) };
-  }
-}
-
-type Token =
-  | "("
-  | ")"
-  | "#t"
-  | "#f"
-  | "'"
-  | number
-  | "define"
-  | "let"
-  | "lambda"
-  | "if"
-  | "cond"
-  | { identifier: string };
-
-function tokenize(source: string): Token[] {
-  let tokens: Token[] = [];
-
-  while (source.length) {
-    source = source.trimStart();
-
-    if (source.startsWith("(")) {
-      source = source.slice(1);
-      tokens.push("(");
-      continue;
-    }
-    if (source.startsWith(")")) {
-      source = source.slice(1);
-      tokens.push(")");
-      continue;
-    }
-    if (source.startsWith("#t")) {
-      source = source.slice(2);
-      tokens.push("#t");
-      continue;
-    }
-    if (source.startsWith("#f")) {
-      source = source.slice(2);
-      tokens.push("#f");
-      continue;
-    }
-    if (source.startsWith("'")) {
-      source = source.slice(1);
-      tokens.push("'");
-      continue;
-    }
-
-    // TODO: Real number parsing
-    let match = source.match(/^\d+/);
-    if (match) {
-      const [matchText] = match;
-      source = source.slice(matchText.length);
-      tokens.push(Number(matchText));
-      continue;
-    }
-
-    match = source.match(/^[a-zA-Z!$%&*\/:<=>?^_~][a-zA-Z!$%&*\/:<=>?^_~0-9+\-\.@]*|\+|\-|\.\.\./);
-    if (match) {
-      const [matchText] = match;
-      source = source.slice(matchText.length);
-
-      tokens.push(
-        (() => {
-          switch (matchText) {
-            case "define":
-            case "let":
-            case "lambda":
-            case "if":
-            case "cond":
-              return matchText;
-            default:
-              return { identifier: matchText };
-          }
-        })()
-      );
-
-      continue;
+  private requireLength(list: FlattenedListDatum, length: number) {
+    if (list.heads.length !== length) {
+      throw `expecting list of length ${length}, but actual length is ${list.heads.length}`;
     }
   }
-
-  return tokens;
 }

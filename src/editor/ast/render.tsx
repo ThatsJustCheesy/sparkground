@@ -11,7 +11,6 @@ import {
   Hole,
   If,
   Lambda,
-  NullExpr,
   NumberExpr,
   Call,
   Sequence,
@@ -123,7 +122,7 @@ export function render(
   }
 
   function renderAtomic(
-    expr: Hole | NameBinding | NumberExpr | BoolExpr | StringExpr | NullExpr | Var
+    expr: Hole | NameBinding | NumberExpr | BoolExpr | StringExpr | Var
   ): JSX.Element {
     const data = ((): BlockData => {
       switch (expr.kind) {
@@ -134,7 +133,6 @@ export function render(
         case "bool":
           return { type: "bool", value: expr.value };
         case "string":
-        case "null":
           throw "TODO!";
         case "name-binding":
         case "var":
@@ -253,9 +251,12 @@ export function render(
     case "number":
     case "bool":
     case "string":
-    case "null":
     case "var":
       return renderAtomic(node);
+
+    case "quote":
+      throw "TODO";
+    // return renderQuote(node);
 
     case "call":
       return renderCall(node);

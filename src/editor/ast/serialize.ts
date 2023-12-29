@@ -1,4 +1,5 @@
 import { Expr, getIdentifier } from "../../typechecker/ast/ast";
+import { serializeDatum } from "../datum/serialize";
 
 export function serializeExpr(expr: Expr): string {
   switch (expr.kind) {
@@ -10,8 +11,8 @@ export function serializeExpr(expr: Expr): string {
       return expr.value ? "#t" : "#f";
     case "string":
       return `"${expr.value.replace(/["\\]/g, "\\$&")}"`;
-    case "null":
-      return "'()";
+    case "quote":
+      return `(quote ${serializeDatum(expr.value)})`;
     case "name-binding":
     case "var":
       return expr.id;

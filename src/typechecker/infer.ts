@@ -24,6 +24,7 @@ import {
   OccursCheckFailure,
   TypeMismatch,
 } from "./errors";
+import { Datum } from "../editor/datum/datum";
 
 // https://www.cs.utoronto.ca/~trebla/CSCC24-2023-Summer/11-type-inference.html
 
@@ -159,8 +160,9 @@ export class TypeInferrer {
         return { tag: "Boolean" };
       case "string":
         return { tag: "String" };
-      case "null":
-        return { tag: "Null" };
+
+      case "quote":
+        return this.#inferFromDatum(expr.value);
 
       case "name-binding":
       case "var":
@@ -337,6 +339,22 @@ export class TypeInferrer {
 
       case "hole":
         return this.#newUnknown("_");
+    }
+  }
+
+  #inferFromDatum(datum: Datum): InferrableType {
+    switch (datum.kind) {
+      case "bool":
+        return { tag: "Boolean" };
+      case "number":
+        return { tag: "Number" };
+      case "string":
+        return { tag: "String" };
+      case "symbol":
+        return { tag: "Symbol" };
+      case "list":
+        // TODO: Infer element type by recurring and unifying (or another appropriate mechanism)
+        return { tag: "List", element: { tag: "Any" } };
     }
   }
 
