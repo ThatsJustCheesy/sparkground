@@ -1,20 +1,21 @@
 import { Expr, getIdentifier } from "../../expr/expr";
 import { serializeDatum } from "../../datum/serialize";
-import { Datum } from "../../datum/datum";
+import { isHole } from "./tree";
 
-export function serializeExpr(expr: Expr | Datum): string {
+export function serializeExpr(expr: Expr): string {
   switch (expr.kind) {
     // Datum
     case "bool":
     case "number":
     case "string":
-    case "symbol":
-    case "list":
       return serializeDatum(expr);
 
+    case "symbol":
+    case "list":
+      if (isHole(expr)) return "·";
+      return `(quote ${serializeDatum(expr)})`;
+
     // Expr
-    case "quote":
-      return `(quote ${serializeDatum(expr.value)})`;
     case "name-binding":
     case "var":
       return expr.id;

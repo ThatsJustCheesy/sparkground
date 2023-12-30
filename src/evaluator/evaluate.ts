@@ -1,4 +1,5 @@
 import { ListDatum } from "../datum/datum";
+import { isHole } from "../editor/trees/tree";
 import { Expr, NameBinding, VarSlot } from "../expr/expr";
 import { Environment } from "./environment";
 import { ListValue, Value, valueAsBool } from "./value";
@@ -51,14 +52,13 @@ export class Evaluator {
       case "number":
       case "bool":
       case "string":
-        return expr;
-
       case "symbol":
-        // TODO: More helpful behaviour
-        throw "evaluating hole as expression";
-
-      case "quote":
-        return expr.value;
+      case "list":
+        if (isHole(expr)) {
+          // TODO: More helpful behaviour
+          throw "evaluating hole as expression";
+        }
+        return expr;
 
       case "var": {
         const binding = this.env.get(expr.id);

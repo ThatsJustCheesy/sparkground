@@ -22,7 +22,6 @@ import {
   Var,
   Let,
   NameBinding,
-  QuoteExpr,
 } from "../../expr/expr";
 import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
@@ -72,7 +71,7 @@ export class Renderer {
   }
 
   render(
-    node: Expr | Datum,
+    node: Expr,
     {
       indexPath,
       isCopySource,
@@ -109,14 +108,12 @@ export class Renderer {
       case "bool":
       case "string":
       case "symbol":
+      case "list":
         return this.#renderDatum(expr);
 
       case "name-binding":
       case "var":
         return this.#renderIdentifier(expr);
-
-      case "quote":
-        return this.#renderQuote(expr);
 
       case "call":
         return this.#renderCall(expr);
@@ -196,7 +193,7 @@ export class Renderer {
         throw "TODO";
       case "symbol":
         if (datum.value === "·") return this.#block({ type: "hole" });
-        return this.#block({ type: "ident", symbol: { id: datum.value } });
+        return this.#block({ type: "symbol", symbol: { id: datum.value } });
       case "list":
         const heads = datum.heads;
         // Remove holes from the end
@@ -243,10 +240,6 @@ export class Renderer {
     })();
 
     return this.#block(data);
-  }
-
-  #renderQuote(quote: QuoteExpr): JSX.Element {
-    return this.#block({ type: "quote" }, [this.#renderSubdatum(quote.value, 0)]);
   }
 
   #hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {

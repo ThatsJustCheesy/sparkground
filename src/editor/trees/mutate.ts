@@ -109,6 +109,6 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
   }
 }
 
-function nodeForIndexPathInTree(tree: Tree, path: number[]): Expr | Datum {
+function nodeForIndexPathInTree(tree: Tree, path: number[]): Expr {
   return nodeAtIndexPath({ tree, path });
 }

@@ -5,21 +5,19 @@ import { Datum } from "../../datum/datum";
 import { serializeExpr } from "./serialize";
 import { Parser as DatumParser } from "../../datum/parse";
 
-export function isAtomic(node: Expr | Datum) {
+export function isAtomic(node: Expr) {
   return (
-    ["number", "bool", "string", "symbol", "var", "name-binding"] satisfies (Expr | Datum)["kind"][]
+    ["number", "bool", "string", "symbol", "var", "name-binding"] satisfies Expr["kind"][]
   ).includes(node.kind as any);
 }
 
-export function children(node: Expr | Datum): (Expr | Datum | undefined)[] {
+export function children(node: Expr): (Expr | undefined)[] {
   switch (node.kind) {
     // Datum
     case "list":
       return [node.tail, ...node.heads];
 
     // Expr
-    case "quote":
-      return [node.value];
     case "call":
       return [node.called, ...node.args];
     case "define":
@@ -41,11 +39,11 @@ export function children(node: Expr | Datum): (Expr | Datum | undefined)[] {
   }
 }
 
-export function childAtIndex(node: Expr | Datum, index: number): Expr | Datum | undefined {
+export function childAtIndex(node: Expr, index: number): Expr | undefined {
   return children(node)[index];
 }
 
-export function setChildAtIndex(node: Expr | Datum, index: number, newChild: Expr | Datum): void {
+export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void {
   switch (node.kind) {
     // Datum
     case "list":
@@ -54,35 +52,32 @@ export function setChildAtIndex(node: Expr | Datum, index: number, newChild: Exp
       break;
 
     // Expr
-    case "quote":
-      if (index === 0) node.value = asDatum(newChild);
-      break;
     case "call":
-      if (index === 0) node.called = asExpr(newChild);
-      else node.args[index - 1] = asExpr(newChild);
+      if (index === 0) node.called = newChild;
+      else node.args[index - 1] = newChild;
       break;
     case "define":
-      if (index === 0) node.name = asExpr(newChild) as NameBinding;
-      if (index === 1) node.value = asExpr(newChild);
+      if (index === 0) node.name = newChild as NameBinding;
+      if (index === 1) node.value = newChild;
       break;
     case "let":
       if (index < 2 * node.bindings.length) {
         const binding = node.bindings[Math.floor(index / 2)];
-        binding[index % 2] = asExpr(newChild);
+        binding[index % 2] = newChild;
       }
-      if (index === 2 * node.bindings.length) node.body = asExpr(newChild);
+      if (index === 2 * node.bindings.length) node.body = newChild;
       break;
     case "lambda":
-      if (index < node.params.length) node.params[index] = asExpr(newChild) as NameBinding;
-      if (index === node.params.length) node.body = asExpr(newChild);
+      if (index < node.params.length) node.params[index] = newChild as NameBinding;
+      if (index === node.params.length) node.body = newChild;
       break;
     case "sequence":
-      node.exprs[index] = asExpr(newChild);
+      node.exprs[index] = newChild;
       break;
     case "if":
-      if (index === 0) node.if = asExpr(newChild);
-      if (index === 1) node.then = asExpr(newChild);
-      if (index === 2) node.else = asExpr(newChild);
+      if (index === 0) node.if = newChild;
+      if (index === 1) node.then = newChild;
+      if (index === 2) node.else = newChild;
       break;
     case "cond":
       throw "TODO";
@@ -93,7 +88,7 @@ export function setChildAtIndex(node: Expr | Datum, index: number, newChild: Exp
   }
 }
 
-function asDatum(node: Expr | Datum): Datum {
+function asDatum(node: Expr): Datum {
   switch (node.kind) {
     // Datum
     case "bool":
@@ -105,27 +100,14 @@ function asDatum(node: Expr | Datum): Datum {
 
     // Expr
     default:
-      // Bit of a hack, but it should work...?
+      // Serialize the expression, then parse it back
+      // Bit of a hack, but it should work
       return DatumParser.parseToDatum(serializeExpr(node));
-  }
-}
-function asExpr(node: Expr | Datum): Expr {
-  if (isHole(node)) return node;
-
-  switch (node.kind) {
-    case "symbol":
-    case "list":
-      return {
-        kind: "quote",
-        value: node,
-      };
-    default:
-      return node;
   }
 }
 
 export const hole: Hole = { kind: "symbol", value: "·" };
-export function isHole(node: Expr | Datum | undefined): node is Hole {
+export function isHole(node: Expr | undefined): node is Hole {
   return node?.kind === "symbol" && node.value === "·";
 }
 
@@ -145,7 +127,7 @@ export function extendIndexPath({ tree, path }: TreeIndexPath, extension: number
     path: [...path, extension],
   };
 }
-export function nodeAtIndexPath({ tree: { root }, path }: TreeIndexPath): Expr | Datum {
+export function nodeAtIndexPath({ tree: { root }, path }: TreeIndexPath): Expr {
   const [origRoot, origPath] = [root, path];
 
   path = [...path];

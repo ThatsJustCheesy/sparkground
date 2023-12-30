@@ -128,7 +128,7 @@ export class TypeInferrer {
     return inferredType;
   }
 
-  #infer(expr: Expr | Datum, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
+  #infer(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
     // Clear public error state.
     // It is a new day.
     this.error = undefined;
@@ -149,7 +149,7 @@ export class TypeInferrer {
     }
   }
 
-  #infer_(expr: Expr | Datum, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
+  #infer_(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
     switch (expr.kind) {
       case "bool":
       case "number":
@@ -157,9 +157,6 @@ export class TypeInferrer {
       case "symbol":
       case "list":
         return this.#inferFromDatum(expr, env, indexPath);
-
-      case "quote":
-        return this.#infer(expr.value, env, extendIndexPath(indexPath, 0));
 
       case "name-binding":
       case "var":

@@ -1,16 +1,4 @@
-import {
-  Define,
-  Expr,
-  Let,
-  Call,
-  NameBinding,
-  Lambda,
-  Sequence,
-  If,
-  Cond,
-  Var,
-  QuoteExpr,
-} from "./expr";
+import { Define, Expr, Let, Call, NameBinding, Lambda, Sequence, If, Cond, Var } from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
 import { hole } from "../editor/trees/tree";
@@ -75,7 +63,7 @@ export class Parser {
         };
 
       case "quote":
-        return datum satisfies QuoteExpr;
+        return datum.value;
     }
   }
 

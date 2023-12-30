@@ -144,8 +144,9 @@
 }
 
 .block-ident,
-.block-number,
-.block-bool {
+.block-symbol,
+.block-bool,
+.block-number {
   display: flex;
 
   width: fit-content;
@@ -153,17 +154,25 @@
   padding-left: 0.55em;
   padding-right: 0.55em;
 
-  background: rgb(229, 255, 174);
+  background: #fcff58;
   border: 1px solid black;
   border-radius: 0.75em;
 }
 
 .block-ident.block-copy-source {
-  background: #cf6;
+  background: #bcff02;
+}
+
+.block-symbol {
+  background: #89f1ff;
 }
 
 .block-bool {
-  background: #baf7ff;
+  background: #b2e4ff;
+}
+
+.block-number {
+  background: #7dff85;
 }
 
 .block-hole {

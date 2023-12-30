@@ -438,10 +438,11 @@ export const symbols = keyBy(
 );
 
 export const library: Expr[] = [
+  { kind: "number", value: 0 },
   { kind: "bool", value: true },
   { kind: "bool", value: false },
-  { kind: "number", value: 0 },
-  { kind: "quote", value: { kind: "list", heads: [] } },
+  { kind: "symbol", value: "symbol" },
+  { kind: "list", heads: [] },
 
   { kind: "define", name: hole, value: hole },
   { kind: "let", bindings: [[hole, hole]], body: hole },

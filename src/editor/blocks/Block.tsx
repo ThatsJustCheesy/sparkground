@@ -49,8 +49,8 @@ export type BlockData =
   | Vertical
   | Horizontal
   | HorizontalList
-  | Quote
   | Identifier
+  | Symbol
   | Number
   | Bool
   | Hole;
@@ -69,13 +69,14 @@ type HorizontalList = {
   type: "hlist";
   tail?: ReactNode;
 };
-type Quote = {
-  type: "quote";
-};
 type Identifier = {
   type: "ident";
   symbol: ProgSymbol;
   isNameBinding?: boolean;
+};
+type Symbol = {
+  type: "symbol";
+  symbol: ProgSymbol;
 };
 type Number = {
   type: "number";
@@ -316,6 +317,7 @@ export default function Block({
       case "v":
       case "h":
       case "ident":
+      case "symbol":
         return data.symbol;
       case "number":
         return data.value;
@@ -365,17 +367,8 @@ export default function Block({
         );
       }
 
-      case "quote": {
-        return (
-          <>
-            <div className="block-quote-label">'</div>
-
-            {children}
-          </>
-        );
-      }
-
-      case "ident": {
+      case "ident":
+      case "symbol": {
         const { symbol } = data;
 
         return symbol.id;

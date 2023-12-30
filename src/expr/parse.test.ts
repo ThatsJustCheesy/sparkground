@@ -45,7 +45,7 @@ describe("evaluate", () => {
               called: { kind: "var", id: "cons" },
               args: [
                 { kind: "number", value: 1 },
-                { kind: "quote", value: { kind: "list", heads: [] } },
+                { kind: "list", heads: [] },
               ],
             },
           ],
