@@ -1,3 +1,4 @@
+import { Datum } from "../../datum/datum";
 import { Expr } from "../../expr/expr";
 import { TypeInferrer } from "../../typechecker/infer";
 
@@ -8,7 +9,7 @@ export type Point = {
 
 export type Tree = {
   id: string;
-  root: Expr;
+  root: Expr | Datum;
   location: Point;
   zIndex: number;
   inferrer: TypeInferrer;
@@ -26,7 +27,7 @@ export function treeByID(id: string): Tree | undefined {
   return trees_.find((tree) => tree.id === id);
 }
 
-export function newTree(root: Expr, location: Point): Tree {
+export function newTree(root: Expr | Datum, location: Point): Tree {
   const tree: Tree = {
     id: `${++nextID}`,
     root,

@@ -1,9 +1,9 @@
-import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import { PropsWithChildren, ReactNode, useEffect, useRef, useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
-import { ContextMenu, ContextMenuItem, ContextMenuTrigger } from "rctx-contextmenu";
+import { ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
-import { TreeIndexPath, exprAtIndexPath, extendIndexPath } from "../trees/tree";
+import { TreeIndexPath, nodeAtIndexPath, extendIndexPath } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
@@ -45,7 +45,15 @@ type Props = PropsWithChildren<{
   renderCounter?: number;
 }>;
 
-export type BlockData = Vertical | Horizontal | Identifier | Number | Bool | Hole;
+export type BlockData =
+  | Vertical
+  | Horizontal
+  | HorizontalList
+  | Quote
+  | Identifier
+  | Number
+  | Bool
+  | Hole;
 
 type Vertical = {
   type: "v";
@@ -56,6 +64,13 @@ type Horizontal = {
   type: "h";
   symbol: ProgSymbol;
   definesSymbol?: boolean;
+};
+type HorizontalList = {
+  type: "hlist";
+  tail?: ReactNode;
+};
+type Quote = {
+  type: "quote";
 };
 type Identifier = {
   type: "ident";
@@ -137,7 +152,7 @@ export default function Block({
 
   const expr = (() => {
     try {
-      return exprAtIndexPath(indexPath);
+      return nodeAtIndexPath(indexPath);
     } catch {
       return undefined;
     }
@@ -272,16 +287,24 @@ export default function Block({
               {renderData()}
             </div>
 
-            {data.type === "h" &&
+            {data.type === "hlist" && expr && expr.kind === "list" ? (
+              <BlockPullTab
+                id={`${id}-pull-tab`}
+                indexPath={extendIndexPath(indexPath, 1 /* tail slot */ + expr.heads.length)}
+                isCopySource={isCopySource}
+              />
+            ) : data.type === "h" &&
               expr &&
               expr.kind === "call" &&
-              expr.args.length < (data.symbol.maxArgCount ?? Infinity) && (
-                <BlockPullTab
-                  id={`${id}-pull-tab`}
-                  indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
-                  isCopySource={isCopySource}
-                />
-              )}
+              expr.args.length < (data.symbol.maxArgCount ?? Infinity) ? (
+              <BlockPullTab
+                id={`${id}-pull-tab`}
+                indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
+                isCopySource={isCopySource}
+              />
+            ) : (
+              ""
+            )}
           </div>
         </Tippy>
       </ContextMenuTrigger>
@@ -324,6 +347,28 @@ export default function Block({
         return (
           <>
             {!definesSymbol && <div className="block-h-label">{symbol.id}</div>}
+
+            {children}
+          </>
+        );
+      }
+
+      case "hlist": {
+        const { tail } = data;
+
+        return (
+          <>
+            {children}
+
+            {tail && <>.{tail}</>}
+          </>
+        );
+      }
+
+      case "quote": {
+        return (
+          <>
+            <div className="block-quote-label">'</div>
 
             {children}
           </>

@@ -6,8 +6,8 @@
   box-sizing: border-box;
   height: calc(100% - var(--menu-bar-height));
 
-  font-family: Consolas, monospace;
-  font-size: 16px;
+  font-family: Menlo, Consolas, monospace;
+  font-size: 11pt;
 
   user-select: none;
 }
@@ -63,7 +63,7 @@
 }
 .block-v-heading > :not(.block-v-label) {
   margin-left: 0.5em;
-  margin-right: 0.5em;
+  margin-right: 0.25em;
 }
 .block-v-label {
   padding: 0.25em;
@@ -83,7 +83,9 @@
   content: ":";
 }
 
-.block-h {
+.block-h,
+.block-hlist,
+.block-quote {
   display: flex;
   flex-flow: row nowrap;
   align-items: baseline;
@@ -91,26 +93,24 @@
 
   width: fit-content;
   padding: 0.05em;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+  padding-left: 0.75em;
+  padding-right: 0.75em;
 
-  background: #fdd279;
+  background: #ffba49;
   border: 0.09em solid black;
   border-radius: 0.65em;
 }
-.block-h-label {
-}
 .block-h-pull-tab-container {
-  width: 0.5em;
+  width: 0.75em;
 }
 .block-h-pull-tab {
   display: none;
 
   position: relative;
   right: 1.65em;
-  width: 2em;
+  width: 2.2em;
   top: 6%;
-  height: 80%;
+  height: 90%;
 
   background: rgb(191, 200, 209);
   border: 0.09em solid black;
@@ -125,6 +125,24 @@
   margin: auto;
 }
 
+.block-hlist:empty::before {
+  content: "\a0";
+  line-height: 1.5;
+}
+.block-hlist {
+  background: #e2b2eb;
+}
+
+.block-quote {
+  background: #f47a69;
+}
+.block-quote-label {
+  margin-top: auto;
+
+  font-size: 1.5em;
+  font-weight: 900;
+}
+
 .block-ident,
 .block-number,
 .block-bool {
@@ -132,10 +150,10 @@
 
   width: fit-content;
   padding: 0.25em;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+  padding-left: 0.55em;
+  padding-right: 0.55em;
 
-  background: rgb(236, 250, 205);
+  background: rgb(229, 255, 174);
   border: 1px solid black;
   border-radius: 0.75em;
 }
@@ -159,8 +177,8 @@
   border-radius: 0.75em;
 }
 
-.block-dragging {
-  box-shadow: 3px 5px 8px 1px rgba(0, 0, 0, 0.5);
+.drag-overlay > .menu-trigger > .block-outer-container > .block-dragging {
+  box-shadow: 1px 5px 8px 1px rgba(0, 0, 0, 0.8);
   cursor: grabbing;
 }
 

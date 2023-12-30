@@ -43,7 +43,7 @@ export class Parser {
           case "cond":
             throw `misplaced keyword '${symbol}'`;
           default:
-            if (symbol === "_") return hole;
+            if (symbol === "·") return hole;
             return { kind: "var", id: symbol };
         }
 

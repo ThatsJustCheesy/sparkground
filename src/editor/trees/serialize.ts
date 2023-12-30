@@ -1,16 +1,18 @@
 import { Expr, getIdentifier } from "../../expr/expr";
 import { serializeDatum } from "../../datum/serialize";
+import { Datum } from "../../datum/datum";
 
-export function serializeExpr(expr: Expr): string {
+export function serializeExpr(expr: Expr | Datum): string {
   switch (expr.kind) {
-    case "hole":
-      return "_";
-    case "number":
-      return `${expr.value}`;
+    // Datum
     case "bool":
-      return expr.value ? "#t" : "#f";
+    case "number":
     case "string":
-      return `"${expr.value.replace(/["\\]/g, "\\$&")}"`;
+    case "symbol":
+    case "list":
+      return serializeDatum(expr);
+
+    // Expr
     case "quote":
       return `(quote ${serializeDatum(expr.value)})`;
     case "name-binding":

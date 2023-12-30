@@ -4,7 +4,7 @@ import { ProgSymbol, SymbolTable } from "./symbol-table";
 import { Renderer } from "./trees/render";
 import {
   TreeIndexPath,
-  exprAtIndexPath,
+  nodeAtIndexPath,
   isAncestor,
   rootIndexPath,
   setChildAtIndex,
@@ -236,7 +236,7 @@ export default function Editor({
 
         <Library />
 
-        <DragOverlay dropAnimation={null} zIndex={99999}>
+        <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
           {activeDrag &&
             new Renderer(
               activeDrag.indexPath.tree,
@@ -246,7 +246,7 @@ export default function Editor({
               {
                 forDragOverlay: activeDragOver ?? true,
               }
-            ).render(exprAtIndexPath(activeDrag.indexPath), { indexPath: activeDrag.indexPath })}
+            ).render(nodeAtIndexPath(activeDrag.indexPath), { indexPath: activeDrag.indexPath })}
         </DragOverlay>
       </DndContext>
     </div>
@@ -268,7 +268,7 @@ export default function Editor({
       codeEditorSubject.tree.root = newExpr;
     } else {
       setChildAtIndex(
-        exprAtIndexPath({
+        nodeAtIndexPath({
           tree: codeEditorSubject.tree,
           path: codeEditorSubject.path.slice(0, -1),
         }) as Call,

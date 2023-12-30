@@ -53,6 +53,10 @@ export class Evaluator {
       case "string":
         return expr;
 
+      case "symbol":
+        // TODO: More helpful behaviour
+        throw "evaluating hole as expression";
+
       case "quote":
         return expr.value;
 
@@ -137,8 +141,6 @@ export class Evaluator {
       case "if":
         const condition = this.#eval(expr.if);
         return this.#eval(valueAsBool(condition) ? expr.then : expr.else);
-
-      case "hole":
 
       case "cond":
       case "name-binding":

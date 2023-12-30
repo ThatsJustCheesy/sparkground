@@ -9,7 +9,7 @@ import { Parser } from "../expr/parse";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
 import { deleteExpr, orphanExpr } from "./trees/mutate";
-import { TreeIndexPath, exprAtIndexPath, hole, rootIndexPath } from "./trees/tree";
+import { TreeIndexPath } from "./trees/tree";
 
 const defaultExpr = Parser.parseToExpr(
   "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"

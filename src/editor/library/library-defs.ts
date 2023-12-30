@@ -440,9 +440,8 @@ export const symbols = keyBy(
 export const library: Expr[] = [
   { kind: "bool", value: true },
   { kind: "bool", value: false },
-  // TODO: Enable once supported
-  // { kind: "null" },
   { kind: "number", value: 0 },
+  { kind: "quote", value: { kind: "list", heads: [] } },
 
   { kind: "define", name: hole, value: hole },
   { kind: "let", bindings: [[hole, hole]], body: hole },

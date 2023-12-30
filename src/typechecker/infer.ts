@@ -128,7 +128,7 @@ export class TypeInferrer {
     return inferredType;
   }
 
-  #infer(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
+  #infer(expr: Expr | Datum, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
     // Clear public error state.
     // It is a new day.
     this.error = undefined;
@@ -149,20 +149,17 @@ export class TypeInferrer {
     }
   }
 
-  #infer_(expr: Expr, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
+  #infer_(expr: Expr | Datum, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
     switch (expr.kind) {
-      case "hole":
-        return this.#newUnknown("_");
-
-      case "number":
-        return expr.value === Math.floor(expr.value) ? { tag: "Integer" } : { tag: "Number" };
       case "bool":
-        return { tag: "Boolean" };
+      case "number":
       case "string":
-        return { tag: "String" };
+      case "symbol":
+      case "list":
+        return this.#inferFromDatum(expr, env, indexPath);
 
       case "quote":
-        return this.#inferFromDatum(expr.value);
+        return this.#infer(expr.value, env, extendIndexPath(indexPath, 0));
 
       case "name-binding":
       case "var":
@@ -336,23 +333,28 @@ export class TypeInferrer {
         });
 
         return overallType;
-
-      case "hole":
-        return this.#newUnknown("_");
     }
   }
 
-  #inferFromDatum(datum: Datum): InferrableType {
+  #inferFromDatum(datum: Datum, env: TypeEnv, indexPath: TreeIndexPath): InferrableType {
     switch (datum.kind) {
       case "bool":
         return { tag: "Boolean" };
       case "number":
-        return { tag: "Number" };
+        return datum.value === Math.floor(datum.value) ? { tag: "Integer" } : { tag: "Number" };
       case "string":
         return { tag: "String" };
       case "symbol":
+        if (datum.value === "·") return this.#newUnknown("·");
         return { tag: "Symbol" };
       case "list":
+        datum.heads.forEach((head, index) => {
+          this.#infer(head, env, extendIndexPath(indexPath, index + 1));
+        });
+        if (datum.tail) {
+          this.#infer(datum.tail, env, extendIndexPath(indexPath, 0));
+        }
+
         // TODO: Infer element type by recurring and unifying (or another appropriate mechanism)
         return { tag: "List", element: { tag: "Any" } };
     }

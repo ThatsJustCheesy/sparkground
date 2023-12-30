@@ -1,12 +1,12 @@
 import { isHole } from "../editor/trees/tree";
-import { Datum } from "../datum/datum";
+import { BoolDatum, Datum, NumberDatum, StringDatum } from "../datum/datum";
 
 export type Expr =
   | Hole
   | NameBinding
-  | NumberExpr
-  | BoolExpr
-  | StringExpr
+  | BoolDatum
+  | NumberDatum
+  | StringDatum
   | QuoteExpr
   | Var
   | Call
@@ -19,11 +19,12 @@ export type Expr =
 
 export type VarSlot = Hole | NameBinding;
 export function getIdentifier(varSlot: VarSlot) {
-  return isHole(varSlot) ? "_" : varSlot.id;
+  return isHole(varSlot) ? "·" : varSlot.id;
 }
 
 export type Hole = {
-  kind: "hole";
+  kind: "symbol";
+  value: "·";
 };
 
 export type NameBinding = {
@@ -31,18 +32,6 @@ export type NameBinding = {
   id: string;
 };
 
-export type NumberExpr = {
-  kind: "number";
-  value: number;
-};
-export type BoolExpr = {
-  kind: "bool";
-  value: boolean;
-};
-export type StringExpr = {
-  kind: "string";
-  value: string;
-};
 export type QuoteExpr = {
   kind: "quote";
   value: Datum;

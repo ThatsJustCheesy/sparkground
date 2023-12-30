@@ -2,7 +2,7 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Editor from "@monaco-editor/react";
 
-import { TreeIndexPath, exprAtIndexPath } from "./trees/tree";
+import { TreeIndexPath, nodeAtIndexPath } from "./trees/tree";
 import { serializeExpr } from "./trees/serialize";
 import { useEffect, useState } from "react";
 
@@ -16,7 +16,7 @@ export default function CodeEditorModal({ indexPath, onClose }: Props) {
   const [newSource, setNewSource] = useState<string>();
 
   useEffect(() => {
-    setNewSource(indexPath ? serializeExpr(exprAtIndexPath(indexPath)) : undefined);
+    setNewSource(indexPath ? serializeExpr(nodeAtIndexPath(indexPath)) : undefined);
   }, [indexPath]);
 
   return (

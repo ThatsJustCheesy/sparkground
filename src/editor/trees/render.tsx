@@ -1,28 +1,34 @@
-import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, exprAtIndexPath } from "./tree";
+import {
+  TreeIndexPath,
+  extendIndexPath,
+  rootIndexPath,
+  hole,
+  nodeAtIndexPath,
+  isHole,
+} from "./tree";
 import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
 import { ProgSymbol, SymbolTable } from "../symbol-table";
 import {
-  BoolExpr,
   Define,
   Expr,
   Hole,
   If,
   Lambda,
-  NumberExpr,
   Call,
   Sequence,
-  StringExpr,
   Var,
   Let,
   NameBinding,
+  QuoteExpr,
 } from "../../expr/expr";
 import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
 import { ActiveDrag } from "../Editor";
+import { Datum } from "../../datum/datum";
 
 export class Renderer {
   indexPath!: TreeIndexPath;
@@ -66,7 +72,7 @@ export class Renderer {
   }
 
   render(
-    node: Expr,
+    node: Expr | Datum,
     {
       indexPath,
       isCopySource,
@@ -86,44 +92,58 @@ export class Renderer {
     if (isCopySource) this.isCopySource = isCopySource;
 
     switch (node.kind) {
-      case "hole":
-      case "name-binding":
+      case "bool":
+      case "number":
+      case "string":
+      case "symbol":
+      case "list":
+        return this.#renderDatum(node);
+      default:
+        return this.#renderExpr(node);
+    }
+  }
+
+  #renderExpr(expr: Expr): JSX.Element {
+    switch (expr.kind) {
       case "number":
       case "bool":
       case "string":
+      case "symbol":
+        return this.#renderDatum(expr);
+
+      case "name-binding":
       case "var":
-        return this.#renderAtomic(node);
+        return this.#renderIdentifier(expr);
 
       case "quote":
-        throw "TODO";
-      // return renderQuote(node);
+        return this.#renderQuote(expr);
 
       case "call":
-        return this.#renderCall(node);
+        return this.#renderCall(expr);
 
       case "define":
-        return this.#renderDefine(node);
+        return this.#renderDefine(expr);
       case "let":
-        return this.#renderLet(node);
+        return this.#renderLet(expr);
       case "lambda":
-        return this.#renderLambda(node);
+        return this.#renderLambda(expr);
       case "sequence":
-        return this.#renderSequence(node);
+        return this.#renderSequence(expr);
 
       case "if":
-        return this.#renderIf(node);
+        return this.#renderIf(expr);
       case "cond":
         throw "TODO";
     }
   }
 
-  #block(data: BlockData, body: JSX.Element | JSX.Element[]) {
+  #block(data: BlockData, body: JSX.Element | JSX.Element[] = []) {
     return this.#subnodeBlock(data, body);
   }
 
   #subnodeBlock(data: BlockData, body: JSX.Element | JSX.Element[]) {
     const key = this.#keyForIndexPath(this.indexPath);
-    const expr = exprAtIndexPath(this.indexPath);
+    const expr = nodeAtIndexPath(this.indexPath);
     return (
       <Block
         key={key}
@@ -132,7 +152,9 @@ export class Renderer {
         data={data}
         isCopySource={this.isCopySource}
         inferrer={this.inferrer}
-        hasError={this.inferrer.error && errorInvolvesExpr(this.inferrer.error, expr)}
+        hasError={
+          this.inferrer.error && errorInvolvesExpr(this.inferrer.error, expr as Expr /* TODO */)
+        }
         activeDrag={this.activeDrag}
         forDragOverlay={this.forDragOverlay}
         onMouseOver={this.onMouseOver}
@@ -146,31 +168,70 @@ export class Renderer {
     );
   }
 
-  #renderSubexpr(subexpr: Expr, index: number, { isCopySource }: { isCopySource?: boolean } = {}) {
+  #renderSubexpr(
+    subexpr: Expr,
+    index: number,
+    { isCopySource }: { isCopySource?: boolean } = {}
+  ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
 
     this.indexPath = extendIndexPath(this.indexPath, index);
     this.isCopySource = this.isCopySource || isCopySource;
 
-    const rendered = this.render(subexpr);
+    const rendered = this.#renderExpr(subexpr);
 
     this.indexPath = parentIndexPath;
     this.isCopySource = parentIsCopySource;
     return rendered;
   }
 
-  #renderAtomic(expr: Hole | NameBinding | NumberExpr | BoolExpr | StringExpr | Var): JSX.Element {
+  #renderDatum(datum: Datum | Hole): JSX.Element {
+    switch (datum.kind) {
+      case "bool":
+        return this.#block({ type: "bool", value: datum.value });
+      case "number":
+        return this.#block({ type: "number", value: datum.value });
+      case "string":
+        throw "TODO";
+      case "symbol":
+        if (datum.value === "·") return this.#block({ type: "hole" });
+        return this.#block({ type: "ident", symbol: { id: datum.value } });
+      case "list":
+        const heads = datum.heads;
+        // Remove holes from the end
+        while (isHole(heads.at(-1))) {
+          heads.pop();
+        }
+        const children = heads.map((head, index) => this.#renderSubdatum(head, index + 1));
+
+        const tail = datum.tail ? this.#renderSubdatum(datum.tail, 0) : undefined;
+
+        return this.#block({ type: "hlist", tail }, children);
+    }
+  }
+
+  #renderSubdatum(
+    subdatum: Datum,
+    index: number,
+    { isCopySource }: { isCopySource?: boolean } = {}
+  ) {
+    const parentIndexPath = this.indexPath;
+    const parentIsCopySource = this.isCopySource;
+
+    this.indexPath = extendIndexPath(this.indexPath, index);
+    this.isCopySource = this.isCopySource || isCopySource;
+
+    const rendered = this.#renderDatum(subdatum);
+
+    this.indexPath = parentIndexPath;
+    this.isCopySource = parentIsCopySource;
+    return rendered;
+  }
+
+  #renderIdentifier(expr: NameBinding | Var): JSX.Element {
     const data = ((): BlockData => {
       switch (expr.kind) {
-        case "hole":
-          return { type: "hole" };
-        case "number":
-          return { type: "number", value: expr.value };
-        case "bool":
-          return { type: "bool", value: expr.value };
-        case "string":
-          throw "TODO!";
         case "name-binding":
         case "var":
           return {
@@ -181,7 +242,11 @@ export class Renderer {
       }
     })();
 
-    return this.#block(data, []);
+    return this.#block(data);
+  }
+
+  #renderQuote(quote: QuoteExpr): JSX.Element {
+    return this.#block({ type: "quote" }, [this.#renderSubdatum(quote.value, 0)]);
   }
 
   #hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {
@@ -211,7 +276,7 @@ export class Renderer {
       }
 
       // Remove holes from the end of varargs calls
-      while (args.length > minArgCount && args.at(-1)?.kind === "hole") {
+      while (args.length > minArgCount && isHole(args.at(-1))) {
         args.pop();
       }
     }

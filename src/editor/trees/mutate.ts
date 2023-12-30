@@ -1,7 +1,7 @@
 import { cloneDeep } from "lodash";
 import {
   TreeIndexPath,
-  exprAtIndexPath as exprAtIndexPath,
+  nodeAtIndexPath as nodeAtIndexPath,
   hole,
   isHole,
   isSameOrAncestor,
@@ -10,6 +10,7 @@ import {
 } from "./tree";
 import { Point, Tree, newTree, removeTree } from "./trees";
 import { Expr } from "../../expr/expr";
+import { Datum } from "../../datum/datum";
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
@@ -30,10 +31,10 @@ export function moveExprInTree(
     return;
   }
 
-  const source = exprForIndexPathInTree(sourceTree, sourceIndexPath);
+  const source = nodeForIndexPathInTree(sourceTree, sourceIndexPath);
 
-  const destination = exprForIndexPathInTree(destinationTree, destinationIndexPath);
-  const destinationParent = exprForIndexPathInTree(
+  const destination = nodeForIndexPathInTree(destinationTree, destinationIndexPath);
+  const destinationParent = nodeForIndexPathInTree(
     destinationTree,
     destinationIndexPath.slice(0, -1)
   );
@@ -41,7 +42,7 @@ export function moveExprInTree(
   if (source === sourceTree.root) {
     removeTree(sourceTree);
   } else {
-    const sourceParent = exprForIndexPathInTree(sourceTree, sourceIndexPath.slice(0, -1));
+    const sourceParent = nodeForIndexPathInTree(sourceTree, sourceIndexPath.slice(0, -1));
 
     setChildAtIndex(sourceParent, sourceIndexPath.at(-1)!, hole);
   }
@@ -60,13 +61,10 @@ export function copyExprInTree(
     return;
   }
 
-  const source = exprForIndexPathInTree(sourceTree, sourceIndexPath);
-  if (source === sourceTree.root) {
-    removeTree(sourceTree);
-  }
+  const source = nodeForIndexPathInTree(sourceTree, sourceIndexPath);
 
-  const destination = exprForIndexPathInTree(destinationTree, destinationIndexPath);
-  const destinationParent = exprForIndexPathInTree(
+  const destination = nodeForIndexPathInTree(destinationTree, destinationIndexPath);
+  const destinationParent = nodeForIndexPathInTree(
     destinationTree,
     destinationIndexPath.slice(0, -1)
   );
@@ -78,10 +76,10 @@ export function copyExprInTree(
 }
 
 export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: boolean): Tree {
-  const expr = exprForIndexPathInTree(tree, path);
+  const expr = nodeForIndexPathInTree(tree, path);
   if (isHole(expr)) return tree;
 
-  const parent = exprForIndexPathInTree(tree, path.slice(0, -1));
+  const parent = nodeForIndexPathInTree(tree, path.slice(0, -1));
 
   if (copy) {
     return newTree(cloneDeep(expr), placeAt);
@@ -98,10 +96,10 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
 }
 
 export function deleteExpr({ tree, path }: TreeIndexPath) {
-  const expr = exprForIndexPathInTree(tree, path);
+  const expr = nodeForIndexPathInTree(tree, path);
   if (isHole(expr)) return;
 
-  const exprParent = exprForIndexPathInTree(tree, path.slice(0, -1));
+  const exprParent = nodeForIndexPathInTree(tree, path.slice(0, -1));
 
   if (path.length === 0 || isAtomic(exprParent)) {
     // expr is the root of its tree
@@ -111,6 +109,6 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
   }
 }
 
-function exprForIndexPathInTree(tree: Tree, path: number[]): Expr {
-  return exprAtIndexPath({ tree, path });
+function nodeForIndexPathInTree(tree: Tree, path: number[]): Expr | Datum {
+  return nodeAtIndexPath({ tree, path });
 }
