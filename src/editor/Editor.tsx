@@ -24,7 +24,6 @@ import {
 import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./trees/mutate";
 import Library from "./library/Library";
 import { Tree, bringTreeToFront } from "./trees/trees";
-import BiwaScheme from "biwascheme";
 import CodeEditorModal from "./CodeEditorModal";
 import { Call } from "../expr/expr";
 import { Parser } from "../expr/parse";
@@ -123,71 +122,8 @@ export default function Editor({
     setWeakRenderCounter(weakRenderCounter + 1);
   }
 
-  const [result, setResult] = useState<any>();
   const [activeDrag, setActiveDrag] = useState<ActiveDrag>();
   const [activeDragOver, setActiveDragOver] = useState<Over>();
-
-  const [stage, setStage] = useState<{ element: JSX.Element }[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      const interpreter = new BiwaScheme.Interpreter((error: any) => console.error(error));
-
-      stage.splice(0, stage.length);
-
-      BiwaScheme.define_libfunc("text", 1, 1, ([text]: [any]) => {
-        const newObject = { element: <>{`${text}`}</> };
-        stage.push(newObject);
-        setStage([...stage]);
-
-        return newObject;
-      });
-      BiwaScheme.define_libfunc(
-        "rotate",
-        2,
-        2,
-        ([degrees, object]: [number, { element: JSX.Element }]) => {
-          BiwaScheme.assert_real(degrees);
-
-          object.element = (
-            <div style={{ position: "relative", transform: `rotate(${degrees}deg)` }}>
-              {object.element}
-            </div>
-          );
-
-          setStage([...stage]);
-
-          return object;
-        }
-      );
-
-      const newResults = await Promise.all(
-        trees.map(async (tree) => {
-          // console.log(evaluate(mainTree.root, new Environment()));
-          /* --- */
-          // const source = serializeExpr(tree.root);
-          // console.log(source);
-          /* --- */
-          // const res = (await new Promise((resolve, reject) => {
-          //   interpreter.evaluate(source, resolve);
-          // })) as any;
-          // return res?.toString();
-          /* --- */
-          // const js = jsifyExpr(tree.root);
-          // console.log(js);
-          /* --- */
-          // try {
-          //   const res = evalInRuntime(js);
-          //   return JSON.stringify(res);
-          // } catch (error) {
-          //   console.error(error);
-          //   return "[error]";
-          // }
-        })
-      );
-      setResult(newResults.join("\n"));
-    })();
-  }, [activeDrag, renderCounter]);
 
   const blocksArea = useRef<HTMLDivElement>(null);
 
