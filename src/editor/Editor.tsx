@@ -28,6 +28,12 @@ import BiwaScheme from "biwascheme";
 import CodeEditorModal from "./CodeEditorModal";
 import { Call } from "../expr/expr";
 import { Parser } from "../expr/parse";
+import {
+  ActiveDragContext,
+  CallbacksContext,
+  RenderCounterContext,
+  RerenderContext,
+} from "./editor-contexts";
 
 export type Props = {
   trees: Tree[];
@@ -187,44 +193,45 @@ export default function Editor({
 
   return (
     <div className="editor">
-      <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
-
-      <DndContext
-        autoScroll={false}
-        collisionDetection={collisionDetection}
-        onDragStart={onBlockDragStart}
-        onDragOver={onBlockDragOver}
-        onDragEnd={onBlockDragEnd}
+      <CallbacksContext.Provider
+        value={{
+          onMouseOver,
+          onMouseOut,
+          onContextMenu: onBlockContextMenu,
+        }}
       >
-        <div className="blocks-stage-container">
-          <div className="blocks" ref={blocksArea}>
-            {trees.map((tree) => (
-              <div
-                key={tree.id}
-                className="block-pos-container"
-                style={{
-                  position: "absolute", // TODO: relative
-                  width: "fit-content",
-                  top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
-                  left: `calc(max(40px, ${tree.location.x}px))`,
-                  zIndex: tree.zIndex,
-                }}
+        <ActiveDragContext.Provider value={activeDrag}>
+          <RerenderContext.Provider value={weakRerender}>
+            <RenderCounterContext.Provider value={renderCounter}>
+              <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
+
+              <DndContext
+                autoScroll={false}
+                collisionDetection={collisionDetection}
+                onDragStart={onBlockDragStart}
+                onDragOver={onBlockDragOver}
+                onDragEnd={onBlockDragEnd}
               >
-                {new Renderer(tree, new SymbolTable(), tree.inferrer, {
-                  activeDrag,
+                <div className="blocks-stage-container">
+                  <div className="blocks" ref={blocksArea}>
+                    {trees.map((tree) => (
+                      <div
+                        key={tree.id}
+                        className="block-pos-container"
+                        style={{
+                          position: "absolute", // TODO: relative
+                          width: "fit-content",
+                          top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
+                          left: `calc(max(40px, ${tree.location.x}px))`,
+                          zIndex: tree.zIndex,
+                        }}
+                      >
+                        {new Renderer(tree, new SymbolTable(), tree.inferrer).render(tree.root, {})}
+                      </div>
+                    ))}
+                  </div>
 
-                  onMouseOver,
-                  onMouseOut,
-                  onContextMenu: onBlockContextMenu,
-
-                  rerender: weakRerender,
-                  renderCounter,
-                }).render(tree.root, {})}
-              </div>
-            ))}
-          </div>
-
-          {/* <div className="stage">
+                  {/* <div className="stage">
             i am stage
             <div style={{ position: "absolute" }}>
               {stage.map(({ element }, index) => (
@@ -232,23 +239,29 @@ export default function Editor({
               ))}
             </div>
           </div> */}
-        </div>
+                </div>
 
-        <Library />
+                <Library />
 
-        <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
-          {activeDrag &&
-            new Renderer(
-              activeDrag.indexPath.tree,
-              // TODO: Do we need to use a better symbol table here?
-              new SymbolTable(),
-              activeDrag.indexPath.tree.inferrer,
-              {
-                forDragOverlay: activeDragOver ?? true,
-              }
-            ).render(nodeAtIndexPath(activeDrag.indexPath), { indexPath: activeDrag.indexPath })}
-        </DragOverlay>
-      </DndContext>
+                <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
+                  {activeDrag &&
+                    new Renderer(
+                      activeDrag.indexPath.tree,
+                      // TODO: Do we need to use a better symbol table here?
+                      new SymbolTable(),
+                      activeDrag.indexPath.tree.inferrer,
+                      {
+                        forDragOverlay: activeDragOver ?? true,
+                      }
+                    ).render(nodeAtIndexPath(activeDrag.indexPath), {
+                      indexPath: activeDrag.indexPath,
+                    })}
+                </DragOverlay>
+              </DndContext>
+            </RenderCounterContext.Provider>
+          </RerenderContext.Provider>
+        </ActiveDragContext.Provider>
+      </CallbacksContext.Provider>
     </div>
   );
 

@@ -10,7 +10,7 @@ import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
-import { ProgSymbol, SymbolTable } from "../symbol-table";
+import { SymbolTable } from "../symbol-table";
 import {
   Define,
   Expr,
@@ -26,48 +26,23 @@ import {
 import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
-import { ActiveDrag } from "../Editor";
 import { Datum } from "../../datum/datum";
 
 export class Renderer {
   indexPath!: TreeIndexPath;
   isCopySource?: boolean;
 
-  activeDrag?: ActiveDrag;
   forDragOverlay?: boolean | Over;
-
-  onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-  onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-  onContextMenu?: (indexPath: TreeIndexPath) => void;
-
-  rerender?: () => void;
-  renderCounter?: number;
 
   constructor(
     private tree: Tree,
     private symbolTable: SymbolTable,
     private inferrer: TypeInferrer,
     options: {
-      activeDrag?: ActiveDrag;
       forDragOverlay?: boolean | Over;
-
-      onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-      onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-      onContextMenu?: (indexPath: TreeIndexPath) => void;
-
-      rerender?: () => void;
-      renderCounter?: number;
-    }
+    } = {}
   ) {
-    this.activeDrag = options.activeDrag;
     this.forDragOverlay = options.forDragOverlay;
-
-    this.onMouseOver = options.onMouseOver;
-    this.onMouseOut = options.onMouseOut;
-    this.onContextMenu = options.onContextMenu;
-
-    this.rerender = options.rerender;
-    this.renderCounter = options.renderCounter;
   }
 
   render(
@@ -152,13 +127,7 @@ export class Renderer {
         hasError={
           this.inferrer.error && errorInvolvesExpr(this.inferrer.error, expr as Expr /* TODO */)
         }
-        activeDrag={this.activeDrag}
         forDragOverlay={this.forDragOverlay}
-        onMouseOver={this.onMouseOver}
-        onMouseOut={this.onMouseOut}
-        onContextMenu={this.onContextMenu}
-        rerender={this.rerender}
-        renderCounter={this.renderCounter}
       >
         {body}
       </Block>

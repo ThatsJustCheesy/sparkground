@@ -1,4 +1,4 @@
-import { PropsWithChildren, ReactNode, useEffect, useRef, useState } from "react";
+import { PropsWithChildren, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenuTrigger } from "rctx-contextmenu";
@@ -14,6 +14,12 @@ import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
 import { ActiveDrag } from "../Editor";
+import {
+  ActiveDragContext,
+  CallbacksContext,
+  RenderCounterContext,
+  RerenderContext,
+} from "../editor-contexts";
 
 // TODO: Move this somewhere else or make it obsolete
 let isShiftDown = false;
@@ -34,15 +40,7 @@ type Props = PropsWithChildren<{
   inferrer: TypeInferrer;
   hasError?: boolean;
 
-  activeDrag?: ActiveDrag;
   forDragOverlay?: boolean | Over;
-
-  onMouseOver?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-  onMouseOut?: (symbol: ProgSymbol | number | boolean | undefined) => void;
-  onContextMenu?: (indexPath: TreeIndexPath) => void;
-
-  rerender?: () => void;
-  renderCounter?: number;
 }>;
 
 export type BlockData =
@@ -100,18 +98,17 @@ export default function Block({
   inferrer,
   hasError,
 
-  activeDrag,
   forDragOverlay,
 
   children,
-
-  onMouseOver,
-  onMouseOut,
-  onContextMenu,
-
-  rerender,
-  renderCounter,
 }: Props) {
+  const activeDrag = useContext(ActiveDragContext);
+
+  const { onMouseOver, onMouseOut, onContextMenu } = useContext(CallbacksContext);
+
+  const rerender = useContext(RerenderContext);
+  useContext(RenderCounterContext);
+
   // Drop area, if applicable
   let { isOver, setNodeRef: setNodeRef1 } = useDroppable({
     id,
