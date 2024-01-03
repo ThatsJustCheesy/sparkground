@@ -167,7 +167,6 @@ export class TypeInferrer {
       case "call":
         const calledType = this.#infer(expr.called, env, extendIndexPath(indexPath, 0));
         if (isUnknown(calledType)) {
-          console.error(env);
           throw `call to expression with type that could not be inferred: ${serializeType(
             calledType
           )}, ${serializeExpr(expr)}`;

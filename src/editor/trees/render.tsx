@@ -27,6 +27,9 @@ import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
 import { Datum } from "../../datum/datum";
+import { memo } from "react";
+
+const BlockMemo = memo(Block);
 
 export class Renderer {
   indexPath!: TreeIndexPath;
@@ -117,7 +120,7 @@ export class Renderer {
     const key = this.#keyForIndexPath(this.indexPath);
     const expr = nodeAtIndexPath(this.indexPath);
     return (
-      <Block
+      <BlockMemo
         key={key}
         id={key}
         indexPath={this.indexPath}
@@ -130,7 +133,7 @@ export class Renderer {
         forDragOverlay={this.forDragOverlay}
       >
         {body}
-      </Block>
+      </BlockMemo>
     );
   }
 

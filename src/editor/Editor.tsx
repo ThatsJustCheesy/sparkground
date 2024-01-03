@@ -25,11 +25,11 @@ import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./trees/
 import Library from "./library/Library";
 import { Tree, bringTreeToFront } from "./trees/trees";
 import CodeEditorModal from "./CodeEditorModal";
-import { Call } from "../expr/expr";
+import { Call, Expr } from "../expr/expr";
 import { Parser } from "../expr/parse";
 import {
   ActiveDragContext,
-  CallbacksContext,
+  OnContextMenuContext,
   RenderCounterContext,
   RerenderContext,
 } from "./editor-contexts";
@@ -92,6 +92,7 @@ const collisionDetection: CollisionDetection = ({
 };
 
 export type ActiveDrag = {
+  node: Expr;
   indexPath: TreeIndexPath;
   copyOnDrop?: boolean;
 };
@@ -129,25 +130,18 @@ export default function Editor({
 
   return (
     <div className="editor">
-      <CallbacksContext.Provider
-        value={{
-          onMouseOver,
-          onMouseOut,
-          onContextMenu: onBlockContextMenu,
-        }}
+      <DndContext
+        autoScroll={false}
+        collisionDetection={collisionDetection}
+        onDragStart={onBlockDragStart}
+        onDragOver={onBlockDragOver}
+        onDragEnd={onBlockDragEnd}
       >
-        <ActiveDragContext.Provider value={activeDrag}>
-          <RerenderContext.Provider value={weakRerender}>
-            <RenderCounterContext.Provider value={renderCounter}>
-              <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
-
-              <DndContext
-                autoScroll={false}
-                collisionDetection={collisionDetection}
-                onDragStart={onBlockDragStart}
-                onDragOver={onBlockDragOver}
-                onDragEnd={onBlockDragEnd}
-              >
+        <OnContextMenuContext.Provider value={onBlockContextMenu}>
+          <ActiveDragContext.Provider value={activeDrag}>
+            <RerenderContext.Provider value={weakRerender}>
+              <RenderCounterContext.Provider value={renderCounter}>
+                <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
                 <div className="blocks-stage-container">
                   <div className="blocks" ref={blocksArea}>
                     {trees.map((tree) => (
@@ -166,18 +160,7 @@ export default function Editor({
                       </div>
                     ))}
                   </div>
-
-                  {/* <div className="stage">
-            i am stage
-            <div style={{ position: "absolute" }}>
-              {stage.map(({ element }, index) => (
-                <div key={index}>{element}</div>
-              ))}
-            </div>
-          </div> */}
                 </div>
-
-                <Library />
 
                 <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
                   {activeDrag &&
@@ -189,21 +172,19 @@ export default function Editor({
                       {
                         forDragOverlay: activeDragOver ?? true,
                       }
-                    ).render(nodeAtIndexPath(activeDrag.indexPath), {
+                    ).render(activeDrag.node, {
                       indexPath: activeDrag.indexPath,
                     })}
                 </DragOverlay>
-              </DndContext>
-            </RenderCounterContext.Provider>
-          </RerenderContext.Provider>
-        </ActiveDragContext.Provider>
-      </CallbacksContext.Provider>
+              </RenderCounterContext.Provider>
+            </RerenderContext.Provider>
+          </ActiveDragContext.Provider>
+        </OnContextMenuContext.Provider>
+
+        <Library />
+      </DndContext>
     </div>
   );
-
-  function onMouseOver(symbol: ProgSymbol | number | boolean | undefined) {}
-
-  function onMouseOut(symbol: ProgSymbol | number | boolean | undefined) {}
 
   function onCodeEditorClose(newSource?: string) {
     // Close editor
@@ -237,6 +218,7 @@ export default function Editor({
       if (!activeIndexPath) return;
 
       setActiveDrag({
+        node: nodeAtIndexPath(activeIndexPath),
         indexPath: activeIndexPath,
         copyOnDrop: isAltPressed,
       });

@@ -13,10 +13,9 @@ import { symbolsAsTypeEnv } from "../typecheck";
 import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
-import { ActiveDrag } from "../Editor";
 import {
   ActiveDragContext,
-  CallbacksContext,
+  OnContextMenuContext,
   RenderCounterContext,
   RerenderContext,
 } from "../editor-contexts";
@@ -104,7 +103,7 @@ export default function Block({
 }: Props) {
   const activeDrag = useContext(ActiveDragContext);
 
-  const { onMouseOver, onMouseOut, onContextMenu } = useContext(CallbacksContext);
+  const onContextMenu = useContext(OnContextMenuContext);
 
   const rerender = useContext(RerenderContext);
   useContext(RenderCounterContext);
@@ -165,7 +164,6 @@ export default function Block({
     try {
       setType(inferrer.inferSubexpr(indexPath, symbolsAsTypeEnv(symbols)));
     } catch (error) {
-      console.error(error);
       setType(inferrer.error ? describeInferenceError(inferrer.error) : `${error}`);
     }
     rerender?.();
@@ -230,7 +228,7 @@ export default function Block({
           followCursor={true}
           offset={[5, 10]}
           placement="top-start"
-          zIndex={99999 + 1}
+          zIndex={99999 + 2}
         >
           <div
             ref={callEach(setNodeRef1, setNodeRef2)}
@@ -265,20 +263,10 @@ export default function Block({
                 if ((event.target as Element).closest(".block") === divRef.current) {
                   setTooltipVisible(true);
                 }
-                if (
-                  (event.target as Element).closest(".block:not(.block-hole)") === divRef.current
-                ) {
-                  onMouseOver?.(contextHelpSubjectFromData());
-                }
               }}
               onMouseOut={(event) => {
                 if ((event.target as Element).closest(".block") === divRef.current) {
                   setTooltipVisible(false);
-                }
-                if (
-                  (event.target as Element).closest(".block:not(.block-hole)") === divRef.current
-                ) {
-                  onMouseOut?.(contextHelpSubjectFromData());
                 }
               }}
             >
