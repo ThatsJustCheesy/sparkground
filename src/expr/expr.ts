@@ -2,7 +2,18 @@ import { isHole } from "../editor/trees/tree";
 import { Datum } from "../datum/datum";
 import { DefinitionAttributes } from "./attributes";
 
-export type Expr = NameBinding | Datum | Var | Call | Define | Let | Lambda | Sequence | If | Cond;
+export type Expr = { attributes?: DefinitionAttributes } & (
+  | NameBinding
+  | Datum
+  | Var
+  | Call
+  | Define
+  | Let
+  | Lambda
+  | Sequence
+  | If
+  | Cond
+);
 
 export type Hole = {
   kind: "symbol";
@@ -33,7 +44,6 @@ export type Define = {
   kind: "define";
   name: VarSlot;
   value: Expr;
-  attributes?: DefinitionAttributes;
 };
 export type Let = {
   kind: "let";

@@ -1,6 +1,6 @@
 import { SyntheticEvent } from "react";
 import { Parser } from "../../../expr/parse";
-import { serializeExpr } from "../../trees/serialize";
+import { serializeExprWithAttributes } from "../../trees/serialize";
 import { deforest, Point, newTree, trees } from "../../trees/trees";
 import MenuBar from "./MenuBar";
 import MenuBarButton from "./MenuBarButton";
@@ -37,7 +37,7 @@ export default function AppMenuBar({ onShowHelp, rerender }: Props) {
 
           let location: Point = { x: 0, y: 0 };
           exprs.forEach((expr) => {
-            if (expr.kind === "define" && expr.attributes?.location) {
+            if (expr.attributes?.location) {
               location = expr.attributes.location;
             }
             newTree(expr, { ...location });
@@ -53,11 +53,9 @@ export default function AppMenuBar({ onShowHelp, rerender }: Props) {
           await navigator.clipboard.writeText(
             trees()
               .map((tree) => {
-                if (tree.root.kind === "define") {
-                  tree.root.attributes = tree.root.attributes ?? {};
-                  tree.root.attributes.location = tree.location;
-                }
-                return serializeExpr(tree.root);
+                tree.root.attributes = tree.root.attributes ?? {};
+                tree.root.attributes.location = tree.location;
+                return serializeExprWithAttributes(tree.root);
               })
               .join("\n")
           );

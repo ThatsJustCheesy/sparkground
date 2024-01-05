@@ -3,6 +3,7 @@ import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flatt
 import { Parser as DatumParser } from "../datum/parse";
 import { hole } from "../editor/trees/tree";
 import { DefinitionAttributes, parseAttributes } from "./attributes";
+import { merge } from "lodash";
 
 export class Parser {
   static parseToExprsWithAttributes(source: string) {
@@ -28,6 +29,15 @@ export class Parser {
   private nextAttributes?: DefinitionAttributes;
 
   parsePrimary(datum: FlattenedDatum): Expr {
+    const attributes = this.nextAttributes;
+    this.nextAttributes = undefined;
+
+    const primary = this.#parsePrimary(datum);
+
+    return merge({ attributes }, primary);
+  }
+
+  #parsePrimary(datum: FlattenedDatum): Expr {
     switch (datum.kind) {
       case "bool":
       case "number":
@@ -96,14 +106,10 @@ export class Parser {
     const name = this.parseNameBinding(datum.heads[1]);
     const value = this.parsePrimary(datum.heads[2]);
 
-    const attributes = this.nextAttributes;
-    this.nextAttributes = undefined;
-
     return {
       kind: "define",
       name,
       value,
-      attributes,
     };
   }
 
