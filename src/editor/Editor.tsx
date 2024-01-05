@@ -145,6 +145,9 @@ export default function Editor({
                 <div className="blocks" ref={blocksArea}>
                   <div
                     style={{
+                      width:
+                        Math.max(...trees.map((tree) => tree.location.x)) +
+                        document.documentElement.clientWidth / 2,
                       height:
                         Math.max(...trees.map((tree) => tree.location.y)) +
                         document.documentElement.clientHeight / 2,
@@ -256,9 +259,11 @@ export default function Editor({
 
     const overIndexPath = indexPathFromDragged(over);
 
-    // Adjust
+    // Adjust coordinates of drop point to account for context of scrolled container
     active!.rect.current.translated!.top += blocksArea.current!.scrollTop;
     active!.rect.current.translated!.bottom += blocksArea.current!.scrollTop;
+    active!.rect.current.translated!.left += blocksArea.current!.scrollLeft;
+    active!.rect.current.translated!.right += blocksArea.current!.scrollLeft;
 
     if (
       /* Dropped on top of nothing */

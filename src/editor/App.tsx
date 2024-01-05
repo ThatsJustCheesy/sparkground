@@ -43,7 +43,7 @@ function App() {
       orphanExpr(
         blockContextMenuSubject,
         {
-          x: clickEvent.clientX,
+          x: clickEvent.clientX + (blocksArea?.scrollLeft ?? 0),
           y: clickEvent.clientY + (blocksArea?.scrollTop ?? 0),
         },
         true
