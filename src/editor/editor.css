@@ -12,24 +12,11 @@
   user-select: none;
 }
 
-.blocks-stage-container {
-  display: flex;
-  flex-flow: column;
-  justify-content: space-between;
-  gap: 1em;
-
+.blocks {
   flex: 80%;
-}
-
-/* .blocks {
-  width: 100%;
+  position: relative;
   overflow: auto;
 }
-
-.stage {
-  padding: 2em;
-  height: 30vh;
-} */
 
 .block-outer-container {
   touch-action: none;

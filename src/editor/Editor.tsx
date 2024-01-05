@@ -142,24 +142,29 @@ export default function Editor({
             <RerenderContext.Provider value={weakRerender}>
               <RenderCounterContext.Provider value={renderCounter}>
                 <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
-                <div className="blocks-stage-container">
-                  <div className="blocks" ref={blocksArea}>
-                    {trees.map((tree) => (
-                      <div
-                        key={tree.id}
-                        className="block-pos-container"
-                        style={{
-                          position: "absolute", // TODO: relative
-                          width: "fit-content",
-                          top: `calc(max(var(--menu-bar-height) + 20px, ${tree.location.y}px))`,
-                          left: `calc(max(40px, ${tree.location.x}px))`,
-                          zIndex: tree.zIndex,
-                        }}
-                      >
-                        {new Renderer(tree, new SymbolTable(), tree.inferrer).render(tree.root, {})}
-                      </div>
-                    ))}
-                  </div>
+                <div className="blocks" ref={blocksArea}>
+                  <div
+                    style={{
+                      height:
+                        Math.max(...trees.map((tree) => tree.location.y)) +
+                        document.documentElement.clientHeight / 2,
+                    }}
+                  />
+                  {trees.map((tree) => (
+                    <div
+                      key={tree.id}
+                      className="block-pos-container"
+                      style={{
+                        position: "absolute",
+                        width: "fit-content",
+                        top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
+                        left: `calc(max(40px, ${tree.location.x}px))`,
+                        zIndex: tree.zIndex,
+                      }}
+                    >
+                      {new Renderer(tree, new SymbolTable(), tree.inferrer).render(tree.root, {})}
+                    </div>
+                  ))}
                 </div>
 
                 <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
@@ -250,7 +255,11 @@ export default function Editor({
     }
 
     const overIndexPath = indexPathFromDragged(over);
-    // console.log(active!.rect.current.translated!.top, blocksArea.current!.scrollTop);
+
+    // Adjust
+    active!.rect.current.translated!.top += blocksArea.current!.scrollTop;
+    active!.rect.current.translated!.bottom += blocksArea.current!.scrollTop;
+
     if (
       /* Dropped on top of nothing */
       !overIndexPath ||

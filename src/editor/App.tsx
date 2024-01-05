@@ -39,7 +39,15 @@ function App() {
   function duplicateBlockContextMenuSubject(event: SyntheticEvent) {
     const clickEvent = event.nativeEvent as MouseEvent;
     if (blockContextMenuSubject) {
-      orphanExpr(blockContextMenuSubject, { x: clickEvent.clientX, y: clickEvent.clientY }, true);
+      const blocksArea = document.querySelector(".blocks");
+      orphanExpr(
+        blockContextMenuSubject,
+        {
+          x: clickEvent.clientX,
+          y: clickEvent.clientY + (blocksArea?.scrollTop ?? 0),
+        },
+        true
+      );
       rerender();
     }
   }
