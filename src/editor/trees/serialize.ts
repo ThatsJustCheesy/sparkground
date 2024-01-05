@@ -1,6 +1,7 @@
 import { Expr, getIdentifier } from "../../expr/expr";
 import { serializeDatum } from "../../datum/serialize";
 import { isHole } from "./tree";
+import { serializeAttributes } from "../../expr/attributes";
 
 export function serializeExpr(expr: Expr): string {
   switch (expr.kind) {
@@ -27,7 +28,15 @@ export function serializeExpr(expr: Expr): string {
         ")"
       );
     case "define":
-      return "(define " + getIdentifier(expr.name) + " " + serializeExpr(expr.value) + ")";
+      return (
+        "\n" +
+        (expr.attributes ? `; ${serializeAttributes(expr.attributes)}\n` : "") +
+        "(define " +
+        getIdentifier(expr.name) +
+        " " +
+        serializeExpr(expr.value) +
+        ")"
+      );
     case "let":
       return (
         "(let (" +

@@ -2,8 +2,20 @@ import { Define, Expr, Let, Call, NameBinding, Lambda, Sequence, If, Cond, Var }
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
 import { hole } from "../editor/trees/tree";
+import { DefinitionAttributes, parseAttributes } from "./attributes";
 
 export class Parser {
+  static parseToExprsWithAttributes(source: string) {
+    const parser = new Parser();
+    return DatumParser.parseToDataWithComments(source).flatMap((datum) => {
+      if (datum.kind === "comment") {
+        parser.nextAttributes = parseAttributes(datum.text);
+        return [];
+      }
+      return [parser.parsePrimary(flattenDatum(datum))];
+    });
+  }
+
   static parseToExprs(source: string) {
     const parser = new Parser();
     return DatumParser.parseToData(source).map((datum) => parser.parsePrimary(flattenDatum(datum)));
@@ -12,6 +24,8 @@ export class Parser {
   static parseToExpr(source: string): Expr {
     return new Parser().parsePrimary(flattenDatum(DatumParser.parseToDatum(source)));
   }
+
+  private nextAttributes?: DefinitionAttributes;
 
   parsePrimary(datum: FlattenedDatum): Expr {
     switch (datum.kind) {
@@ -82,10 +96,14 @@ export class Parser {
     const name = this.parseNameBinding(datum.heads[1]);
     const value = this.parsePrimary(datum.heads[2]);
 
+    const attributes = this.nextAttributes;
+    this.nextAttributes = undefined;
+
     return {
       kind: "define",
       name,
       value,
+      attributes,
     };
   }
 

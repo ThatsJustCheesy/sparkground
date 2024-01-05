@@ -121,7 +121,7 @@ function tokenize(source: string): Token[] {
       source = source.slice(1);
 
       let text = "";
-      while (!source.startsWith("\n")) {
+      while (source.length && !source.startsWith("\n")) {
         text += source[0];
         source = source.slice(1);
       }

@@ -18,19 +18,28 @@ export default function AppMenuBar({ onShowHelp, rerender }: Props) {
       <MenuBarTitle>Sparkground</MenuBarTitle>
 
       <MenuBarButton
-        action={() => {
-          const source = prompt(
-            "THIS WILL OVERWRITE THE CANVAS. Paste exported Sparkground or Scheme code:"
+        action={async () => {
+          const continue_ = confirm(
+            "This will import Sparkground or Scheme code from your clipboard, and WILL OVERWRITE THE CANVAS. Continue?"
           );
-          if (!source) return;
+          if (!continue_) return;
 
-          const exprs = Parser.parseToExprs(source);
+          await new Promise((resolve) => {
+            setTimeout(resolve, 200);
+          });
+
+          const source = await navigator.clipboard.readText();
+
+          const exprs = Parser.parseToExprsWithAttributes(source);
           if (!exprs.length) return;
 
           deforest();
 
           let location: Point = { x: 0, y: 0 };
           exprs.forEach((expr) => {
+            if (expr.kind === "define" && expr.attributes?.location) {
+              location = expr.attributes.location;
+            }
             newTree(expr, { ...location });
             location.y += 200;
           });
@@ -43,7 +52,13 @@ export default function AppMenuBar({ onShowHelp, rerender }: Props) {
         action={async () => {
           await navigator.clipboard.writeText(
             trees()
-              .map((tree) => serializeExpr(tree.root))
+              .map((tree) => {
+                if (tree.root.kind === "define") {
+                  tree.root.attributes = tree.root.attributes ?? {};
+                  tree.root.attributes.location = tree.location;
+                }
+                return serializeExpr(tree.root);
+              })
               .join("\n")
           );
           alert("Copied to clipboard.");
