@@ -132,6 +132,8 @@ function tokenize(source: string): Token[] {
       tokens.push({ symbol });
       continue;
     }
+
+    throw "invalid token in source code";
   }
 
   return tokens;
