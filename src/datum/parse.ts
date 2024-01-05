@@ -1,25 +1,47 @@
 import { Datum, ListDatum } from "./datum";
 
 export class Parser {
-  static parseToData(source: string): Datum[] {
+  static parseToDataWithComments(source: string): (Datum | Comment)[] {
     const parser = new Parser(tokenize(source));
+
+    let data: (Datum | Comment)[] = [];
+    while (parser.tokens.length) {
+      data.push(parser.parseDatumOrComment());
+    }
+
+    return data;
+  }
+
+  static parseToData(source: string): Datum[] {
+    const parser = new Parser(discardComments(tokenize(source)));
+
     let data: Datum[] = [];
     while (parser.tokens.length) {
       data.push(parser.parseDatum());
     }
+
     return data;
   }
 
   static parseToDatum(source: string): Datum {
-    return new Parser(tokenize(source)).parseDatum();
+    return new Parser(discardComments(tokenize(source))).parseDatum();
   }
 
   constructor(private tokens: Token[]) {}
 
-  parseDatum(): Datum {
-    if (!this.tokens.length) throw "expected datum, but found end of input";
-
+  parseDatumOrComment(): Datum | Comment {
     const next = this.tokens[0];
+    if (isComment(next)) {
+      this.tokens.shift();
+      return next;
+    }
+    return this.parseDatum();
+  }
+
+  parseDatum(): Datum {
+    const next = this.tokens[0];
+    if (!next) throw "expected datum, but found end of input";
+
     switch (next) {
       case "(":
         this.eat("(");
@@ -38,8 +60,11 @@ export class Parser {
         this.tokens.shift();
         if (typeof next === "number") {
           return { kind: "number", value: next };
-        } else {
+        } else if ("symbol" in next) {
           return { kind: "symbol", value: next.symbol };
+        } else {
+          // Comment - should have been thrown away
+          throw "comment token not allowed in this context";
         }
     }
   }
@@ -79,13 +104,31 @@ export class Parser {
   }
 }
 
-type Token = "(" | ")" | "#t" | "#f" | "." | number | { symbol: string };
+export type Comment = {
+  kind: "comment";
+  text: string;
+};
+
+type Token = "(" | ")" | "#t" | "#f" | "." | number | { symbol: string } | Comment;
 
 function tokenize(source: string): Token[] {
   let tokens: Token[] = [];
 
   while (source.length) {
     source = source.trimStart();
+
+    if (source.startsWith(";")) {
+      source = source.slice(1);
+
+      let text = "";
+      while (!source.startsWith("\n")) {
+        text += source[0];
+        source = source.slice(1);
+      }
+
+      tokens.push({ kind: "comment", text });
+      continue;
+    }
 
     if (source.startsWith("(")) {
       source = source.slice(1);
@@ -137,4 +180,12 @@ function tokenize(source: string): Token[] {
   }
 
   return tokens;
+}
+
+function isComment(token: Token | undefined): token is Comment {
+  return typeof token === "object" && "kind" in token && token.kind === "comment";
+}
+
+function discardComments(tokens: Token[]): Token[] {
+  return tokens.filter((token) => !isComment(token));
 }
