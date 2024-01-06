@@ -114,9 +114,7 @@ type Token = "(" | ")" | "#t" | "#f" | "." | number | { symbol: string } | Comme
 function tokenize(source: string): Token[] {
   let tokens: Token[] = [];
 
-  while (source.length) {
-    source = source.trimStart();
-
+  while ((source = source.trimStart())) {
     if (source.startsWith(";")) {
       source = source.slice(1);
 
