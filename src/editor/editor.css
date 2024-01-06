@@ -7,7 +7,7 @@
   height: calc(100% - var(--menu-bar-height));
 
   font-family: Menlo, Consolas, monospace;
-  font-size: 11pt;
+  font-size: 14px;
 
   user-select: none;
 }
