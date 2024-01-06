@@ -10,6 +10,8 @@ import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
 import { deleteExpr, orphanExpr } from "./trees/mutate";
 import { TreeIndexPath } from "./trees/tree";
+import LoadDialog from "./projects/LoadDialog";
+import SaveDialog from "./projects/SaveDialog";
 
 const defaultExpr = Parser.parseToExpr(
   "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"
@@ -26,7 +28,9 @@ function App() {
   const [blockContextMenuSubject, setBlockContextMenuSubject] = useState<TreeIndexPath>();
   const [codeEditorSubject, setCodeEditorSubject] = useState<TreeIndexPath>();
 
-  const [showHelp, setShowHelp] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
 
   function onBlockContextMenu(indexPath: TreeIndexPath) {
     setBlockContextMenuSubject(indexPath);
@@ -59,9 +63,27 @@ function App() {
     }
   }
 
+  const [loadResolve, setLoadResolve] = useState<(source: string | undefined) => void>();
+  const [saveResolve, setSaveResolve] = useState<() => void>();
+
   return (
     <>
-      <AppMenuBar onShowHelp={() => setShowHelp(true)} rerender={rerender} />
+      <AppMenuBar
+        onShowLoad={() =>
+          new Promise((resolve) => {
+            setShowLoadDialog(true);
+            setLoadResolve(() => resolve);
+          })
+        }
+        onShowSave={() =>
+          new Promise((resolve) => {
+            setShowSaveDialog(true);
+            setSaveResolve(() => resolve);
+          })
+        }
+        onShowHelp={() => setShowHelpDialog(true)}
+        rerender={rerender}
+      />
 
       <Editor
         trees={trees()}
@@ -72,7 +94,21 @@ function App() {
         renderCounter={renderCounter}
       />
 
-      <HelpDialog show={showHelp} onHide={() => setShowHelp(false)} />
+      <LoadDialog
+        show={showLoadDialog}
+        onHide={(source) => {
+          setShowLoadDialog(false);
+          loadResolve?.(source);
+        }}
+      />
+      <SaveDialog
+        show={showSaveDialog}
+        onHide={() => {
+          setShowSaveDialog(false);
+          saveResolve?.();
+        }}
+      />
+      <HelpDialog show={showHelpDialog} onHide={() => setShowHelpDialog(false)} />
 
       <ContextMenu id={`menu`} hideOnLeave={false}>
         <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>

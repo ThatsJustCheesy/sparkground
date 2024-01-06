@@ -51,13 +51,14 @@ export default function HelpDialog({ show, onHide }: Props) {
 
             <h5>Save a project</h5>
             <p>
-              Choose <i>Export</i> at the top. Project contents are copied to your clipboard. To
-              save, paste into a text document. (This will be improved eventually.)
+              Choose <i>Save</i> at the top. Then choose <i>Save New</i> and enter a project name,
+              or choose an existing project to overwrite.
             </p>
 
             <h5>Load a project</h5>
             <p>
-              Choose <i>Import</i> at the top, then paste your previously exported project.
+              Choose <i>Load</i> at the top, then choose a project to load. You can also rename,
+              delete, import, and export projects from here.
             </p>
           </Tab>
         </Tabs>

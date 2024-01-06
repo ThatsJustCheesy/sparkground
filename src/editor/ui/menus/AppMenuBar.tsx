@@ -1,34 +1,27 @@
 import { SyntheticEvent } from "react";
 import { Parser } from "../../../expr/parse";
-import { serializeExprWithAttributes } from "../../trees/serialize";
-import { deforest, Point, newTree, trees } from "../../trees/trees";
+import { deforest, Point, newTree } from "../../trees/trees";
 import MenuBar from "./MenuBar";
 import MenuBarButton from "./MenuBarButton";
 import MenuBarTitle from "./MenuBarTitle";
 
 export type Props = {
+  onShowLoad: (event: SyntheticEvent) => Promise<string | undefined>;
+  onShowSave: (event: SyntheticEvent) => Promise<void>;
   onShowHelp: (event: SyntheticEvent) => void;
 
   rerender: () => void;
 };
 
-export default function AppMenuBar({ onShowHelp, rerender }: Props) {
+export default function AppMenuBar({ onShowLoad, onShowSave, onShowHelp, rerender }: Props) {
   return (
     <MenuBar>
       <MenuBarTitle>Sparkground</MenuBarTitle>
 
       <MenuBarButton
-        action={async () => {
-          const continue_ = confirm(
-            "This will import Sparkground or Scheme code from your clipboard, and WILL OVERWRITE THE CANVAS. Continue?"
-          );
-          if (!continue_) return;
-
-          await new Promise((resolve) => {
-            setTimeout(resolve, 200);
-          });
-
-          const source = await navigator.clipboard.readText();
+        action={async (event) => {
+          const source = await onShowLoad(event);
+          if (source === undefined) return;
 
           const exprs = Parser.parseToExprsWithAttributes(source);
           if (!exprs.length) return;
@@ -46,23 +39,14 @@ export default function AppMenuBar({ onShowHelp, rerender }: Props) {
           rerender();
         }}
       >
-        Import
+        Load
       </MenuBarButton>
       <MenuBarButton
-        action={async () => {
-          await navigator.clipboard.writeText(
-            trees()
-              .map((tree) => {
-                tree.root.attributes = tree.root.attributes ?? {};
-                tree.root.attributes.location = tree.location;
-                return serializeExprWithAttributes(tree.root);
-              })
-              .join("\n")
-          );
-          alert("Copied to clipboard.");
+        action={async (event) => {
+          await onShowSave(event);
         }}
       >
-        Export
+        Save
       </MenuBarButton>
       <MenuBarButton action={onShowHelp}>Help</MenuBarButton>
     </MenuBar>
