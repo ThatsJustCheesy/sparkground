@@ -10,6 +10,7 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
+    "noUncheckedIndexedAccess": true,
     "target": "ES2021",
     "paths": {
       "*": [

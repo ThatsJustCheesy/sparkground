@@ -1,7 +1,7 @@
 import { Parser } from "../expr/parse"
 import { Parser as DatumParser } from "../datum/parse"
 import { Lambda } from "../expr/expr"
-import { Environment } from "./environment"
+import { Stack } from "./environment"
 import { Evaluator } from "./evaluate"
 import { Value } from "./value"
 import { datumEqual } from "../datum/equality"
@@ -20,7 +20,7 @@ describe("evaluate", () => {
 
   it("evals variables", () => {
     expect(() => evaluator.eval({ kind: "var", id: "x" })).toThrow()
-    expect(evaluator.eval({ kind: "var", id: "x" }, new Environment<Value>({ x: { kind: "number", value: 42 } }))).toEqual<Value>({
+    expect(evaluator.eval({ kind: "var", id: "x" }, new Stack<Value>({ x: { kind: "number", value: 42 } }))).toEqual<Value>({
       kind: "number",
       value: 42,
     })

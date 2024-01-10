@@ -1,5 +1,4 @@
 import { PropsWithChildren, ReactNode, useContext, useEffect, useRef, useState } from "react";
-import { ProgSymbol } from "../symbol-table";
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
@@ -9,8 +8,6 @@ import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
 import { Type } from "../../typechecker/type";
 import { TypeInferrer } from "../../typechecker/infer";
-import { symbolsAsTypeEnv } from "../typecheck";
-import { symbols } from "../library/library-defs";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
 import {
@@ -19,6 +16,9 @@ import {
   RenderCounterContext,
   RerenderContext,
 } from "../editor-contexts";
+import { Binding } from "../library/environments";
+import { Value } from "../../evaluator/value";
+import { InitialTypeEnvironment } from "../typecheck";
 
 // TODO: Move this somewhere else or make it obsolete
 let isShiftDown = false;
@@ -54,12 +54,14 @@ export type BlockData =
 
 type Vertical = {
   type: "v";
-  symbol: ProgSymbol;
+  id: string;
+  binding?: Binding<Value>;
   heading?: JSX.Element;
 };
 type Horizontal = {
   type: "h";
-  symbol: ProgSymbol;
+  id: string;
+  binding?: Binding<Value>;
   definesSymbol?: boolean;
 };
 type HorizontalList = {
@@ -68,12 +70,13 @@ type HorizontalList = {
 };
 type Identifier = {
   type: "ident";
-  symbol: ProgSymbol;
+  id: string;
+  binding?: Binding<Value>;
   isNameBinding?: boolean;
 };
 type Symbol = {
   type: "symbol";
-  symbol: ProgSymbol;
+  id: string;
 };
 type Number = {
   type: "number";
@@ -162,7 +165,7 @@ export default function Block({
 
   useEffect(() => {
     try {
-      setType(inferrer.inferSubexpr(indexPath, symbolsAsTypeEnv(symbols)));
+      setType(inferrer.inferSubexpr(indexPath, InitialTypeEnvironment));
     } catch (error) {
       setType(inferrer.error ? describeInferenceError(inferrer.error) : `${error}`);
     }
@@ -189,11 +192,7 @@ export default function Block({
             <br />
           </>
         )}
-        {!isShiftDown ? (
-          <small>
-            For help: <kbd>Shift</kbd>
-          </small>
-        ) : (
+        {
           <>
             <b>Help:</b>
             <div className="mt-1 ms-2">
@@ -203,15 +202,52 @@ export default function Block({
                 <div className="fst-italic">{contextHelpSubject.toString()}</div>
               ) : typeof contextHelpSubject === "object" ? (
                 <>
-                  <div className="fst-italic">{contextHelpSubject.id}</div>
-                  <div>{contextHelpSubject.doc}</div>
+                  <div className="fst-mono d-flex align-items-end">
+                    ({contextHelpSubject.name}
+                    <div className="ms-2 fst-italic">
+                      {contextHelpSubject.value.kind === "fn"
+                        ? " " + contextHelpSubject.value.params.join(" ")
+                        : ""}
+                    </div>
+                    )
+                  </div>
+                  <div className="mt-1">
+                    {" "}
+                    {(() => {
+                      let doc = contextHelpSubject.attributes?.doc;
+                      if (!doc) return "";
+
+                      let match: RegExpExecArray | null;
+                      let rendered = <></>;
+                      while ((match = /^(?:[^`]+|`([^`]+)`)/.exec(doc))) {
+                        doc = doc.slice(match[0].length);
+                        if (match[1]) {
+                          rendered = (
+                            <>
+                              {rendered}
+                              <span className="fst-mono fst-italic">{match[1]}</span>
+                            </>
+                          );
+                        } else {
+                          rendered = (
+                            <>
+                              {rendered}
+                              {match[0]}
+                            </>
+                          );
+                        }
+                      }
+
+                      return rendered;
+                    })()}
+                  </div>
                 </>
               ) : (
                 <></>
               )}
             </div>
           </>
-        )}
+        }
       </div>
     </>
   );
@@ -282,7 +318,7 @@ export default function Block({
             ) : data.type === "h" &&
               expr &&
               expr.kind === "call" &&
-              expr.args.length < (data.symbol.maxArgCount ?? Infinity) ? (
+              expr.args.length < (data.binding?.attributes?.maxArgCount ?? Infinity) ? (
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
@@ -302,8 +338,7 @@ export default function Block({
       case "v":
       case "h":
       case "ident":
-      case "symbol":
-        return data.symbol;
+        return data.binding;
       case "number":
         return data.value;
       case "bool":
@@ -314,12 +349,12 @@ export default function Block({
   function renderData() {
     switch (data.type) {
       case "v": {
-        const { symbol, heading } = data;
+        const { id, heading } = data;
 
         return (
           <>
             <div className="block-v-heading">
-              <div className="block-v-label">{symbol.id}</div>
+              <div className="block-v-label">{id}</div>
               {heading}
             </div>
 
@@ -329,11 +364,11 @@ export default function Block({
       }
 
       case "h": {
-        const { symbol, definesSymbol } = data;
+        const { id, definesSymbol } = data;
 
         return (
           <>
-            {!definesSymbol && <div className="block-h-label">{symbol.id}</div>}
+            {!definesSymbol && <div className="block-h-label">{id}</div>}
 
             {children}
           </>
@@ -354,9 +389,9 @@ export default function Block({
 
       case "ident":
       case "symbol": {
-        const { symbol } = data;
+        const { id } = data;
 
-        return symbol.id;
+        return id;
       }
 
       case "number": {

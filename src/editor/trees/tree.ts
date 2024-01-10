@@ -62,7 +62,7 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       break;
     case "let":
       if (index < 2 * node.bindings.length) {
-        const binding = node.bindings[Math.floor(index / 2)];
+        const binding = node.bindings[Math.floor(index / 2)]!;
         binding[index % 2] = newChild;
       }
       if (index === 2 * node.bindings.length) node.body = newChild;

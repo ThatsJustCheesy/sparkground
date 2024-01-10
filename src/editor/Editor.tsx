@@ -1,6 +1,5 @@
 import "./editor.css";
 import { useEffect, useRef, useState } from "react";
-import { ProgSymbol, SymbolTable } from "./symbol-table";
 import { Renderer } from "./trees/render";
 import {
   TreeIndexPath,
@@ -33,6 +32,7 @@ import {
   RenderCounterContext,
   RerenderContext,
 } from "./editor-contexts";
+import { InitialEnvironment } from "./library/environments";
 
 export type Props = {
   trees: Tree[];
@@ -165,7 +165,7 @@ export default function Editor({
                         zIndex: tree.zIndex,
                       }}
                     >
-                      {new Renderer(tree, new SymbolTable(), tree.inferrer).render(tree.root, {})}
+                      {new Renderer(tree, InitialEnvironment, tree.inferrer).render(tree.root, {})}
                     </div>
                   ))}
                 </div>
@@ -175,7 +175,7 @@ export default function Editor({
                     new Renderer(
                       activeDrag.indexPath.tree,
                       // TODO: Do we need to use a better symbol table here?
-                      new SymbolTable(),
+                      InitialEnvironment,
                       activeDrag.indexPath.tree.inferrer,
                       {
                         forDragOverlay: activeDragOver ?? true,

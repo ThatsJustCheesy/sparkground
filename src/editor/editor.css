@@ -6,9 +6,6 @@
   box-sizing: border-box;
   height: calc(100% - var(--menu-bar-height));
 
-  font-family: Menlo, Consolas, monospace;
-  font-size: 14px;
-
   user-select: none;
 }
 
@@ -21,6 +18,9 @@
 .block-outer-container {
   touch-action: none;
   cursor: grab;
+
+  font-family: Menlo, Consolas, monospace;
+  font-size: 14px;
 }
 .block-outer-container:hover:not(:has(.block-outer-container:hover))
   > .block:not(.block-drop-will-delete) {

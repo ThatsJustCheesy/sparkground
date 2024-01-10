@@ -73,7 +73,7 @@ export class Parser {
     let heads: Datum[] = [];
 
     let next: Token;
-    while ((next = this.tokens[0]) != ")") {
+    while ((next = this.tokens[0]!) != ")") {
       if (heads.length > 0 && next === ".") {
         // (head1 head2 ... headN . tail)
 

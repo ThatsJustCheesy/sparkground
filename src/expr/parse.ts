@@ -34,7 +34,7 @@ export class Parser {
 
     const primary = this.#parsePrimary(datum);
 
-    return merge({ attributes }, primary);
+    return attributes !== undefined ? merge({ attributes }, primary) : primary;
   }
 
   #parsePrimary(datum: FlattenedDatum): Expr {
@@ -60,7 +60,7 @@ export class Parser {
         }
 
       case "list":
-        const called = datum.heads[0];
+        const called = datum.heads[0]!;
         if (called.kind === "symbol") {
           // Determine which syntactic keyword this is, if any
 
@@ -95,7 +95,7 @@ export class Parser {
     const [called, ...args] = datum.heads.map((head) => this.parsePrimary(head));
     return {
       kind: "call",
-      called,
+      called: called!,
       args,
     };
   }
@@ -103,8 +103,8 @@ export class Parser {
   parseDefine(datum: FlattenedListDatum): Define {
     this.requireLength(datum, 3);
 
-    const name = this.parseNameBinding(datum.heads[1]);
-    const value = this.parsePrimary(datum.heads[2]);
+    const name = this.parseNameBinding(datum.heads[1]!);
+    const value = this.parsePrimary(datum.heads[2]!);
 
     return {
       kind: "define",
@@ -116,7 +116,7 @@ export class Parser {
   parseLet(datum: FlattenedListDatum): Let {
     this.requireLength(datum, 3);
 
-    const bindingList = datum.heads[1];
+    const bindingList = datum.heads[1]!;
     if (bindingList.kind !== "list") {
       throw "expecting binding list";
     }
@@ -127,13 +127,13 @@ export class Parser {
       }
       this.requireLength(binding, 2);
 
-      const name = this.parseNameBinding(binding.heads[0]);
-      const value = this.parsePrimary(binding.heads[1]);
+      const name = this.parseNameBinding(binding.heads[0]!);
+      const value = this.parsePrimary(binding.heads[1]!);
 
       return [name, value];
     });
 
-    const body = this.parsePrimary(datum.heads[2]);
+    const body = this.parsePrimary(datum.heads[2]!);
 
     return {
       kind: "let",
@@ -145,7 +145,7 @@ export class Parser {
   parseLambda(datum: FlattenedListDatum): Lambda {
     this.requireLength(datum, 3);
 
-    const bindingList = datum.heads[1];
+    const bindingList = datum.heads[1]!;
     if (bindingList.kind !== "list") {
       throw "expecting binding list";
     }
@@ -168,9 +168,9 @@ export class Parser {
   parseIf(datum: FlattenedListDatum): If {
     this.requireLength(datum, 4);
 
-    const if_ = this.parsePrimary(datum.heads[1]);
-    const then = this.parsePrimary(datum.heads[2]);
-    const else_ = this.parsePrimary(datum.heads[3]);
+    const if_ = this.parsePrimary(datum.heads[1]!);
+    const then = this.parsePrimary(datum.heads[2]!);
+    const else_ = this.parsePrimary(datum.heads[3]!);
 
     return {
       kind: "if",
@@ -183,7 +183,7 @@ export class Parser {
   parseCond(datum: FlattenedListDatum): Cond {
     this.requireLength(datum, 2);
 
-    const caseList = datum.heads[1];
+    const caseList = datum.heads[1]!;
     if (caseList.kind !== "list") {
       throw "expecting cond case list";
     }
@@ -194,8 +194,8 @@ export class Parser {
       }
       this.requireLength(case_, 2);
 
-      const condition = this.parsePrimary(case_.heads[0]);
-      const value = this.parsePrimary(case_.heads[1]);
+      const condition = this.parsePrimary(case_.heads[0]!);
+      const value = this.parsePrimary(case_.heads[1]!);
 
       return [condition, value];
     });

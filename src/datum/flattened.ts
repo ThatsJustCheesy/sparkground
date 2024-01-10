@@ -32,7 +32,7 @@ export function flattenListOrQuotedDatum(list: ListDatum): FlattenedListDatum | 
 
     return {
       kind: "quote",
-      value: list.heads[1],
+      value: list.heads[1]!,
     };
   }
 

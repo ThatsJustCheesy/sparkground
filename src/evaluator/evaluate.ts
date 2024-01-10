@@ -1,48 +1,17 @@
-import { ListDatum } from "../datum/datum";
+import { InitialEnvironment } from "../editor/library/environments";
 import { isHole } from "../editor/trees/tree";
 import { Expr, NameBinding, VarSlot } from "../expr/expr";
-import { Environment } from "./environment";
-import { ListValue, Value, valueAsBool } from "./value";
+import { Stack } from "./environment";
+import { Value, valueAsBool } from "./value";
 
 /** Call-by-value evaluator */
 export class Evaluator {
-  env!: Environment<Value>;
+  env!: Stack<Value>;
 
-  eval(expr: Expr, env: Environment<Value> = new Environment()): Value {
+  eval(expr: Expr, env: Stack<Value> = new Stack()): Value {
     this.env = env;
 
-    // TODO: Move this
-    env.bind(
-      {
-        name: "null",
-        value: {
-          kind: "fn",
-          params: [],
-          body: (env): ListValue => {
-            return {
-              kind: "list",
-              heads: [],
-            };
-          },
-        },
-      },
-      {
-        name: "cons",
-        value: {
-          kind: "fn",
-          params: ["car", "cdr"],
-          body: (env): ListValue => {
-            const car = env.get("car")!.value;
-            const cdr = env.get("cdr")!.value as ListDatum; // TODO: Dynamic type checking
-            return {
-              kind: "list",
-              heads: [car],
-              tail: cdr,
-            };
-          },
-        },
-      }
-    );
+    env.bind(...Object.values(InitialEnvironment));
 
     return this.#eval(expr);
   }
@@ -77,8 +46,8 @@ export class Evaluator {
 
         this.env.push();
         for (let i = 0; i < argValues.length && i < calledValue.params.length; ++i) {
-          const name = calledValue.params[i];
-          const value = argValues[i];
+          const name = calledValue.params[i]!;
+          const value = argValues[i]!;
           this.env.bind({
             name,
             value,

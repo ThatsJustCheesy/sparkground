@@ -50,3 +50,8 @@ p,
   font-size: 80%;
   color: #777;
 }
+
+.fst-mono {
+  font-family: Menlo, Consolas, monospace;
+  font-size: 90%;
+}

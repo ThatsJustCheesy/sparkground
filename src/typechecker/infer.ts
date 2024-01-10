@@ -470,8 +470,8 @@ export class TypeInferrer {
       const t2Params = typeParams(t2);
       for (const key in t1Params) {
         this.#unify(
-          t1Params[key as keyof typeof t1Params],
-          t2Params[key as keyof typeof t2Params],
+          t1Params[key as keyof typeof t1Params]!,
+          t2Params[key as keyof typeof t2Params]!,
           e1,
           e2
         );

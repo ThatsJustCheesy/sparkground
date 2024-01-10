@@ -16,7 +16,7 @@ export function datumEqual(left: Datum | Value, right: Datum | Value): boolean {
 
       return (
         leftFlat.heads.length === rightFlat.heads.length &&
-        leftFlat.heads.every((_, i) => datumEqual(leftFlat.heads[i], rightFlat.heads[i])) &&
+        leftFlat.heads.every((_, i) => datumEqual(leftFlat.heads[i]!, rightFlat.heads[i]!)) &&
         ((leftFlat.tail === undefined && rightFlat.tail === undefined) ||
           (leftFlat.tail !== undefined &&
             rightFlat.tail !== undefined &&

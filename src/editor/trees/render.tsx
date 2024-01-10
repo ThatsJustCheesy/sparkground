@@ -10,7 +10,6 @@ import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
-import { SymbolTable } from "../symbol-table";
 import {
   Define,
   Expr,
@@ -23,11 +22,11 @@ import {
   Let,
   NameBinding,
 } from "../../expr/expr";
-import { symbols } from "../library/library-defs";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
+import { Environment } from "../library/environments";
 
 const BlockMemo = memo(Block);
 
@@ -39,7 +38,7 @@ export class Renderer {
 
   constructor(
     private tree: Tree,
-    private symbolTable: SymbolTable,
+    private environment: Environment,
     private inferrer: TypeInferrer,
     options: {
       forDragOverlay?: boolean | Over;
@@ -165,7 +164,7 @@ export class Renderer {
         throw "TODO";
       case "symbol":
         if (datum.value === "·") return this.#block({ type: "hole" });
-        return this.#block({ type: "symbol", symbol: { id: datum.value } });
+        return this.#block({ type: "symbol", id: datum.value });
       case "list":
         const heads = datum.heads;
         // Remove holes from the end
@@ -205,7 +204,8 @@ export class Renderer {
         case "var":
           return {
             type: "ident",
-            symbol: this.symbolTable.get(expr.id),
+            id: expr.id,
+            binding: this.environment[expr.id],
             isNameBinding: expr.kind === "name-binding",
           };
       }
@@ -232,8 +232,10 @@ export class Renderer {
     let { called, args } = expr;
 
     if (called.kind === "var") {
-      const calledSymbol = this.symbolTable.get(called.id);
-      const minArgCount = calledSymbol.minArgCount ?? 0;
+      const calledBinding = this.environment[called.id];
+      const calledAttributes = calledBinding?.attributes;
+
+      const minArgCount = calledAttributes?.minArgCount ?? 0;
 
       // Add holes where arguments are required
       while (args.length < minArgCount) {
@@ -249,20 +251,22 @@ export class Renderer {
     const renderedArgs = args.map((arg, index) => this.#renderSubexpr(arg, index + 1));
 
     if (called.kind === "var") {
-      const calledSymbol = this.symbolTable.get(called.id);
-      if (calledSymbol.headingArgCount || calledSymbol.bodyArgHints?.length) {
-        const { headingArgCount, bodyArgHints } = calledSymbol;
+      const calledBinding = this.environment[called.id];
+      const calledAttributes = calledBinding?.attributes;
+
+      if (calledAttributes?.headingArgCount || calledAttributes?.bodyArgHints?.length) {
+        const { headingArgCount, bodyArgHints } = calledAttributes;
 
         const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
         const body = renderedArgs.slice(headingArgCount);
 
         return this.#block(
-          { type: "v", symbol: calledSymbol, heading: <>{heading}</> },
+          { type: "v", id: called.id, binding: calledBinding, heading: <>{heading}</> },
           this.#hintBodyArgs(body, bodyArgHints)
         );
       }
 
-      return this.#block({ type: "h", symbol: calledSymbol }, renderedArgs);
+      return this.#block({ type: "h", id: called.id, binding: calledBinding }, renderedArgs);
     } else {
       throw "calling non-identifier is not supported yet";
     }
@@ -272,7 +276,7 @@ export class Renderer {
     const heading = this.#renderSubexpr(expr.name, 0, { isCopySource: true });
     const body = this.#renderSubexpr(expr.value, 1);
 
-    return this.#block({ type: "v", symbol: symbols.define, heading }, body);
+    return this.#block({ type: "v", id: "define", heading }, body);
   }
 
   #renderLet(expr: Let): JSX.Element {
@@ -288,7 +292,7 @@ export class Renderer {
     );
     const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length);
 
-    return this.#block({ type: "v", symbol: symbols.let, heading }, body);
+    return this.#block({ type: "v", id: "let", heading }, body);
   }
 
   #renderLambda(expr: Lambda): JSX.Element {
@@ -301,7 +305,7 @@ export class Renderer {
     );
     const body = this.#renderSubexpr(expr.body, expr.params.length);
 
-    return this.#block({ type: "v", symbol: symbols.lambda, heading }, body);
+    return this.#block({ type: "v", id: "lambda", heading }, body);
   }
 
   #renderSequence(expr: Sequence): JSX.Element {
@@ -311,7 +315,7 @@ export class Renderer {
 
   #renderIf(expr: If): JSX.Element {
     return this.#block(
-      { type: "v", symbol: symbols.if, heading: this.#renderSubexpr(expr.if, 0) },
+      { type: "v", id: "if", heading: this.#renderSubexpr(expr.if, 0) },
       this.#hintBodyArgs(
         [this.#renderSubexpr(expr.then, 1), this.#renderSubexpr(expr.else, 2)],
         ["then", "else"]

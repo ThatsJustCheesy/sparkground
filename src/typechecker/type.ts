@@ -81,6 +81,7 @@ const TypeDefs = {
   List: ["element"],
   Function: ["in", "out"],
   Procedure: ["out"],
+  Promise: ["value"],
 } as const satisfies Record<string, Readonly<string[]>>;
 
 // For type inference algorithm only.

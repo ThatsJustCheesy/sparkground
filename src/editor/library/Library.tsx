@@ -14,7 +14,7 @@ export default function Library() {
   return (
     <div ref={setNodeRef} className="library-container">
       <div className="library">
-        <h2 className="library-heading">Library</h2>
+        {/* <h2 className="library-heading">Library</h2> */}
         <LibraryBlocksMemo />
       </div>
     </div>

@@ -1,13 +1,14 @@
-export type Binding<Domain> = { name: string; value: Domain };
+import { Binding } from "../editor/library/environments";
 
 type StackFrame<Domain> = {
   bindings: Map<string, Binding<Domain>>;
 };
 
-export class Environment<Domain> {
+// TODO: Audit all uses of this. It isn't really correct.
+export class Stack<Domain> {
   #stack: StackFrame<Domain>[] = [];
   get #top(): StackFrame<Domain> {
-    return this.#stack[this.#stack.length - 1];
+    return this.#stack[this.#stack.length - 1]!;
   }
 
   /**
@@ -24,7 +25,7 @@ export class Environment<Domain> {
 
   get(identifier: string): Binding<Domain> | undefined {
     for (let i = this.#stack.length - 1; i >= 0; --i) {
-      const binding = this.#stack[i].bindings.get(identifier);
+      const binding = this.#stack[i]!.bindings.get(identifier);
       if (binding) return binding;
     }
 
@@ -48,7 +49,4 @@ export class Environment<Domain> {
 
 export type EvalFn<Domain, Value> = (binding: Binding<Domain>) => Value;
 
-export type Builtin<Domain, Value> = (
-  env: Environment<Domain>,
-  evaluate: EvalFn<Domain, Value>
-) => Value;
+export type Builtin<Domain, Value> = (env: Stack<Domain>, evaluate: EvalFn<Domain, Value>) => Value;

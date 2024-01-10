@@ -179,7 +179,7 @@ export default function LoadDialog({ show, onHide }: Props) {
             const input = document.createElement("input");
             input.type = "file";
             input.addEventListener("change", async () => {
-              const source = await input.files?.[0].text();
+              const source = await input.files?.[0]?.text();
               if (source === undefined) return;
 
               const name = prompt("Name your project:");
