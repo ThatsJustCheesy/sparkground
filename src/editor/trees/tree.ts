@@ -1,6 +1,6 @@
 import { Tree } from "./trees";
 import { isEqual } from "lodash";
-import { Expr, Hole, NameBinding } from "../../expr/expr";
+import { Expr, Hole, NameBinding, Var } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { serializeExpr } from "./serialize";
 import { Parser as DatumParser } from "../../datum/parse";
@@ -127,6 +127,12 @@ export function extendIndexPath({ tree, path }: TreeIndexPath, extension: number
     path: [...path, extension],
   };
 }
+export function parentIndexPath({ tree, path }: TreeIndexPath) {
+  return {
+    tree,
+    path: path.slice(0, -1),
+  };
+}
 export function nodeAtIndexPath({ tree: { root }, path }: TreeIndexPath): Expr {
   const [origRoot, origPath] = [root, path];
 
@@ -163,4 +169,33 @@ export function isSameOrAncestor(ancestor: TreeIndexPath, descendant: TreeIndexP
     (ancestor.tree === descendant.tree && isEqual(ancestor.path, descendant.path)) ||
     isAncestor(ancestor, descendant)
   );
+}
+
+export function referencesToBinding(id: string, root: TreeIndexPath): Var[] {
+  return children(nodeAtIndexPath(root)).flatMap((child, childIndex) => {
+    if (!child) return [];
+    const childIndexPath = extendIndexPath(root, childIndex);
+
+    switch (child.kind) {
+      case "var":
+        if (child.id === id) {
+          return [child];
+        }
+        break;
+      case "lambda":
+        if (child.params.some((slot) => slot.kind === "name-binding" && slot.id === id)) {
+          // Shadowed
+          return [];
+        }
+        break;
+      case "let":
+        if (child.bindings.some(([slot]) => slot.kind === "name-binding" && slot.id === id)) {
+          // Shadowed
+          return [];
+        }
+        break;
+    }
+
+    return referencesToBinding(id, childIndexPath);
+  });
 }

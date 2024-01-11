@@ -10,7 +10,6 @@ import {
 } from "./tree";
 import { Point, Tree, newTree, removeTree } from "./trees";
 import { Expr } from "../../expr/expr";
-import { Datum } from "../../datum/datum";
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,

@@ -252,9 +252,11 @@ export default function Block({
     </>
   );
 
+  const isNameBinding = data.type === "ident" && data.isNameBinding;
+
   return (
     <>
-      <ContextMenuTrigger id={`menu`}>
+      <ContextMenuTrigger id={isNameBinding ? `block-menu-namebinding` : "block-menu"}>
         <Tippy
           content={tooltipContent}
           className={"text-bg-primary"}

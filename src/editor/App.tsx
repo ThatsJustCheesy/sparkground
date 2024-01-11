@@ -9,9 +9,10 @@ import { Parser } from "../expr/parse";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
 import { deleteExpr, orphanExpr } from "./trees/mutate";
-import { TreeIndexPath } from "./trees/tree";
+import { TreeIndexPath, nodeAtIndexPath, parentIndexPath, referencesToBinding } from "./trees/tree";
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
+import { Var } from "../expr/expr";
 
 const defaultExpr = Parser.parseToExpr(
   "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"
@@ -34,6 +35,26 @@ function App() {
 
   function onBlockContextMenu(indexPath: TreeIndexPath) {
     setBlockContextMenuSubject(indexPath);
+  }
+
+  function renameContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const binding = nodeAtIndexPath(blockContextMenuSubject);
+    if (binding.kind !== "name-binding") return;
+
+    const references: Var[] = referencesToBinding(
+      binding.id,
+      parentIndexPath(blockContextMenuSubject)
+    );
+
+    const newName = prompt("New name:");
+    if (!newName) return;
+
+    binding.id = newName;
+    references.forEach((ref) => {
+      ref.id = newName;
+    });
   }
 
   function textEditBlockContextMenuSubject(event: SyntheticEvent) {
@@ -110,7 +131,15 @@ function App() {
       />
       <HelpDialog show={showHelpDialog} onHide={() => setShowHelpDialog(false)} />
 
-      <ContextMenu id={`menu`} hideOnLeave={false}>
+      <ContextMenu id="block-menu" hideOnLeave={false}>
+        <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
+        <MenuItemSeparator />
+        <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
+        <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-namebinding" hideOnLeave={false}>
+        <ContextMenuItem onClick={renameContextMenuSubject}>Rename</ContextMenuItem>
         <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
         <MenuItemSeparator />
         <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
