@@ -40,7 +40,7 @@ export class Parser {
 
   parseDatum(): Datum {
     const next = this.tokens[0];
-    if (!next) throw "expected datum, but found end of input";
+    if (next === undefined) throw "expected datum, but found end of input";
 
     switch (next) {
       case "(":
