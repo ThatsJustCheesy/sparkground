@@ -71,6 +71,7 @@
 }
 
 .block-h,
+.block-happly,
 .block-hlist,
 .block-quote {
   display: flex;
@@ -110,6 +111,10 @@
 }
 .block-h-pull-tab-shown > svg {
   margin: auto;
+}
+
+.block-happly {
+  background: #ffe070;
 }
 
 .block-hlist:empty::before {

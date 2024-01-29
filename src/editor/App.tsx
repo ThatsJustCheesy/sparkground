@@ -1,15 +1,22 @@
 import "./app.css";
 import "tippy.js/dist/tippy.css";
 import { SyntheticEvent, useState } from "react";
-import { newTree, trees } from "./trees/trees";
+import { Point, newTree, trees } from "./trees/trees";
 import Editor from "./Editor";
 import AppMenuBar from "./ui/menus/AppMenuBar";
 import HelpDialog from "./ui/HelpDialog";
 import { Parser } from "../expr/parse";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
-import { deleteExpr, orphanExpr } from "./trees/mutate";
-import { TreeIndexPath, nodeAtIndexPath, parentIndexPath, referencesToBinding } from "./trees/tree";
+import { deleteExpr, moveExprInTree, orphanExpr } from "./trees/mutate";
+import {
+  TreeIndexPath,
+  extendIndexPath,
+  hole,
+  nodeAtIndexPath,
+  parentIndexPath,
+  referencesToBinding,
+} from "./trees/tree";
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
 import { Var } from "../expr/expr";
@@ -37,6 +44,15 @@ function App() {
     setBlockContextMenuSubject(indexPath);
   }
 
+  function mouseCursorLocation(event: SyntheticEvent): Point {
+    const clickEvent = event.nativeEvent as MouseEvent;
+    const blocksArea = document.querySelector(".blocks");
+    return {
+      x: clickEvent.clientX + (blocksArea?.scrollLeft ?? 0),
+      y: clickEvent.clientY + (blocksArea?.scrollTop ?? 0),
+    };
+  }
+
   function renameContextMenuSubject(event: SyntheticEvent) {
     if (!blockContextMenuSubject) return;
 
@@ -57,22 +73,37 @@ function App() {
     });
   }
 
+  function applyContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const variable = nodeAtIndexPath(blockContextMenuSubject);
+    if (variable.kind !== "var") return;
+
+    const location = mouseCursorLocation(event);
+    const call = newTree({ kind: "call", called: hole, args: [] }, location);
+    moveExprInTree(blockContextMenuSubject, { tree: call, path: [0] }, location);
+    rerender();
+  }
+
+  function unapplyContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const call = nodeAtIndexPath(blockContextMenuSubject);
+    if (call.kind !== "call") return;
+
+    const location = mouseCursorLocation(event);
+    orphanExpr(extendIndexPath(blockContextMenuSubject, 0), location, false);
+    rerender();
+  }
+
   function textEditBlockContextMenuSubject(event: SyntheticEvent) {
     setCodeEditorSubject(blockContextMenuSubject);
   }
 
   function duplicateBlockContextMenuSubject(event: SyntheticEvent) {
-    const clickEvent = event.nativeEvent as MouseEvent;
     if (blockContextMenuSubject) {
-      const blocksArea = document.querySelector(".blocks");
-      orphanExpr(
-        blockContextMenuSubject,
-        {
-          x: clickEvent.clientX + (blocksArea?.scrollLeft ?? 0),
-          y: clickEvent.clientY + (blocksArea?.scrollTop ?? 0),
-        },
-        true
-      );
+      const location = mouseCursorLocation(event);
+      orphanExpr(blockContextMenuSubject, location, true);
       rerender();
     }
   }
@@ -86,6 +117,15 @@ function App() {
 
   const [loadResolve, setLoadResolve] = useState<(source: string | undefined) => void>();
   const [saveResolve, setSaveResolve] = useState<() => void>();
+
+  const commonContextMenu = (
+    <>
+      <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
+      <MenuItemSeparator />
+      <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
+      <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
+    </>
+  );
 
   return (
     <>
@@ -132,18 +172,26 @@ function App() {
       <HelpDialog show={showHelpDialog} onHide={() => setShowHelpDialog(false)} />
 
       <ContextMenu id="block-menu" hideOnLeave={false}>
-        <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
-        <MenuItemSeparator />
-        <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
-        <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
+        {commonContextMenu}
       </ContextMenu>
 
       <ContextMenu id="block-menu-namebinding" hideOnLeave={false}>
         <ContextMenuItem onClick={renameContextMenuSubject}>Rename</ContextMenuItem>
-        <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
-        <MenuItemSeparator />
-        <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
-        <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-var" hideOnLeave={false}>
+        <ContextMenuItem onClick={applyContextMenuSubject}>Apply</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-call" hideOnLeave={false}>
+        <ContextMenuItem onClick={unapplyContextMenuSubject}>Unapply</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-apply" hideOnLeave={false}>
+        {commonContextMenu}
       </ContextMenu>
     </>
   );

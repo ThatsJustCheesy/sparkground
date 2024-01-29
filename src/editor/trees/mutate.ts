@@ -70,7 +70,7 @@ export function copyExprInTree(
 
   if (destination === source || destination === destinationTree.root) return;
 
-  setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, cloneDeep(source));
+  setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, cloneExpr(source));
   if (!isHole(destination)) newTree(destination, displaceTo);
 }
 
@@ -81,7 +81,7 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
   const parent = nodeForIndexPathInTree(tree, path.slice(0, -1));
 
   if (copy) {
-    return newTree(cloneDeep(expr), placeAt);
+    return newTree(cloneExpr(expr), placeAt);
   }
 
   if (path.length === 0 || isAtomic(parent)) {
@@ -110,4 +110,13 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
 
 function nodeForIndexPathInTree(tree: Tree, path: number[]): Expr {
   return nodeAtIndexPath({ tree, path });
+}
+
+function cloneExpr(expr: Expr): Expr {
+  let clone = cloneDeep(expr);
+  switch (clone.kind) {
+    case "name-binding":
+      clone = { ...clone, kind: "var" };
+  }
+  return clone;
 }

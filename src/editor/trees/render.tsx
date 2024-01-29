@@ -261,14 +261,24 @@ export class Renderer {
         const body = renderedArgs.slice(headingArgCount);
 
         return this.#block(
-          { type: "v", id: called.id, binding: calledBinding, heading: <>{heading}</> },
+          {
+            type: "v",
+            id: called.id,
+            binding: calledBinding,
+            heading: <>{heading}</>,
+            calledIsVar: true,
+          },
           this.#hintBodyArgs(body, bodyArgHints)
         );
       }
 
-      return this.#block({ type: "h", id: called.id, binding: calledBinding }, renderedArgs);
+      return this.#block(
+        { type: "h", id: called.id, binding: calledBinding, calledIsVar: true },
+        renderedArgs
+      );
     } else {
-      throw "calling non-identifier is not supported yet";
+      const renderedCalled = this.#renderSubexpr(called, 0);
+      return this.#block({ type: "happly" }, [renderedCalled, ...renderedArgs]);
     }
   }
 

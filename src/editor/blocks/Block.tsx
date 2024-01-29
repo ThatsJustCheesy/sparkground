@@ -45,6 +45,7 @@ type Props = PropsWithChildren<{
 export type BlockData =
   | Vertical
   | Horizontal
+  | HorizontalApply
   | HorizontalList
   | Identifier
   | Symbol
@@ -56,13 +57,18 @@ type Vertical = {
   type: "v";
   id: string;
   binding?: Binding<Value>;
+  calledIsVar?: boolean;
   heading?: JSX.Element;
 };
 type Horizontal = {
   type: "h";
   id: string;
   binding?: Binding<Value>;
+  calledIsVar?: boolean;
   definesSymbol?: boolean;
+};
+type HorizontalApply = {
+  type: "happly";
 };
 type HorizontalList = {
   type: "hlist";
@@ -252,11 +258,24 @@ export default function Block({
     </>
   );
 
-  const isNameBinding = data.type === "ident" && data.isNameBinding;
+  const contextMenuID = (() => {
+    switch (data.type) {
+      case "ident":
+        if (data.isNameBinding) return "block-menu-namebinding";
+        return "block-menu-var";
+      case "h":
+      case "v":
+        if (data.calledIsVar) return "block-menu-call";
+        break;
+      case "happly":
+        if (data) return "block-menu-apply";
+    }
+    return "block-menu";
+  })();
 
   return (
     <>
-      <ContextMenuTrigger id={isNameBinding ? `block-menu-namebinding` : "block-menu"}>
+      <ContextMenuTrigger id={contextMenuID}>
         <Tippy
           content={tooltipContent}
           className={"text-bg-primary"}
@@ -317,6 +336,12 @@ export default function Block({
                 indexPath={extendIndexPath(indexPath, 1 /* tail slot */ + expr.heads.length)}
                 isCopySource={isCopySource}
               />
+            ) : data.type === "happly" && expr && expr.kind === "call" ? (
+              <BlockPullTab
+                id={`${id}-pull-tab`}
+                indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
+                isCopySource={isCopySource}
+              />
             ) : data.type === "h" &&
               expr &&
               expr.kind === "call" &&
@@ -375,6 +400,10 @@ export default function Block({
             {children}
           </>
         );
+      }
+
+      case "happly": {
+        return <>{children}</>;
       }
 
       case "hlist": {
