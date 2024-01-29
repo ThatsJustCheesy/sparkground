@@ -260,7 +260,7 @@ export default function Editor({
     const overIndexPath = indexPathFromDragged(over);
 
     // Adjust coordinates of drop point to account for context of scrolled container
-    active!.rect.current.translated!.top += blocksArea.current!.scrollTop;
+    active!.rect.current.translated!.top += blocksArea.current!.scrollTop + 4.5;
     active!.rect.current.translated!.bottom += blocksArea.current!.scrollTop;
     active!.rect.current.translated!.left += blocksArea.current!.scrollLeft;
     active!.rect.current.translated!.right += blocksArea.current!.scrollLeft;
