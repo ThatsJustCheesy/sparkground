@@ -1,25 +1,8 @@
+import { BoolDatum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
 import { Expr } from "../expr/expr";
 import { Builtin } from "./environment";
 
-export type Value = BoolValue | NumberValue | StringValue | SymbolValue | ListValue | FnValue;
-
-export type BoolValue = {
-  kind: "bool";
-  value: boolean;
-};
-export type NumberValue = {
-  kind: "number";
-  value: number;
-};
-export type StringValue = {
-  kind: "string";
-  value: string;
-};
-
-export type SymbolValue = {
-  kind: "symbol";
-  value: string;
-};
+export type Value = BoolDatum | NumberDatum | StringDatum | SymbolDatum | ListValue | FnValue;
 
 export type ListValue = {
   kind: "list";
