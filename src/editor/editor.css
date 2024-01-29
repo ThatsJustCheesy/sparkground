@@ -38,6 +38,8 @@
   padding-top: 0.5em;
   padding-bottom: 0.5em;
 
+  /* background: #e1e8ed; */
+  border: 0.09em solid black;
   border-radius: 0.5em;
 }
 .block-v > :not(.block-v-heading) {
