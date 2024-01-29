@@ -155,7 +155,7 @@ function tokenize(source: string): Token[] {
     }
 
     // TODO: Real number parsing
-    let match = source.match(/^\d+/);
+    let match = source.match(/^-?\d+/);
     if (match) {
       const [matchText] = match;
       source = source.slice(matchText.length);
