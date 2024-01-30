@@ -23,6 +23,7 @@ export function children(node: Expr): (Expr | undefined)[] {
     case "define":
       return [node.name, node.value];
     case "let":
+    case "letrec":
       return [...node.bindings.flat(1), node.body];
     case "lambda":
       return [...node.params, node.body];
@@ -61,6 +62,7 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       if (index === 1) node.value = newChild;
       break;
     case "let":
+    case "letrec":
       if (index < 2 * node.bindings.length) {
         const binding = node.bindings[Math.floor(index / 2)]!;
         binding[index % 2] = newChild;
@@ -189,6 +191,7 @@ export function referencesToBinding(id: string, root: TreeIndexPath): Var[] {
         }
         break;
       case "let":
+      case "letrec": // FIXME: not right for letrec
         if (child.bindings.some(([slot]) => slot.kind === "name-binding" && slot.id === id)) {
           // Shadowed
           return [];

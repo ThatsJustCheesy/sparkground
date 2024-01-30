@@ -1,4 +1,3 @@
-import { Datum } from "../../datum/datum";
 import { Expr } from "../../expr/expr";
 import { TypeInferrer } from "../../typechecker/infer";
 

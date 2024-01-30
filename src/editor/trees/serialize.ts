@@ -36,8 +36,11 @@ export function serializeExpr(expr: Expr): string {
     case "define":
       return "(define " + getIdentifier(expr.name) + " " + serializeExpr(expr.value) + ")";
     case "let":
+    case "letrec":
       return (
-        "(let (" +
+        "(" +
+        expr.kind +
+        " (" +
         expr.bindings.map(
           ([name, valueExpr]) => "(" + getIdentifier(name) + " " + serializeExpr(valueExpr) + ")"
         ) +

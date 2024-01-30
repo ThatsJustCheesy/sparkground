@@ -17,7 +17,7 @@ export class Stack<Domain> {
   constructor(globalBindings: Record<string, Domain> = {}) {
     this.push();
     Object.entries(globalBindings).forEach(([name, value]) => {
-      this.bind({ name, value });
+      this.bind({ name, cell: { value } });
     });
 
     this.push();
@@ -47,6 +47,4 @@ export class Stack<Domain> {
   }
 }
 
-export type EvalFn<Domain, Value> = (binding: Binding<Domain>) => Value;
-
-export type Builtin<Domain, Value> = (env: Stack<Domain>, evaluate: EvalFn<Domain, Value>) => Value;
+export type Builtin<Domain, Value, Evaluator> = (args: Domain[], evaluator: Evaluator) => Value;

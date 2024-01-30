@@ -21,6 +21,7 @@ import {
   Var,
   Let,
   NameBinding,
+  Letrec,
 } from "../../expr/expr";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
@@ -99,6 +100,8 @@ export class Renderer {
         return this.#renderDefine(expr);
       case "let":
         return this.#renderLet(expr);
+      case "letrec":
+        return this.#renderLetrec(expr);
       case "lambda":
         return this.#renderLambda(expr);
       case "sequence":
@@ -303,6 +306,22 @@ export class Renderer {
     const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length);
 
     return this.#block({ type: "v", id: "let", heading }, body);
+  }
+
+  #renderLetrec(expr: Letrec): JSX.Element {
+    const heading = (
+      <>
+        {expr.bindings.map(([name, value], index) => (
+          <>
+            {this.#renderSubexpr(name, 2 * index, { isCopySource: true })}
+            {this.#renderSubexpr(value, 2 * index + 1)}
+          </>
+        ))}
+      </>
+    );
+    const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length);
+
+    return this.#block({ type: "v", id: "letrec", heading }, body);
   }
 
   #renderLambda(expr: Lambda): JSX.Element {

@@ -9,6 +9,7 @@ export type Expr = { attributes?: DefinitionAttributes } & (
   | Call
   | Define
   | Let
+  | Letrec
   | Lambda
   | Sequence
   | If
@@ -47,6 +48,11 @@ export type Define = {
 };
 export type Let = {
   kind: "let";
+  bindings: [name: VarSlot, value: Expr][];
+  body: Expr;
+};
+export type Letrec = {
+  kind: "letrec";
   bindings: [name: VarSlot, value: Expr][];
   body: Expr;
 };

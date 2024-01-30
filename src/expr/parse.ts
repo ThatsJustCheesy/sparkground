@@ -1,4 +1,16 @@
-import { Define, Expr, Let, Call, NameBinding, Lambda, Sequence, If, Cond, Var } from "./expr";
+import {
+  Define,
+  Expr,
+  Let,
+  Call,
+  NameBinding,
+  Lambda,
+  Sequence,
+  If,
+  Cond,
+  Var,
+  Letrec,
+} from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
 import { hole } from "../editor/trees/tree";
@@ -50,6 +62,7 @@ export class Parser {
           case "quote":
           case "define":
           case "let":
+          case "letrec":
           case "lambda":
           case "if":
           case "cond":
@@ -69,6 +82,8 @@ export class Parser {
               return this.parseDefine(datum);
             case "let":
               return this.parseLet(datum);
+            case "letrec":
+              return this.parseLetrec(datum);
             case "lambda":
               return this.parseLambda(datum);
             case "if":
@@ -140,6 +155,10 @@ export class Parser {
       bindings,
       body,
     };
+  }
+
+  parseLetrec(datum: FlattenedListDatum): Letrec {
+    return { ...this.parseLet(datum), kind: "letrec" };
   }
 
   parseLambda(datum: FlattenedListDatum): Lambda {

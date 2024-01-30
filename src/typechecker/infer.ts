@@ -265,6 +265,9 @@ export class TypeInferrer {
 
         return this.#infer(expr.body, newEnv, extendIndexPath(indexPath, 2 * expr.bindings.length));
 
+      case "letrec":
+        throw "TODO";
+
       case "lambda": {
         const paramTypes = Object.fromEntries(
           expr.params.map((param) => [getIdentifier(param), this.#newUnknown(getIdentifier(param))])

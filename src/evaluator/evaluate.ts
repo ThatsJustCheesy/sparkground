@@ -31,9 +31,9 @@ export class Evaluator {
 
       case "var": {
         const binding = this.env.get(expr.id);
-        if (!binding) throw "unbound variable: " + expr.id;
+        if (!binding?.cell.value) throw "unbound variable: " + expr.id;
 
-        return binding.value;
+        return binding.cell.value;
       }
 
       case "call": {
@@ -71,17 +71,43 @@ export class Evaluator {
         throw "TODO";
 
       case "let": {
-        const valueBindings: [VarSlot, Value][] = expr.bindings.map(([name, value]) => [
-          name,
-          this.#eval(value),
+        const valueBindings: [string, Cell<Value>][] = expr.bindings.map(([name, value]) => [
+          (name as NameBinding).id,
+          { value: this.#eval(value) },
         ]);
 
         this.env.push();
-        valueBindings.forEach(([name, value]) => {
+        valueBindings.forEach(([name, cell]) => {
           this.env.bind({
-            name: (name as NameBinding).id,
-            value,
+            name,
+            cell,
           });
+        });
+
+        const result: Value = this.#eval(expr.body);
+
+        this.env.pop();
+
+        return result;
+      }
+
+      case "letrec": {
+        const valueBindings: [string, Cell<Value>][] = expr.bindings.map(([name]) => [
+          (name as NameBinding).id,
+          {},
+        ]);
+
+        this.env.push();
+        valueBindings.forEach(([name, cell]) => {
+          this.env.bind({
+            name,
+            cell,
+          });
+        });
+
+        expr.bindings.forEach(([name, value]) => {
+          const id = (name as NameBinding).id;
+          this.env.get(id)!.cell.value = this.#eval(value);
         });
 
         const result: Value = this.#eval(expr.body);

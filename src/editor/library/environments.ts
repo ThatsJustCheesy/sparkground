@@ -3,9 +3,13 @@ import { ListDatum } from "../../datum/datum";
 import { ListValue, Value } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
 
+export type Cell<Domain> = {
+  value?: Domain;
+};
+
 export type Binding<Domain> = {
   name: string;
-  value: Domain;
+  cell: Cell<Domain>;
   attributes?: BindingAttributes;
 };
 
