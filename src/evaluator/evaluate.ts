@@ -1,8 +1,9 @@
-import { InitialEnvironment } from "../editor/library/environments";
+import { Cell, InitialEnvironment } from "../editor/library/environments";
 import { isHole } from "../editor/trees/tree";
-import { Expr, NameBinding, VarSlot } from "../expr/expr";
+import { Expr, NameBinding } from "../expr/expr";
+import { checkCallAgainstTypeSignature } from "./dynamic-type";
 import { Stack } from "./environment";
-import { Value, valueAsBool } from "./value";
+import { FnValue, Value, valueAsBool } from "./value";
 
 /** Call-by-value evaluator */
 export class Evaluator {
@@ -44,27 +45,7 @@ export class Evaluator {
 
         const argValues = args.map((arg) => this.#eval(arg));
 
-        this.env.push();
-        for (let i = 0; i < argValues.length && i < calledValue.params.length; ++i) {
-          const name = calledValue.params[i]!;
-          const value = argValues[i]!;
-          this.env.bind({
-            name,
-            value,
-          });
-        }
-
-        let result: Value;
-        if (typeof calledValue.body === "function") {
-          // Builtin
-          result = calledValue.body(this.env, ({ value }) => value);
-        } else {
-          result = this.#eval(calledValue.body);
-        }
-
-        this.env.pop();
-
-        return result;
+        return this.call(calledValue, argValues);
       }
 
       case "define":
@@ -120,7 +101,10 @@ export class Evaluator {
       case "lambda":
         return {
           kind: "fn",
-          params: expr.params.map((param) => (param as NameBinding).id),
+          signature: expr.params.map((param) => ({
+            name: (param as NameBinding).id,
+            // TODO: type and variadic?
+          })),
           body: expr.body,
         };
 
@@ -141,5 +125,31 @@ export class Evaluator {
       case "name-binding":
         throw "TODO";
     }
+  }
+
+  call(fn: FnValue, args: Value[]): Value {
+    checkCallAgainstTypeSignature(args, fn.signature);
+
+    this.env.push();
+    for (let i = 0; i < args.length && i < fn.signature.length; ++i) {
+      const { name } = fn.signature[i]!;
+      const value = args[i]!;
+      this.env.bind({
+        name,
+        cell: { value },
+      });
+    }
+
+    let result: Value;
+    if (typeof fn.body === "function") {
+      // Builtin
+      result = fn.body(args, this);
+    } else {
+      result = this.#eval(fn.body);
+    }
+
+    this.env.pop();
+
+    return result;
   }
 }

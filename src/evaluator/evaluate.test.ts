@@ -3,13 +3,14 @@ import { Parser as DatumParser } from "../datum/parse"
 import { Lambda } from "../expr/expr"
 import { Stack } from "./environment"
 import { Evaluator } from "./evaluate"
-import { Value } from "./value"
+import { FnValue, Value } from "./value"
 import { datumEqual } from "../datum/equality"
 
 describe("evaluate", () => {
   let evaluator: Evaluator
   beforeEach(() => {
     evaluator = new Evaluator()
+    evaluator.env = new Stack()
   })
 
   it("evals literal values", () => {
@@ -40,13 +41,13 @@ describe("evaluate", () => {
 
   it("evals procedures", () => {
     const const42: Lambda = { kind: "lambda", params: [], body: { kind: "number", value: 42 } }
-    expect(evaluator.eval(const42)).toEqual<Value>({ kind: "fn", params: [], body: { kind: "number", value: 42 } })
+    expect(evaluator.eval(const42)).toEqual<Value>({ kind: "fn", signature: [], body: { kind: "number", value: 42 } })
     expect(evaluator.eval({ kind: "call", called: const42, args: [] })).toEqual<Value>({ kind: "number", value: 42 })
   })
 
   it("evals unary functions", () => {
     const id: Lambda = { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } }
-    expect(evaluator.eval(id)).toEqual<Value>({ kind: "fn", params: ["x"], body: { kind: "var", id: "x" } })
+    expect(evaluator.eval(id)).toEqual<Value>({ kind: "fn", signature: [{ name: "x" }], body: { kind: "var", id: "x" } })
     expect(evaluator.eval({ kind: "call", called: id, args: [{ kind: "number", value: 42 }] })).toEqual<Value>({
       kind: "number",
       value: 42,
@@ -64,7 +65,7 @@ describe("evaluate", () => {
     }
     expect(evaluator.eval(second)).toEqual<Value>({
       kind: "fn",
-      params: ["x", "y"],
+      signature: [{ name: "x" }, { name: "y" }],
       body: { kind: "var", id: "y" },
     })
     expect(
@@ -89,5 +90,33 @@ describe("evaluate", () => {
     const consResult = evaluator.eval(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 (null))))"))
     const datum = DatumParser.parseToDatum("(3 2 1)")
     expect(datumEqual(consResult, datum)).toBeTruthy()
+  })
+
+  it("checks the types of function parameters", () => {
+    const body: FnValue["body"] = () => {
+      return { kind: "list", heads: [] }
+    }
+
+    // No formal, one actual
+    expect(() => evaluator.call({ kind: "fn", signature: [], body }, [{ kind: "bool", value: true }])).toThrow()
+
+    // One formal, no actual
+    expect(() => evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Boolean" }], body }, [])).toThrow()
+
+    // One formal, one actual, type mismatch
+    expect(() =>
+      evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Number" }], body }, [{ kind: "bool", value: true }])
+    ).toThrow()
+
+    // Variadic formal, no actual
+    expect(() => evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, [])).not.toThrow()
+
+    // Variadic formal, 2 actual
+    expect(() =>
+      evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, [
+        { kind: "bool", value: true },
+        { kind: "number", value: 123 },
+      ])
+    ).not.toThrow()
   })
 })

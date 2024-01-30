@@ -1,6 +1,6 @@
-import { keyBy } from "lodash";
-import { ListDatum } from "../../datum/datum";
-import { ListValue, Value } from "../../evaluator/value";
+import { keyBy, multiply, reduce, sumBy } from "lodash";
+import { ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
+import { FnValue, ListValue, Value, getVariadic, listValueAsVector } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
 
 export type Cell<Domain> = {
@@ -38,15 +38,31 @@ export function mergeEnvs(...environments: Environment[]): Environment {
 export const SchemeReportEnvironment: Environment = makeEnv([
   {
     name: "apply",
-    value: {
-      kind: "fn",
-      params: ["proc", "args"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          {
+            name: "function",
+            type: "Function",
+          },
+          {
+            name: "args",
+            type: "List",
+          },
+        ],
+        body: (args, evaluator): Value => {
+          const [fn, argList] = args as [FnValue, ListValue];
+
+          const argv = listValueAsVector(argList);
+          if (!argv) throw "argument list passed to 'apply' is an improper list";
+
+          return evaluator.call(fn, argv);
+        },
       },
     },
     attributes: {
-      doc: "Calls `proc` with the elements of `args` as arguments.",
+      doc: "Calls `function` with the elements of `args` as arguments.",
       minArgCount: 2,
       maxArgCount: 2,
       argTypes: [
@@ -58,15 +74,50 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "map",
-    value: {
-      kind: "fn",
-      params: ["proc", "lists..."],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          {
+            name: "function",
+            type: "Function",
+          },
+          {
+            name: "lists",
+            type: "List",
+            variadic: true,
+          },
+        ],
+        body: (args, evaluator): Value => {
+          const [fn] = args as [FnValue];
+          const lists = getVariadic<ListValue>(1, args);
+
+          if (!lists.length) return { kind: "list", heads: [] };
+
+          const vectors = lists.map(listValueAsVector);
+          if (vectors.some((vector) => vector === undefined)) {
+            throw "one of the lists passed to 'map' is an improper list";
+          }
+          const rows = vectors as Value[][];
+
+          const width = vectors[0]!.length;
+          let results: Value[] = [];
+          for (let i = 0; i < width; i++) {
+            const tentativeCol = rows.map((row) => row[i]);
+            if (tentativeCol.some((entry) => entry === undefined)) {
+              throw "lists passed to 'map' have different length";
+            }
+            const col = tentativeCol as Value[];
+
+            results.push(evaluator.call(fn, col));
+          }
+
+          return { kind: "list", heads: results };
+        },
       },
     },
     attributes: {
-      doc: "Applies `proc` elementwise to the elements of `lists` and returns a list of the results, in order.",
+      doc: "Applies `function` elementwise to the elements of `lists` and returns a list of the results, in order.",
       minArgCount: 1,
       argTypes: [
         { tag: "Function", in: { var: "Element" }, out: { var: "NewElement" } },
@@ -77,11 +128,38 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "for-each",
-    value: {
-      kind: "fn",
-      params: ["proc", "lists..."],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "proc", type: "Function" },
+          { name: "lists", type: "List", variadic: true },
+        ],
+        body: (args, evaluator): Value => {
+          const [proc] = args as [FnValue];
+          const lists = getVariadic<ListValue>(1, args);
+
+          if (!lists.length) return { kind: "list", heads: [] };
+
+          const vectors = lists.map(listValueAsVector);
+          if (vectors.some((vector) => vector === undefined)) {
+            throw "one of the lists passed to 'for-each' is an improper list";
+          }
+          const rows = vectors as Value[][];
+
+          const width = vectors[0]!.length;
+          for (let i = 0; i < width; i++) {
+            const tentativeCol = rows.map((row) => row[i]);
+            if (tentativeCol.some((entry) => entry === undefined)) {
+              throw "lists passed to 'for-each' have different length";
+            }
+            const col = tentativeCol as Value[];
+
+            evaluator.call(proc, col);
+          }
+
+          return { kind: "list", heads: [] };
+        },
       },
     },
     attributes: {
@@ -96,11 +174,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "force",
-    value: {
-      kind: "fn",
-      params: ["promise"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "promise", type: "Promise" }],
+        body: (args): Value => {
+          throw "TODO";
+        },
       },
     },
     attributes: {
@@ -113,11 +193,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "call-with-current-continuation",
-    value: {
-      kind: "fn",
-      params: ["next"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "next", type: "Function" }],
+        body: (args): Value => {
+          throw "TODO";
+        },
       },
     },
     attributes: {
@@ -136,11 +218,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "eval",
-    value: {
-      kind: "fn",
-      params: ["expression", "environment"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "expression" }, { name: "environment" }],
+        body: (args): Value => {
+          throw "TODO";
+        },
       },
     },
     attributes: {
@@ -153,11 +237,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "boolean?",
-    value: {
-      kind: "fn",
-      params: ["obj"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args as [Value];
+          return { kind: "bool", value: obj.kind === "bool" };
+        },
       },
     },
     attributes: {
@@ -170,11 +257,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "symbol?",
-    value: {
-      kind: "fn",
-      params: ["obj"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args as [Value];
+          return { kind: "bool", value: obj.kind === "symbol" };
+        },
       },
     },
     attributes: {
@@ -187,11 +277,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "number?",
-    value: {
-      kind: "fn",
-      params: ["obj"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args as [Value];
+          return { kind: "bool", value: obj.kind === "number" };
+        },
       },
     },
     attributes: {
@@ -204,11 +297,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "string?",
-    value: {
-      kind: "fn",
-      params: ["obj"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args as [Value];
+          return { kind: "bool", value: obj.kind === "string" };
+        },
       },
     },
     attributes: {
@@ -221,11 +317,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "list?",
-    value: {
-      kind: "fn",
-      params: ["obj"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args as [Value];
+          return { kind: "bool", value: obj.kind === "list" };
+        },
       },
     },
     attributes: {
@@ -238,11 +337,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "procedure?",
-    value: {
-      kind: "fn",
-      params: ["obj"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args as [Value];
+          return { kind: "bool", value: obj.kind === "fn" };
+        },
       },
     },
     attributes: {
@@ -255,11 +357,17 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "string->number",
-    value: {
-      kind: "fn",
-      params: ["string", "radix"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string", type: "String" },
+          { name: "radix", type: "Number" },
+        ],
+        body: (args): Value => {
+          const [string, radix] = args as [StringDatum, NumberDatum];
+          return { kind: "number", value: Number.parseInt(string.value, radix.value) };
+        },
       },
     },
     attributes: {
@@ -272,11 +380,17 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "number->string",
-    value: {
-      kind: "fn",
-      params: ["number", "radix"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "number", type: "Number" },
+          { name: "radix", type: "Number" },
+        ],
+        body: (args): Value => {
+          const [number, radix] = args as [StringDatum, NumberDatum];
+          return { kind: "string", value: new Number(number.value).toString(radix.value) };
+        },
       },
     },
     attributes: {
@@ -289,11 +403,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "string->symbol",
-    value: {
-      kind: "fn",
-      params: ["name"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "name", type: "String" }],
+        body: (args): Value => {
+          const [name] = args as [StringDatum];
+          return { kind: "symbol", value: name.value };
+        },
       },
     },
     attributes: {
@@ -306,11 +423,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "symbol->string",
-    value: {
-      kind: "fn",
-      params: ["symbol"],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "symbol", type: "Symbol" }],
+        body: (args): Value => {
+          const [name] = args as [SymbolDatum];
+          return { kind: "string", value: name.value };
+        },
       },
     },
     attributes: {
@@ -323,11 +443,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "+",
-    value: {
-      kind: "fn",
-      params: ["numbers..."],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return { kind: "number", value: sumBy(numbers, ({ value }) => value) };
+        },
       },
     },
     attributes: {
@@ -338,11 +461,23 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "-",
-    value: {
-      kind: "fn",
-      params: ["number", "numbers..."],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "number", type: "Number" },
+          { name: "numbers", type: "Number", variadic: true },
+        ],
+        body: (args): Value => {
+          const [number] = args as [NumberDatum];
+          const numbers = getVariadic<NumberDatum>(1, args);
+          return {
+            kind: "number",
+            value: numbers.length
+              ? number.value - sumBy(numbers, ({ value }) => value)
+              : -number.value,
+          };
+        },
       },
     },
     attributes: {
@@ -354,11 +489,21 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "*",
-    value: {
-      kind: "fn",
-      params: ["numbers..."],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return {
+            kind: "number",
+            value: reduce(
+              numbers.map(({ value }) => value),
+              multiply,
+              1
+            ),
+          };
+        },
       },
     },
     attributes: {
@@ -369,11 +514,28 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "/",
-    value: {
-      kind: "fn",
-      params: ["number", "numbers..."],
-      body: (env): Value => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "number", type: "Number" },
+          { name: "numbers", type: "Number", variadic: true },
+        ],
+        body: (args): Value => {
+          const [number] = args as [NumberDatum];
+          const numbers = getVariadic<NumberDatum>(1, args);
+          return {
+            kind: "number",
+            value: numbers.length
+              ? number.value /
+                reduce(
+                  numbers.map(({ value }) => value),
+                  multiply,
+                  1
+                )
+              : 1 / number.value,
+          };
+        },
       },
     },
     attributes: {
@@ -385,32 +547,39 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "cons",
-    value: {
-      kind: "fn",
-      params: ["car", "cdr"],
-      body: (env): ListValue => {
-        const car = env.get("car")!.value;
-        const cdr = env.get("cdr")!.value as ListDatum; // TODO: Dynamic type checking
-        return {
-          kind: "list",
-          heads: [car],
-          tail: cdr,
-        };
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "head" }, { name: "tail" }],
+        body: (args): ListValue => {
+          const [head, tail] = args as [Value, ListDatum];
+          return {
+            kind: "list",
+            heads: [head],
+            tail,
+          };
+        },
       },
     },
     attributes: {
-      doc: "Constructs a pair with `car` as the head and `cdr` as the tail. If `cdr` is a list, the resulting pair is a list.",
+      doc: "Constructs a pair with `head` as the head and `tail` as the tail. If `tail` is a list, the resulting pair is a list.",
       minArgCount: 2,
       maxArgCount: 2,
     },
   },
   {
     name: "list",
-    value: {
-      kind: "fn",
-      params: ["elements..."],
-      body: (env): ListValue => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "elements", variadic: true }],
+        body: (args): ListValue => {
+          const elements = getVariadic(0, args);
+          return {
+            kind: "list",
+            heads: elements,
+          };
+        },
       },
     },
     attributes: {
@@ -421,11 +590,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "append",
-    value: {
-      kind: "fn",
-      params: ["lists..."],
-      body: (env): ListValue => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "lists", type: "List", variadic: true }],
+        body: (args): ListValue => {
+          const lists = getVariadic<ListValue>(0, args);
+          throw "TODO";
+        },
       },
     },
     attributes: {
@@ -439,11 +611,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "reverse",
-    value: {
-      kind: "fn",
-      params: ["list"],
-      body: (env): ListValue => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "lists", type: "List" }],
+        body: (args): ListValue => {
+          throw "TODO";
+        },
       },
     },
     attributes: {
@@ -456,11 +630,15 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "car",
-    value: {
-      kind: "fn",
-      params: ["pair"],
-      body: (env): ListValue => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "pair", type: "List" }],
+        body: (args): Value => {
+          const [pair] = args as [ListDatum];
+          // TODO: Length check
+          return pair.heads[0]!;
+        },
       },
     },
     attributes: {
@@ -473,15 +651,42 @@ export const SchemeReportEnvironment: Environment = makeEnv([
   },
   {
     name: "cdr",
-    value: {
-      kind: "fn",
-      params: ["pair"],
-      body: (env): ListValue => {
-        throw "TODO";
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "pair", type: "List" }],
+        body: (args): Value => {
+          const [pair] = args as [ListDatum];
+          if (pair.heads.length > 1) {
+            return { kind: "list", heads: [...pair.heads.slice(1)], tail: pair.tail };
+          } else {
+            return pair.tail ?? { kind: "list", heads: [] };
+          }
+        },
       },
     },
     attributes: {
       doc: "Returns the second element of `pair`. (If `pair` is a list, this is the tail.)",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "List", element: { var: "Element" } }],
+      retType: { tag: "List", element: { var: "Element" } },
+    },
+  },
+  {
+    name: "null?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "obj" }],
+        body: (args): Value => {
+          const [obj] = args;
+          return { kind: "bool", value: obj?.kind === "list" && obj.heads.length === 0 };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns whether `obj` is the empty list.",
       minArgCount: 1,
       maxArgCount: 1,
       argTypes: [{ tag: "List", element: { var: "Element" } }],
@@ -493,14 +698,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 export const ExtensionsEnvironment: Environment = makeEnv([
   {
     name: "null",
-    value: {
-      kind: "fn",
-      params: [],
-      body: (env): ListValue => {
-        return {
-          kind: "list",
-          heads: [],
-        };
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [],
+        body: (args): ListValue => {
+          return {
+            kind: "list",
+            heads: [],
+          };
+        },
       },
     },
   },

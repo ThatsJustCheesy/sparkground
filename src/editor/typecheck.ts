@@ -7,9 +7,9 @@ import { Value } from "../evaluator/value";
 export const InitialTypeEnvironment = envAsTypeEnv(InitialEnvironment);
 
 export function envAsTypeEnv(environment: Environment): TypeEnv {
-  return mapValues(environment, bindingAsType);
+  return mapValues(environment, typeOfBinding);
 }
-export function bindingAsType(binding: Binding<Value>): Type {
+export function typeOfBinding(binding: Binding<Value>): Type {
   return (
     binding.attributes?.argTypes?.reduceRight(
       (retType, argType) => ({ tag: "Function", in: argType, out: retType }),

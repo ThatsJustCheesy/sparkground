@@ -211,8 +211,11 @@ export default function Block({
                   <div className="fst-mono d-flex align-items-end">
                     ({contextHelpSubject.name}
                     <div className="ms-2 fst-italic">
-                      {contextHelpSubject.value.kind === "fn"
-                        ? " " + contextHelpSubject.value.params.join(" ")
+                      {contextHelpSubject.cell.value?.kind === "fn"
+                        ? " " +
+                          contextHelpSubject.cell.value.signature
+                            .map((param) => param.name)
+                            .join(" ")
                         : ""}
                     </div>
                     )
