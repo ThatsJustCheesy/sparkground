@@ -20,6 +20,8 @@ import {
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
 import { Var } from "../expr/expr";
+import { Evaluator } from "../evaluator/evaluate";
+import { Datum } from "../datum/datum";
 
 const defaultExpr = Parser.parseToExpr(
   "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"
@@ -115,6 +117,20 @@ function App() {
     }
   }
 
+  function evaluateContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const subject = nodeAtIndexPath(blockContextMenuSubject);
+
+    const evaluator = new Evaluator();
+    const result = evaluator.eval(subject);
+
+    const location = mouseCursorLocation(event);
+    // FIXME: builtin function representation
+    newTree(result as Datum, location);
+    rerender();
+  }
+
   const [loadResolve, setLoadResolve] = useState<(source: string | undefined) => void>();
   const [saveResolve, setSaveResolve] = useState<() => void>();
 
@@ -124,6 +140,8 @@ function App() {
       <MenuItemSeparator />
       <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
       <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
+      <MenuItemSeparator />
+      <ContextMenuItem onClick={evaluateContextMenuSubject}>Evaluate</ContextMenuItem>
     </>
   );
 
