@@ -20,6 +20,17 @@ export default function AppMenuBar({ onShowLoad, onShowSave, onShowHelp, rerende
 
       <MenuBarButton
         action={async (event) => {
+          const ok = confirm("Any unsaved changes will be lost. Proceed?");
+          if (!ok) return;
+
+          deforest();
+          rerender();
+        }}
+      >
+        New
+      </MenuBarButton>
+      <MenuBarButton
+        action={async (event) => {
           const source = await onShowLoad(event);
           if (source === undefined) return;
 
