@@ -38,6 +38,7 @@ type Props = PropsWithChildren<{
 
   inferrer: TypeInferrer;
   hasError?: boolean;
+  identifierTag?: string;
 
   forDragOverlay?: boolean | Over;
 }>;
@@ -105,6 +106,7 @@ export default function Block({
 
   inferrer,
   hasError,
+  identifierTag,
 
   forDragOverlay,
 
@@ -175,6 +177,15 @@ export default function Block({
     } catch (error) {
       setType(inferrer.error ? describeInferenceError(inferrer.error) : `${error}`);
     }
+
+    if (identifierTag) {
+      if (tooltipVisible) {
+        document.body.classList.add(`highlight-identifier-${identifierTag}`);
+      } else {
+        document.body.classList.remove(`highlight-identifier-${identifierTag}`);
+      }
+    }
+
     rerender?.();
   }, [tooltipVisible, activeDrag]);
 
@@ -209,16 +220,19 @@ export default function Block({
               ) : typeof contextHelpSubject === "object" ? (
                 <>
                   <div className="fst-mono d-flex align-items-end">
-                    ({contextHelpSubject.name}
-                    <div className="ms-2 fst-italic">
-                      {contextHelpSubject.cell.value?.kind === "fn"
-                        ? " " +
-                          contextHelpSubject.cell.value.signature
+                    {contextHelpSubject.cell.value?.kind === "fn" ? (
+                      <>
+                        ({contextHelpSubject.name}
+                        <div className="ms-2 fst-italic">
+                          {contextHelpSubject.cell.value.signature
                             .map((param) => param.name)
-                            .join(" ")
-                        : ""}
-                    </div>
-                    )
+                            .join(" ")}
+                        </div>
+                        )
+                      </>
+                    ) : (
+                      contextHelpSubject.name
+                    )}
                   </div>
                   <div className="mt-1">
                     {" "}
@@ -278,6 +292,24 @@ export default function Block({
 
   return (
     <>
+      <style>
+        {identifierTag
+          ? `
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-h-label,
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-v-label,
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-ident {
+            transition: all 50ms linear;
+            transform: scale(1.10);
+            
+            font-weight: bold;
+            
+            box-shadow: 0px 0px 0.25em 0.4em rgba(255, 255, 50);
+            background-color: rgba(255, 255, 50)
+          }
+        `
+          : ""}
+      </style>
+
       <ContextMenuTrigger id={contextMenuID}>
         <Tippy
           content={tooltipContent}
@@ -318,7 +350,7 @@ export default function Block({
                 forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
               } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
                 hasError ? "block-error" : ""
-              }`}
+              } ${identifierTag ? `block-identifier-${identifierTag}` : ""}`}
               onMouseOver={(event) => {
                 if ((event.target as Element).closest(".block") === divRef.current) {
                   setTooltipVisible(true);

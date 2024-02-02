@@ -22,12 +22,14 @@ import {
   Let,
   NameBinding,
   Letrec,
+  VarSlot,
 } from "../../expr/expr";
 import { TypeInferrer } from "../../typechecker/infer";
 import { errorInvolvesExpr } from "../../typechecker/errors";
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
-import { Environment } from "../library/environments";
+import { Binding, Environment, makeEnv, mergeEnvs } from "../library/environments";
+import { Value } from "../../evaluator/value";
 
 const BlockMemo = memo(Block);
 
@@ -114,13 +116,14 @@ export class Renderer {
     }
   }
 
-  #block(data: BlockData, body: JSX.Element | JSX.Element[] = []) {
-    return this.#subnodeBlock(data, body);
-  }
-
-  #subnodeBlock(data: BlockData, body: JSX.Element | JSX.Element[]) {
+  #block(
+    data: BlockData,
+    body: JSX.Element | JSX.Element[] = [],
+    { binding }: { binding?: Binding<Value> } = {}
+  ) {
     const key = this.#keyForIndexPath(this.indexPath);
     const expr = nodeAtIndexPath(this.indexPath);
+
     return (
       <BlockMemo
         key={key}
@@ -132,6 +135,11 @@ export class Renderer {
         hasError={
           this.inferrer.error && errorInvolvesExpr(this.inferrer.error, expr as Expr /* TODO */)
         }
+        identifierTag={
+          binding?.attributes?.binder
+            ? this.#keyForIndexPath(binding.attributes.binder).trim().replace(/\s/g, "-").trim()
+            : undefined
+        }
         forDragOverlay={this.forDragOverlay}
       >
         {body}
@@ -142,18 +150,21 @@ export class Renderer {
   #renderSubexpr(
     subexpr: Expr,
     index: number,
-    { isCopySource }: { isCopySource?: boolean } = {}
+    { isCopySource, environment }: { isCopySource?: boolean; environment?: Environment } = {}
   ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
+    const parentEnvironment = this.environment;
 
     this.indexPath = extendIndexPath(this.indexPath, index);
     this.isCopySource = this.isCopySource || isCopySource;
+    this.environment = environment ?? this.environment;
 
     const rendered = this.#renderExpr(subexpr);
 
     this.indexPath = parentIndexPath;
     this.isCopySource = parentIsCopySource;
+    this.environment = parentEnvironment;
     return rendered;
   }
 
@@ -214,7 +225,7 @@ export class Renderer {
       }
     })();
 
-    return this.#block(data);
+    return this.#block(data, [], { binding: this.environment[expr.id] });
   }
 
   #hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {
@@ -271,13 +282,14 @@ export class Renderer {
             heading: <>{heading}</>,
             calledIsVar: true,
           },
-          this.#hintBodyArgs(body, bodyArgHints)
+          this.#hintBodyArgs(body, bodyArgHints),
+          { binding: this.environment[called.id] }
         );
       }
 
       return this.#block(
-        { type: "h", id: called.id, binding: calledBinding, calledIsVar: true },
-        renderedArgs
+        renderedArgs,
+        { binding: this.environment[called.id] }
       );
     } else {
       const renderedCalled = this.#renderSubexpr(called, 0);
@@ -293,46 +305,68 @@ export class Renderer {
   }
 
   #renderLet(expr: Let): JSX.Element {
+    const newEnvironment = this.#extendedEnvironment(expr.bindings.map(([name]) => name));
+
     const heading = (
       <>
         {expr.bindings.map(([name, value], index) => (
           <>
-            {this.#renderSubexpr(name, 2 * index, { isCopySource: true })}
+            {this.#renderSubexpr(name, 2 * index, {
+              isCopySource: true,
+            })}
             {this.#renderSubexpr(value, 2 * index + 1)}
           </>
         ))}
       </>
     );
-    const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length);
+    const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length, {
+      environment: newEnvironment,
+    });
 
     return this.#block({ type: "v", id: "let", heading }, body);
   }
 
   #renderLetrec(expr: Letrec): JSX.Element {
+    const newEnvironment = this.#extendedEnvironment(expr.bindings.map(([name]) => name));
+
     const heading = (
       <>
         {expr.bindings.map(([name, value], index) => (
           <>
-            {this.#renderSubexpr(name, 2 * index, { isCopySource: true })}
-            {this.#renderSubexpr(value, 2 * index + 1)}
+            {this.#renderSubexpr(name, 2 * index, {
+              isCopySource: true,
+              environment: newEnvironment,
+            })}
+            {this.#renderSubexpr(value, 2 * index + 1, {
+              environment: newEnvironment,
+            })}
           </>
         ))}
       </>
     );
-    const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length);
+    const body = this.#renderSubexpr(expr.body, 2 * expr.bindings.length, {
+      environment: newEnvironment,
+    });
 
     return this.#block({ type: "v", id: "letrec", heading }, body);
   }
 
   #renderLambda(expr: Lambda): JSX.Element {
+    const newEnvironment = this.#extendedEnvironment(expr.params);
+
     const heading = (
       <>
         {expr.params.map((param, index) =>
-          this.#renderSubexpr(param, index, { isCopySource: true })
+          this.#renderSubexpr(param, index, {
+            isCopySource: true,
+            environment: newEnvironment,
+          })
         )}
       </>
     );
-    const body = this.#renderSubexpr(expr.body, expr.params.length);
+    const body = this.#renderSubexpr(expr.body, expr.params.length, {
+      environment: newEnvironment,
+    });
 
     return this.#block({ type: "v", id: "lambda", heading }, body);
   }
@@ -354,5 +388,24 @@ export class Renderer {
 
   #keyForIndexPath({ path }: TreeIndexPath) {
     return this.tree.id + " " + path.join(" ");
+  }
+
+  #extendedEnvironment(varSlots: VarSlot[]) {
+    return mergeEnvs(
+      this.environment,
+      makeEnv(
+        varSlots
+          .filter((slot) => slot.kind === "name-binding")
+          .map(
+            (slot, index): Binding<Value> => ({
+              name: (slot as NameBinding).id,
+              cell: {},
+              attributes: {
+                binder: extendIndexPath(this.indexPath, index),
+              },
+            })
+          )
+      )
+    );
   }
 }

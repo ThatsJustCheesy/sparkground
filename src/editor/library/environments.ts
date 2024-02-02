@@ -2,6 +2,7 @@ import { keyBy, multiply, reduce, sumBy } from "lodash";
 import { ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
 import { FnValue, ListValue, Value, getVariadic, listValueAsVector } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
+import { TreeIndexPath } from "../trees/tree";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -14,6 +15,7 @@ export type Binding<Domain> = {
 };
 
 export type BindingAttributes = {
+  binder?: TreeIndexPath;
   doc?: string;
 
   argTypes?: Type[];
