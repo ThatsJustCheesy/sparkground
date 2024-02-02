@@ -287,7 +287,21 @@ export class Renderer {
         );
       }
 
+      if (calledAttributes?.infix) {
+        const argCount = renderedArgs.length;
+        for (let i = 0; i < argCount - 1; i++) {
+          renderedArgs.splice(2 * i + 1, 0, <div className="block-h-label">{called.id}</div>);
+        }
+      }
+
       return this.#block(
+        {
+          type: "h",
+          id: called.id,
+          binding: calledBinding,
+          calledIsVar: true,
+          argCount: args.length,
+        },
         renderedArgs,
         { binding: this.environment[called.id] }
       );

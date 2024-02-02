@@ -25,6 +25,8 @@ export type BindingAttributes = {
 
   headingArgCount?: number;
   bodyArgHints?: string[];
+
+  infix?: boolean;
 };
 
 export type Environment = Record<string, Binding<Value>>;
@@ -459,6 +461,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Adds `numbers`. If given no numbers, the result is 0.",
       argTypes: [{ tag: "Number" }],
       retType: { tag: "Number" },
+      infix: true,
     },
   },
   {
@@ -487,6 +490,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       minArgCount: 1,
       argTypes: [{ tag: "Number" }],
       retType: { tag: "Number" },
+      infix: true,
     },
   },
   {
@@ -512,6 +516,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Multiplies `numbers`. If given no numbers, the result is 1.",
       argTypes: [{ tag: "Number" }],
       retType: { tag: "Number" },
+      infix: true,
     },
   },
   {
@@ -545,6 +550,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       minArgCount: 1,
       argTypes: [{ tag: "Number" }],
       retType: { tag: "Number" },
+      infix: true,
     },
   },
   {

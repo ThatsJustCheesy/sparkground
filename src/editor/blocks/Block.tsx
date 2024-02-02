@@ -67,6 +67,7 @@ type Horizontal = {
   binding?: Binding<Value>;
   calledIsVar?: boolean;
   definesSymbol?: boolean;
+  argCount?: number;
 };
 type HorizontalApply = {
   type: "happly";
@@ -426,11 +427,13 @@ export default function Block({
       }
 
       case "h": {
-        const { id, definesSymbol } = data;
+        const { id, binding, definesSymbol, argCount } = data;
+
+        const renderAsInfix = binding?.attributes?.infix && (argCount ?? 0) > 1;
 
         return (
           <>
-            {!definesSymbol && <div className="block-h-label">{id}</div>}
+            {!definesSymbol && !renderAsInfix && <div className="block-h-label">{id}</div>}
 
             {children}
           </>
