@@ -701,6 +701,32 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       retType: { tag: "List", element: { var: "Element" } },
     },
   },
+  {
+    name: "length",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "list", type: "List" }],
+        body: (args): Value => {
+          const [list] = args as [ListValue];
+
+          const vector = listValueAsVector(list);
+          if (vector === undefined) {
+            throw "argument passed to 'length' is an improper list";
+          }
+
+          return { kind: "number", value: vector.length };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the number of elements in `list`.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "List", element: { var: "Element" } }],
+      retType: { tag: "Integer" },
+    },
+  },
 ]);
 
 export const ExtensionsEnvironment: Environment = makeEnv([
