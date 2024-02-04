@@ -300,7 +300,6 @@ export default function Block({
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-v-label,
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-ident {
             transition: all 50ms linear;
-            transform: scale(1.10);
             
             font-weight: bold;
             
