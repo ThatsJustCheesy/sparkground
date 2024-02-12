@@ -1,6 +1,7 @@
 import { Cell, InitialEnvironment } from "../editor/library/environments";
 import { isHole } from "../editor/trees/tree";
 import { Expr, NameBinding } from "../expr/expr";
+import { Defines } from "./defines";
 import { checkCallAgainstTypeSignature } from "./dynamic-type";
 import { Stack } from "./environment";
 import { FnValue, Value, valueAsBool } from "./value";
@@ -8,6 +9,8 @@ import { FnValue, Value, valueAsBool } from "./value";
 /** Call-by-value evaluator */
 export class Evaluator {
   env!: Stack<Value>;
+
+  constructor(public defines: Defines = new Defines()) {}
 
   eval(expr: Expr, env: Stack<Value> = new Stack()): Value {
     this.env = env;
@@ -31,10 +34,10 @@ export class Evaluator {
         return expr;
 
       case "var": {
-        const binding = this.env.get(expr.id);
-        if (!binding?.cell.value) throw "unbound variable: " + expr.id;
+        const cell = this.#get(expr.id);
+        if (!cell?.value) throw "unbound variable: " + expr.id;
 
-        return binding.cell.value;
+        return cell.value;
       }
 
       case "call": {
@@ -49,7 +52,11 @@ export class Evaluator {
       }
 
       case "define":
-        throw "TODO";
+        if (expr.name.kind !== "name-binding") throw "'define' must be given a name";
+
+        this.defines.add(expr.name.id, () => ({ value: this.#eval(expr.value) }));
+
+        return { kind: "list", heads: [] };
 
       case "let": {
         const valueBindings: [string, Cell<Value>][] = expr.bindings.map(([name, value]) => [
@@ -99,6 +106,7 @@ export class Evaluator {
       }
 
       case "lambda":
+        // TODO: Real closures
         return {
           kind: "fn",
           signature: expr.params.map((param) => ({
@@ -151,5 +159,9 @@ export class Evaluator {
     this.env.pop();
 
     return result;
+  }
+
+  #get(name: string): Cell<Value> | undefined {
+    return this.env.get(name)?.cell ?? this.defines.get(name);
   }
 }

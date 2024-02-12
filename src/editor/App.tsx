@@ -19,9 +19,12 @@ import {
 } from "./trees/tree";
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
-import { Var } from "../expr/expr";
+import { Define, NameBinding, Var } from "../expr/expr";
 import { Evaluator } from "../evaluator/evaluate";
 import { Datum } from "../datum/datum";
+import { Defines } from "../evaluator/defines";
+import { Cell } from "./library/environments";
+import { Value } from "../evaluator/value";
 
 const defaultExpr = Parser.parseToExpr(
   "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"
@@ -122,7 +125,27 @@ function App() {
 
     const subject = nodeAtIndexPath(blockContextMenuSubject);
 
-    const evaluator = new Evaluator();
+    const defines = new Defines();
+    const evaluator = new Evaluator(defines);
+
+    defines.addAll(
+      trees()
+        .filter((tree) => tree.root.kind === "define" && tree.root.name.kind === "name-binding")
+        .map((tree) => {
+          const define = tree.root as Define;
+          const name = define.name as NameBinding;
+          return [
+            name.id,
+            (): Cell<Value> => {
+              const evaluator = new Evaluator();
+              evaluator.defines = defines;
+              evaluator.eval(define);
+              return defines.get(name.id)!;
+            },
+          ];
+        })
+    );
+
     const result = evaluator.eval(subject);
 
     const location = mouseCursorLocation(event);
