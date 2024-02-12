@@ -121,6 +121,12 @@
   border-radius: 0.25em;
 }
 
+.block,
+.block-h-label,
+.block-v-label {
+  width: max-content;
+}
+
 .block-happly {
   background: #ffe070;
 }
