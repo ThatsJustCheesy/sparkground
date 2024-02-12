@@ -38,6 +38,24 @@ export function mergeEnvs(...environments: Environment[]): Environment {
   return Object.assign({}, ...environments);
 }
 
+// TODO: Move this
+function chainCompare<Item>(
+  items: Item[],
+  compare: (item1: Item, item2: Item) => boolean
+): boolean {
+  if (items.length === 0) return true;
+
+  let prev = items[0]!;
+  let satisfied = true;
+  for (let i = 1; i < items.length && satisfied; i++) {
+    const cur = items[i]!;
+    if (compare(prev, cur)) prev = cur;
+    else satisfied = false;
+  }
+
+  return satisfied;
+}
+
 // https://conservatory.scheme.org/schemers/Documents/Standards/R5RS/HTML/r5rs-Z-H-9.html#%_chap_6
 export const SchemeReportEnvironment: Environment = makeEnv([
   {
@@ -550,6 +568,116 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       minArgCount: 1,
       argTypes: [{ tag: "Number" }],
       retType: { tag: "Number" },
+      infix: true,
+    },
+  },
+  {
+    name: "=",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return {
+            kind: "bool",
+            value: chainCompare(numbers, (item1, item2) => item1.value === item2.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns whether `numbers` are all equal to each other.",
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Boolean" },
+      infix: true,
+    },
+  },
+  {
+    name: "<",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return {
+            kind: "bool",
+            value: chainCompare(numbers, (item1, item2) => item1.value < item2.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns whether `numbers` are in strictly decreasing order.",
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Boolean" },
+      infix: true,
+    },
+  },
+  {
+    name: ">",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return {
+            kind: "bool",
+            value: chainCompare(numbers, (item1, item2) => item1.value > item2.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns whether `numbers` are in strictly increasing order.",
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Boolean" },
+      infix: true,
+    },
+  },
+  {
+    name: "<=",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return {
+            kind: "bool",
+            value: chainCompare(numbers, (item1, item2) => item1.value <= item2.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns whether `numbers` are in (non-strictly) decreasing order.",
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Boolean" },
+      infix: true,
+    },
+  },
+  {
+    name: ">=",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "numbers", type: "Number", variadic: true }],
+        body: (args): Value => {
+          const numbers = getVariadic<NumberDatum>(0, args);
+          return {
+            kind: "bool",
+            value: chainCompare(numbers, (item1, item2) => item1.value >= item2.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns whether `numbers` are in (non-strictly) increasing order.",
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Boolean" },
       infix: true,
     },
   },
