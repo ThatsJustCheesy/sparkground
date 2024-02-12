@@ -26,12 +26,6 @@ import { Defines } from "../evaluator/defines";
 import { Cell } from "./library/environments";
 import { Value } from "../evaluator/value";
 
-const defaultExpr = Parser.parseToExpr(
-  "(define firsts (lambda (a b) (append (list (car a)) (list (car b)))))"
-  // "(define rev-tail (lambda (l acc) (if (null? l) acc (rev-tail (cdr l) (append (list (car l)) acc)))))"
-);
-newTree(defaultExpr, { x: 0, y: 0 });
-
 function App() {
   const [renderCounter, setRenderCounter] = useState(0);
   function rerender() {
