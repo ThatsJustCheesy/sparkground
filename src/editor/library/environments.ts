@@ -765,7 +765,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "car",
+    name: "first",
     cell: {
       value: {
         kind: "fn",
@@ -786,7 +786,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "cdr",
+    name: "rest",
     cell: {
       value: {
         kind: "fn",

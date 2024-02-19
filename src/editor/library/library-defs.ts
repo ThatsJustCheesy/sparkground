@@ -149,8 +149,8 @@ export const LibraryCategories: LibraryCategory[] = [
         entries: [
           { kind: "call", called: { kind: "var", id: "null?" }, args: [] },
           { kind: "call", called: { kind: "var", id: "pair?" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "car" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "cdr" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "first" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "rest" }, args: [] },
           { kind: "call", called: { kind: "var", id: "length" }, args: [] },
           { kind: "call", called: { kind: "var", id: "list-tail" }, args: [] },
           { kind: "call", called: { kind: "var", id: "memq" }, args: [] },
@@ -161,13 +161,13 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "call", called: { kind: "var", id: "assoc" }, args: [] },
         ],
       },
-      {
-        name: "Mutuate",
-        entries: [
-          { kind: "call", called: { kind: "var", id: "set-car!" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "set-cdr!" }, args: [] },
-        ],
-      },
+      // {
+      //   name: "Mutuate",
+      //   entries: [
+      //     { kind: "call", called: { kind: "var", id: "set-car!" }, args: [] },
+      //     { kind: "call", called: { kind: "var", id: "set-cdr!" }, args: [] },
+      //   ],
+      // },
     ],
   },
   {
