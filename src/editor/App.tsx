@@ -13,6 +13,7 @@ import {
   TreeIndexPath,
   extendIndexPath,
   hole,
+  isHole,
   nodeAtIndexPath,
   parentIndexPath,
   referencesToBinding,
@@ -70,6 +71,28 @@ function App() {
     references.forEach((ref) => {
       ref.id = newName;
     });
+    rerender();
+  }
+
+  function nameContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const nameHole = nodeAtIndexPath(blockContextMenuSubject);
+    if (!isHole(nameHole)) return;
+
+    const newName = prompt("New name:");
+    if (!newName) return;
+
+    const location = mouseCursorLocation(event);
+    const newBinding = newTree(
+      {
+        kind: "name-binding",
+        id: newName,
+      },
+      location
+    );
+    moveExprInTree({ tree: newBinding, path: [] }, blockContextMenuSubject, location);
+    rerender();
   }
 
   function applyContextMenuSubject(event: SyntheticEvent) {
@@ -211,7 +234,12 @@ function App() {
       </ContextMenu>
 
       <ContextMenu id="block-menu-namebinding" hideOnLeave={false}>
-        <ContextMenuItem onClick={renameContextMenuSubject}>Rename</ContextMenuItem>
+        <ContextMenuItem onClick={renameContextMenuSubject}>Rename Variable</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-namehole" hideOnLeave={false}>
+        <ContextMenuItem onClick={nameContextMenuSubject}>Name Variable</ContextMenuItem>
         {commonContextMenu}
       </ContextMenu>
 

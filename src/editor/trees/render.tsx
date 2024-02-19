@@ -116,14 +116,11 @@ export class Renderer {
     }
   }
 
-  #block(
-    data: BlockData,
-    body: JSX.Element | JSX.Element[] = [],
-    { binding }: { binding?: Binding<Value> } = {}
-  ) {
+  #block(data: BlockData, body: JSX.Element | JSX.Element[] = []) {
     const key = this.#keyForIndexPath(this.indexPath);
     const expr = nodeAtIndexPath(this.indexPath);
 
+    const binding = "binding" in data ? data.binding : undefined;
     return (
       <BlockMemo
         key={key}
@@ -145,6 +142,27 @@ export class Renderer {
         {body}
       </BlockMemo>
     );
+  }
+
+  #renderVarSlot(
+    varSlot: VarSlot,
+    index: number,
+    { environment }: { environment?: Environment } = {}
+  ): JSX.Element {
+    const parentIndexPath = this.indexPath;
+    const parentIsCopySource = this.isCopySource;
+    const parentEnvironment = this.environment;
+
+    this.indexPath = extendIndexPath(this.indexPath, index);
+    this.isCopySource = true;
+    this.environment = environment ?? this.environment;
+
+    const rendered = this.#renderVarSlotContent(varSlot);
+
+    this.indexPath = parentIndexPath;
+    this.isCopySource = parentIsCopySource;
+    this.environment = parentEnvironment;
+    return rendered;
   }
 
   #renderSubexpr(
@@ -212,20 +230,25 @@ export class Renderer {
   }
 
   #renderIdentifier(expr: NameBinding | Var): JSX.Element {
-    const data = ((): BlockData => {
-      switch (expr.kind) {
-        case "name-binding":
-        case "var":
-          return {
-            type: "ident",
-            id: expr.id,
-            binding: this.environment[expr.id],
-            isNameBinding: expr.kind === "name-binding",
-          };
-      }
-    })();
+    return this.#block({
+      type: "ident",
+      id: expr.id,
+      binding: this.environment[expr.id],
+    });
+  }
 
-    return this.#block(data, [], { binding: this.environment[expr.id] });
+  #renderVarSlotContent(varSlot: VarSlot) {
+    return this.#block(
+      isHole(varSlot)
+        ? {
+            type: "name-hole",
+          }
+        : {
+            type: "name-binding",
+            id: varSlot.id,
+            binding: this.environment[varSlot.id]!,
+          }
+    );
   }
 
   #hintBodyArgs(bodyArgs: JSX.Element[], hints: string[] = []) {
@@ -282,8 +305,7 @@ export class Renderer {
             heading: <>{heading}</>,
             calledIsVar: true,
           },
-          this.#hintBodyArgs(body, bodyArgHints),
-          { binding: this.environment[called.id] }
+          this.#hintBodyArgs(body, bodyArgHints)
         );
       }
 
@@ -302,8 +324,7 @@ export class Renderer {
           calledIsVar: true,
           argCount: args.length,
         },
-        renderedArgs,
-        { binding: this.environment[called.id] }
+        renderedArgs
       );
     } else {
       const renderedCalled = this.#renderSubexpr(called, 0);
@@ -312,7 +333,7 @@ export class Renderer {
   }
 
   #renderDefine(expr: Define): JSX.Element {
-    const heading = this.#renderSubexpr(expr.name, 0, { isCopySource: true });
+    const heading = this.#renderVarSlot(expr.name, 0);
     const body = this.#renderSubexpr(expr.value, 1);
 
     return this.#block({ type: "hat", id: "define", heading }, body);
@@ -325,8 +346,8 @@ export class Renderer {
       <>
         {expr.bindings.map(([name, value], index) => (
           <>
-            {this.#renderSubexpr(name, 2 * index, {
-              isCopySource: true,
+            {this.#renderVarSlot(name, 2 * index, {
+              environment: newEnvironment,
             })}
             {this.#renderSubexpr(value, 2 * index + 1)}
           </>
@@ -347,8 +368,7 @@ export class Renderer {
       <>
         {expr.bindings.map(([name, value], index) => (
           <>
-            {this.#renderSubexpr(name, 2 * index, {
-              isCopySource: true,
+            {this.#renderVarSlot(name, 2 * index, {
               environment: newEnvironment,
             })}
             {this.#renderSubexpr(value, 2 * index + 1, {
@@ -371,8 +391,7 @@ export class Renderer {
     const heading = (
       <>
         {expr.params.map((param, index) =>
-          this.#renderSubexpr(param, index, {
-            isCopySource: true,
+          this.#renderVarSlot(param, index, {
             environment: newEnvironment,
           })
         )}
@@ -382,7 +401,7 @@ export class Renderer {
       environment: newEnvironment,
     });
 
-    return this.#block({ type: "v", id: "lambda", heading }, body);
+    return this.#block({ type: "v", id: "function", heading }, body);
   }
 
   #renderSequence(expr: Sequence): JSX.Element {

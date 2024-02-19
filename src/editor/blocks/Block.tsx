@@ -50,6 +50,8 @@ export type BlockData =
   | HorizontalApply
   | HorizontalList
   | Identifier
+  | NameBinding
+  | NameHole
   | Symbol
   | Number
   | Bool
@@ -88,7 +90,14 @@ type Identifier = {
   type: "ident";
   id: string;
   binding?: Binding<Value>;
-  isNameBinding?: boolean;
+};
+type NameBinding = {
+  type: "name-binding";
+  id: string;
+  binding: Binding<Value>;
+};
+type NameHole = {
+  type: "name-hole";
 };
 type Symbol = {
   type: "symbol";
@@ -158,7 +167,7 @@ export default function Block({
           contextHelpSubject: contextHelpSubject,
         },
       });
-  if (forDragOverlay || data.type === "hole") {
+  if (forDragOverlay || data.type === "hole" || data.type === "name-hole") {
     // Not draggable
     active = null;
     over = typeof forDragOverlay === "object" ? forDragOverlay : null;
@@ -198,8 +207,61 @@ export default function Block({
     rerender?.();
   }, [tooltipVisible, activeDrag]);
 
+  const contextHelp =
+    typeof contextHelpSubject === "number" ? (
+      <div>{"right-click to change value"}</div>
+    ) : typeof contextHelpSubject === "boolean" ? (
+      <div className="fst-italic">{contextHelpSubject.toString()}</div>
+    ) : typeof contextHelpSubject === "object" ? (
+      <>
+        <div className="fst-mono d-flex align-items-end">
+          {contextHelpSubject.cell.value?.kind === "fn" ? (
+            <>
+              ({contextHelpSubject.name}
+              <div className="ms-2 fst-italic">
+                {contextHelpSubject.cell.value.signature.map((param) => param.name).join(" ")}
+              </div>
+              )
+            </>
+          ) : (
+            contextHelpSubject.name
+          )}
+        </div>
+        <div className="mt-1">
+          {" "}
+          {(() => {
+            let doc = contextHelpSubject.attributes?.doc;
+            if (!doc) return "";
+
+            let match: RegExpExecArray | null;
+            let rendered = <></>;
+            while ((match = /^(?:[^`]+|`([^`]+)`)/.exec(doc))) {
+              doc = doc.slice(match[0].length);
+              if (match[1]) {
+                rendered = (
+                  <>
+                    {rendered}
+                    <span className="fst-mono fst-italic">{match[1]}</span>
+                  </>
+                );
+              } else {
+                rendered = (
+                  <>
+                    {rendered}
+                    {match[0]}
+                  </>
+                );
+              }
+            }
+
+            return rendered;
+          })()}
+        </div>
+      </>
+    ) : undefined;
+
   const tooltipContent = (
-    <>
+    <div className="mb-1">
       <b>Type:</b>{" "}
       {typeof type === "string" ? (
         <span className="text-warning">
@@ -208,87 +270,39 @@ export default function Block({
       ) : (
         serializeType(type)
       )}
-      <br />
-      <div className="mt-2">
-        {data.type === "ident" && data.isNameBinding && (
-          <>
-            <small>
-              Rename: <kbd>Right click</kbd>
-            </small>
-            <br />
-          </>
-        )}
-        {
-          <>
-            <b>Help:</b>
-            <div className="mt-1 ms-2">
-              {typeof contextHelpSubject === "number" ? (
-                <div>{"right-click to change value"}</div>
-              ) : typeof contextHelpSubject === "boolean" ? (
-                <div className="fst-italic">{contextHelpSubject.toString()}</div>
-              ) : typeof contextHelpSubject === "object" ? (
-                <>
-                  <div className="fst-mono d-flex align-items-end">
-                    {contextHelpSubject.cell.value?.kind === "fn" ? (
-                      <>
-                        ({contextHelpSubject.name}
-                        <div className="ms-2 fst-italic">
-                          {contextHelpSubject.cell.value.signature
-                            .map((param) => param.name)
-                            .join(" ")}
-                        </div>
-                        )
-                      </>
-                    ) : (
-                      contextHelpSubject.name
-                    )}
-                  </div>
-                  <div className="mt-1">
-                    {" "}
-                    {(() => {
-                      let doc = contextHelpSubject.attributes?.doc;
-                      if (!doc) return "";
-
-                      let match: RegExpExecArray | null;
-                      let rendered = <></>;
-                      while ((match = /^(?:[^`]+|`([^`]+)`)/.exec(doc))) {
-                        doc = doc.slice(match[0].length);
-                        if (match[1]) {
-                          rendered = (
-                            <>
-                              {rendered}
-                              <span className="fst-mono fst-italic">{match[1]}</span>
-                            </>
-                          );
-                        } else {
-                          rendered = (
-                            <>
-                              {rendered}
-                              {match[0]}
-                            </>
-                          );
-                        }
-                      }
-
-                      return rendered;
-                    })()}
-                  </div>
-                </>
-              ) : (
-                <></>
-              )}
-            </div>
-          </>
-        }
-      </div>
-    </>
+      {data.type === "name-binding" && (
+        <div className="mt-2">
+          <small>
+            Rename: <kbd>Right click</kbd>
+          </small>
+          <br />
+        </div>
+      )}
+      {data.type === "name-hole" && (
+        <div className="mt-2">
+          <small>
+            Name: <kbd>Right click</kbd>
+          </small>
+          <br />
+        </div>
+      )}
+      {contextHelp && (
+        <div className="mt-2">
+          <b>Help:</b>
+          <div className="mt-1 ms-2">{contextHelp}</div>
+        </div>
+      )}
+    </div>
   );
 
   const contextMenuID = (() => {
     switch (data.type) {
       case "ident":
-        if (data.isNameBinding) return "block-menu-namebinding";
         return "block-menu-var";
+      case "name-binding":
+        return "block-menu-namebinding";
+      case "name-hole":
+        return "block-menu-namehole";
       case "h":
       case "v":
         if (data.calledIsVar) return "block-menu-call";
@@ -306,7 +320,8 @@ export default function Block({
           ? `
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-h-label,
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-v-label,
-          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-ident {
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-ident,
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-name-binding {
             transition: all 50ms linear;
             
             font-weight: bold;
@@ -354,7 +369,7 @@ export default function Block({
               style={{
                 zIndex: indexPath.tree.zIndex,
               }}
-              className={`block block-${data.type} ${isCopySource ? "block-copy-source" : ""} ${
+              className={`block block-${data.type} ${
                 forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
               } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
                 hasError ? "block-error" : ""
@@ -409,6 +424,7 @@ export default function Block({
       case "v":
       case "h":
       case "ident":
+      case "name-binding":
         return data.binding;
       case "number":
         return data.value;
@@ -480,6 +496,7 @@ export default function Block({
       }
 
       case "ident":
+      case "name-binding":
       case "symbol": {
         const { id } = data;
 
@@ -498,6 +515,7 @@ export default function Block({
         return <div>{value ? "true" : "false"}</div>;
       }
 
+      case "name-hole":
       case "hole": {
         return <div className="block-hole-symbol" />;
       }

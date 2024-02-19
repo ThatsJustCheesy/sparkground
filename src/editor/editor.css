@@ -180,6 +180,7 @@
 }
 
 .block-ident,
+.block-name-binding,
 .block-symbol,
 .block-bool,
 .block-number {
@@ -195,7 +196,7 @@
   border-radius: 0.75em;
 }
 
-.block-ident.block-copy-source {
+.block-name-binding {
   background: #bcff02;
 }
 
@@ -211,7 +212,8 @@
   background: #7dff85;
 }
 
-.block-hole {
+.block-hole,
+.block-name-hole {
   display: flex;
 
   width: fit-content;
@@ -220,6 +222,9 @@
   background: rgb(220, 228, 234);
   border: 0.09em solid black;
   border-radius: 0.75em;
+}
+.block-name-hole {
+  background: #bcff02;
 }
 .block-hole-symbol {
   width: 100%;
