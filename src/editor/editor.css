@@ -27,6 +27,36 @@
   outline: 0.2em solid #1fdcd9;
 }
 
+.block-hat {
+  display: flex;
+  flex-flow: column nowrap;
+
+  width: fit-content;
+
+  border-radius: 0.5em;
+}
+.block-hat > .block-hat-heading {
+  padding: 0.5em;
+
+  background: rgb(220, 228, 234);
+  border: 1px solid black;
+  border-bottom: none;
+  border-radius: 0.5em 0.5em 0 0;
+}
+.block-hat > .menu-trigger > .block-outer-container > .block {
+  border-radius: 0 0 0.5em 0.5em;
+  width: 100%;
+}
+.block-hat-heading {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: baseline;
+}
+.block-hat-heading > :not(.block-hat-label) {
+  margin-left: 0.5em;
+  margin-right: 0.25em;
+}
+
 .block-v {
   display: flex;
   flex-flow: column nowrap;
@@ -190,6 +220,12 @@
   background: rgb(220, 228, 234);
   border: 0.09em solid black;
   border-radius: 0.75em;
+}
+.block-hole-symbol {
+  width: 100%;
+  padding: 0.2em;
+  border: 1px solid #333;
+  border-radius: 0.5em;
 }
 
 .drag-overlay > .menu-trigger > .block-outer-container > .block-dragging {

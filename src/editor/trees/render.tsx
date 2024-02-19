@@ -315,7 +315,7 @@ export class Renderer {
     const heading = this.#renderSubexpr(expr.name, 0, { isCopySource: true });
     const body = this.#renderSubexpr(expr.value, 1);
 
-    return this.#block({ type: "v", id: "define", heading }, body);
+    return this.#block({ type: "hat", id: "define", heading }, body);
   }
 
   #renderLet(expr: Let): JSX.Element {
