@@ -215,7 +215,7 @@
 .block-name-hole {
   display: flex;
 
-  width: fit-content;
+  width: 100%;
   padding: 0.5em;
 
   background: rgb(220, 228, 234);

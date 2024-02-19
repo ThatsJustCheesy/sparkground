@@ -1,6 +1,5 @@
 // https://github.com/clauderic/dnd-kit/issues/477#issuecomment-985194908
 
-import type { KeyboardEvent } from "react";
 import { KeyboardSensor, PointerSensor } from "@dnd-kit/core";
 
 export class CustomPointerSensor extends PointerSensor {
@@ -17,14 +16,17 @@ export class CustomPointerSensor extends PointerSensor {
 }
 
 export class CustomKeyboardSensor extends KeyboardSensor {
-  static activators = [
-    {
-      eventName: "onKeyDown" as const,
-      handler: ({ nativeEvent: event }: KeyboardEvent<Element>) => {
-        return shouldHandleEvent(event.target as HTMLElement);
+  static activators = KeyboardSensor.activators.map(
+    ({ eventName, handler }): (typeof KeyboardSensor.activators)[number] => ({
+      eventName,
+      handler(event, options, context) {
+        return (
+          shouldHandleEvent(event.nativeEvent.target as HTMLElement) &&
+          handler(event, options, context)
+        );
       },
-    },
-  ];
+    })
+  );
 }
 
 function shouldHandleEvent(element: HTMLElement | null) {
