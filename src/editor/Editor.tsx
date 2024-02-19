@@ -19,6 +19,8 @@ import {
   DragOverlay,
   DragStartEvent,
   Over,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./trees/mutate";
 import Library from "./library/Library";
@@ -33,6 +35,7 @@ import {
   RerenderContext,
 } from "./editor-contexts";
 import { InitialEnvironment } from "./library/environments";
+import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors";
 
 export type Props = {
   trees: Tree[];
@@ -132,6 +135,7 @@ export default function Editor({
     <div className="editor">
       <DndContext
         autoScroll={false}
+        sensors={useSensors(useSensor(CustomPointerSensor), useSensor(CustomKeyboardSensor))}
         collisionDetection={collisionDetection}
         onDragStart={onBlockDragStart}
         onDragOver={onBlockDragOver}

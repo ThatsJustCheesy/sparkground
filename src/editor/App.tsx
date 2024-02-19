@@ -64,7 +64,7 @@ function App() {
       parentIndexPath(blockContextMenuSubject)
     );
 
-    const newName = prompt("New name:");
+    const newName = prompt("Enter variable name:");
     if (!newName) return;
 
     binding.id = newName;
@@ -80,7 +80,7 @@ function App() {
     const nameHole = nodeAtIndexPath(blockContextMenuSubject);
     if (!isHole(nameHole)) return;
 
-    const newName = prompt("New name:");
+    const newName = prompt("Enter variable name:");
     if (!newName) return;
 
     const location = mouseCursorLocation(event);

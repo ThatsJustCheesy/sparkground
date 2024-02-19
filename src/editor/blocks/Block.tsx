@@ -2,7 +2,7 @@ import { PropsWithChildren, ReactNode, useContext, useEffect, useRef, useState }
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
-import { TreeIndexPath, nodeAtIndexPath, extendIndexPath } from "../trees/tree";
+import { TreeIndexPath, nodeAtIndexPath, extendIndexPath, isHole } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
@@ -19,6 +19,8 @@ import {
 import { Binding } from "../library/environments";
 import { Value } from "../../evaluator/value";
 import { InitialTypeEnvironment } from "../typecheck";
+import { Point, newTree } from "../trees/trees";
+import { moveExprInTree } from "../trees/mutate";
 
 // TODO: Move this somewhere else or make it obsolete
 let isShiftDown = false;
@@ -151,6 +153,7 @@ export default function Block({
   const contextHelpSubject = contextHelpSubjectFromData();
 
   // Draggable, if applicable
+  let draggable = true;
   let {
     active,
     over,
@@ -169,12 +172,15 @@ export default function Block({
       });
   if (forDragOverlay || data.type === "hole" || data.type === "name-hole") {
     // Not draggable
+    draggable = false;
     active = null;
     over = typeof forDragOverlay === "object" ? forDragOverlay : null;
     attributes = [] as any;
     listeners = [] as any;
     setNodeRef2 = () => {};
   }
+
+  const nameable = data.type === "name-hole" && !indexPath.tree.id.startsWith("library");
 
   const expr = (() => {
     try {
@@ -272,17 +278,13 @@ export default function Block({
       )}
       {data.type === "name-binding" && (
         <div className="mt-2">
-          <small>
-            Rename: <kbd>Right click</kbd>
-          </small>
+          <small>Right-click to rename this variable</small>
           <br />
         </div>
       )}
-      {data.type === "name-hole" && (
+      {nameable && (
         <div className="mt-2">
-          <small>
-            Name: <kbd>Right click</kbd>
-          </small>
+          <small>Click to name this variable</small>
           <br />
         </div>
       )}
@@ -363,6 +365,32 @@ export default function Block({
             onContextMenu={(event) => {
               onContextMenu?.(indexPath);
             }}
+            data-no-dnd={nameable}
+            onClick={
+              nameable
+                ? (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const nameHole = nodeAtIndexPath(indexPath);
+                    if (!isHole(nameHole)) return;
+
+                    const newName = prompt("Enter variable name:");
+                    if (!newName) return;
+
+                    const location: Point = { x: 0, y: 0 };
+                    const newBinding = newTree(
+                      {
+                        kind: "name-binding",
+                        id: newName,
+                      },
+                      location
+                    );
+                    moveExprInTree({ tree: newBinding, path: [] }, indexPath, location);
+                    rerender?.();
+                  }
+                : undefined
+            }
           >
             <div
               ref={(div) => (divRef.current = div)}
