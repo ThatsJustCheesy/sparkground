@@ -1,10 +1,12 @@
 import { isHole } from "../editor/trees/tree";
 import { Datum } from "../datum/datum";
 import { DefinitionAttributes } from "./attributes";
+import { Type } from "../typechecker/type";
 
 export type Expr = { attributes?: DefinitionAttributes } & (
   | NameBinding
   | Datum
+  | TypeExpr
   | Var
   | Call
   | Define
@@ -28,6 +30,12 @@ export function getIdentifier(varSlot: VarSlot) {
 export type NameBinding = {
   kind: "name-binding";
   id: string;
+  type?: Type;
+};
+
+export type TypeExpr = {
+  kind: "type";
+  type: Type;
 };
 
 export type Var = {

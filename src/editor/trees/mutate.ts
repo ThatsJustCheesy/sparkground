@@ -3,10 +3,10 @@ import {
   TreeIndexPath,
   nodeAtIndexPath as nodeAtIndexPath,
   hole,
-  isHole,
   isSameOrAncestor,
   setChildAtIndex,
   isAtomic,
+  isHoleForEditor,
 } from "./tree";
 import { Point, Tree, newTree, removeTree } from "./trees";
 import { Expr } from "../../expr/expr";
@@ -47,7 +47,7 @@ export function moveExprInTree(
   }
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, source);
-  if (!isHole(destination)) newTree(destination, displaceTo);
+  if (!isHoleForEditor(destination)) newTree(destination, displaceTo);
 }
 
 export function copyExprInTree(
@@ -71,12 +71,12 @@ export function copyExprInTree(
   if (destination === source || destination === destinationTree.root) return;
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, cloneExpr(source));
-  if (!isHole(destination)) newTree(destination, displaceTo);
+  if (!isHoleForEditor(destination)) newTree(destination, displaceTo);
 }
 
 export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: boolean): Tree {
   const expr = nodeForIndexPathInTree(tree, path);
-  if (isHole(expr)) return tree;
+  if (isHoleForEditor(expr)) return tree;
 
   const parent = nodeForIndexPathInTree(tree, path.slice(0, -1));
 
@@ -96,7 +96,7 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
 
 export function deleteExpr({ tree, path }: TreeIndexPath) {
   const expr = nodeForIndexPathInTree(tree, path);
-  if (isHole(expr)) return;
+  if (isHoleForEditor(expr)) return;
 
   const exprParent = nodeForIndexPathInTree(tree, path.slice(0, -1));
 

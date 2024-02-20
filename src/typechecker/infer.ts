@@ -8,7 +8,6 @@ import {
   hasNoUnknown,
   isTypeVar,
   isUnknown,
-  typeParams,
   typeStructureMap,
 } from "./type";
 import { Expr, Var, getIdentifier } from "../expr/expr";
@@ -25,6 +24,7 @@ import {
   TypeMismatch,
 } from "./errors";
 import { Datum } from "../datum/datum";
+import { satisfies } from "semver";
 
 // https://www.cs.utoronto.ca/~trebla/CSCC24-2023-Summer/11-type-inference.html
 
@@ -158,6 +158,9 @@ export class TypeInferrer {
       case "list":
         return this.#inferFromDatum(expr, env, indexPath);
 
+      case "type":
+        throw "TODO";
+
       case "name-binding":
       case "var":
         const varType = env[expr.id];
@@ -183,7 +186,7 @@ export class TypeInferrer {
               attemptedCallArity: expr.args.length,
             } satisfies ArityMismatch;
           }
-          return calledType.out;
+          return calledType.of![0]!;
         }
 
         if (!expr.args.length) {
@@ -212,8 +215,7 @@ export class TypeInferrer {
             resultType,
             {
               tag: "Function",
-              in: argType,
-              out: newResultType,
+              of: [argType, newResultType],
             },
             expr.called,
             arg
@@ -291,12 +293,11 @@ export class TypeInferrer {
         );
 
         return !expr.params.length
-          ? { tag: "Procedure", out: bodyType }
+          ? { tag: "Function", of: [bodyType] }
           : Object.values(paramTypes).reduceRight(
               (resultType, paramType): InferrableType => ({
                 tag: "Function",
-                in: paramType,
-                out: resultType,
+                of: [paramType, resultType],
               }),
               bodyType
             );
@@ -355,7 +356,7 @@ export class TypeInferrer {
         }
 
         // TODO: Infer element type by recurring and unifying (or another appropriate mechanism)
-        return { tag: "List", element: { tag: "Any" } };
+        return { tag: "List", of: [{ tag: "Any" }] };
     }
   }
 
@@ -469,15 +470,14 @@ export class TypeInferrer {
 
       // Recursively unify through the entire type expression structure.
       // (As much as we know of the structure right now, anyway.)
-      const t1Params = typeParams(t1);
-      const t2Params = typeParams(t2);
-      for (const key in t1Params) {
-        this.#unify(
-          t1Params[key as keyof typeof t1Params]!,
-          t2Params[key as keyof typeof t2Params]!,
-          e1,
-          e2
-        );
+      const t1Params = t1.of ?? [];
+      const t2Params = t2.of ?? [];
+      if (t1Params.length !== t2Params.length) {
+        // TODO: Better exception type
+        throw "type parameter arity mismatch";
+      }
+      for (let i = 0; i < t1Params.length; i++) {
+        this.#unify(t1Params[i]!, t2Params[i]!, e1, e2);
       }
     }
   }
@@ -488,7 +488,9 @@ export class TypeInferrer {
   #occurs(u: Unknown, typeExpr: InferrableType): boolean {
     return isUnknown(typeExpr)
       ? u.unknown === typeExpr.unknown
-      : Object.values(typeParams(typeExpr)).some((typeParamExpr) => this.#occurs(u, typeParamExpr));
+      : isTypeVar(typeExpr)
+      ? false
+      : (typeExpr.of ?? []).some((typeParamExpr) => this.#occurs(u, typeParamExpr));
   }
 
   /**

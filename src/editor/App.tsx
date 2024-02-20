@@ -95,6 +95,26 @@ function App() {
     rerender();
   }
 
+  function typeAnnotateContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const nameBinding = nodeAtIndexPath(blockContextMenuSubject);
+    if (nameBinding.kind !== "name-binding") return;
+
+    nameBinding.type = { tag: "Any" };
+    rerender();
+  }
+
+  function typeUnannotateContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const nameBinding = nodeAtIndexPath(blockContextMenuSubject);
+    if (nameBinding.kind !== "name-binding") return;
+
+    delete nameBinding.type;
+    rerender();
+  }
+
   function applyContextMenuSubject(event: SyntheticEvent) {
     if (!blockContextMenuSubject) return;
 
@@ -234,6 +254,17 @@ function App() {
       </ContextMenu>
 
       <ContextMenu id="block-menu-namebinding" hideOnLeave={false}>
+        <ContextMenuItem onClick={typeAnnotateContextMenuSubject}>
+          Annotate Variable Type
+        </ContextMenuItem>
+        <ContextMenuItem onClick={renameContextMenuSubject}>Rename Variable</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-namebinding-annotated" hideOnLeave={false}>
+        <ContextMenuItem onClick={typeUnannotateContextMenuSubject}>
+          Remove Type Annotation
+        </ContextMenuItem>
         <ContextMenuItem onClick={renameContextMenuSubject}>Rename Variable</ContextMenuItem>
         {commonContextMenu}
       </ContextMenu>

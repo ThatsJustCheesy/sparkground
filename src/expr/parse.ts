@@ -10,12 +10,16 @@ import {
   Cond,
   Var,
   Letrec,
+  TypeExpr,
+  VarSlot,
 } from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
 import { hole } from "../editor/trees/tree";
 import { DefinitionAttributes, parseAttributes } from "./attributes";
+import { Parser as TypeParser } from "../typechecker/parse";
 import { merge } from "lodash";
+import { Type } from "../typechecker/type";
 
 export class Parser {
   static parseToExprsWithAttributes(source: string) {
@@ -60,6 +64,7 @@ export class Parser {
         const symbol = datum.value;
         switch (symbol) {
           case "quote":
+          case "type":
           case "define":
           case "let":
           case "letrec":
@@ -78,6 +83,8 @@ export class Parser {
           // Determine which syntactic keyword this is, if any
 
           switch (called.value) {
+            case "type":
+              return this.parseTypeExpr(datum);
             case "define":
               return this.parseDefine(datum);
             case "let":
@@ -115,10 +122,23 @@ export class Parser {
     };
   }
 
+  parseTypeExpr(datum: FlattenedListDatum): TypeExpr {
+    this.requireLength(datum, 2);
+
+    return {
+      kind: "type",
+      type: this.parseType(datum.heads[1]!),
+    };
+  }
+
+  parseType(datum: FlattenedDatum): Type {
+    return new TypeParser().parseType(datum);
+  }
+
   parseDefine(datum: FlattenedListDatum): Define {
     this.requireLength(datum, 3);
 
-    const name = this.parseNameBinding(datum.heads[1]!);
+    const name = this.parseVarSlot(datum.heads[1]!);
     const value = this.parsePrimary(datum.heads[2]!);
 
     return {
@@ -136,13 +156,13 @@ export class Parser {
       throw "expecting binding list";
     }
 
-    const bindings: [name: NameBinding, value: Expr][] = bindingList.heads.map((binding) => {
+    const bindings: [name: VarSlot, value: Expr][] = bindingList.heads.map((binding) => {
       if (binding.kind !== "list") {
         throw "expecting binding";
       }
       this.requireLength(binding, 2);
 
-      const name = this.parseNameBinding(binding.heads[0]!);
+      const name = this.parseVarSlot(binding.heads[0]!);
       const value = this.parsePrimary(binding.heads[1]!);
 
       return [name, value];
@@ -169,7 +189,7 @@ export class Parser {
       throw "expecting binding list";
     }
 
-    const params: NameBinding[] = bindingList.heads.map((name) => this.parseNameBinding(name));
+    const params: VarSlot[] = bindingList.heads.map((name) => this.parseVarSlot(name));
     const body = this.parseSequence(datum.heads.slice(2));
 
     return {
@@ -230,8 +250,23 @@ export class Parser {
     return { kind: "var", id: datum.value };
   }
 
-  parseNameBinding(datum: FlattenedDatum): NameBinding {
-    return { kind: "name-binding", id: this.parseVar(datum).id };
+  parseVarSlot(datum: FlattenedDatum): VarSlot {
+    let id: string;
+    let type: Type | undefined;
+
+    if (datum.kind === "list") {
+      if (datum.heads.length > 2) {
+        throw `expecting list of length ${length}, but actual length is ${datum.heads.length}`;
+      }
+      id = this.parseVar(datum.heads[0]!).id;
+      if (datum.heads.length >= 2) type = this.parseType(datum.heads[1]!);
+    } else {
+      id = this.parseVar(datum).id;
+    }
+
+    if (id === hole.value) return hole;
+    if (type) return { kind: "name-binding", id, type };
+    return { kind: "name-binding", id };
   }
 
   private requireLength(list: FlattenedListDatum, length: number) {

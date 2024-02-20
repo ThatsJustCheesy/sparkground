@@ -224,6 +224,29 @@ export const LibraryCategories: LibraryCategory[] = [
       },
     ],
   },
+  {
+    name: "Types",
+    entries: [
+      { kind: "type", type: { tag: "Boolean" } },
+      { kind: "type", type: { tag: "Symbol" } },
+      { kind: "type", type: { tag: "Number" } },
+      { kind: "type", type: { tag: "Integer" } },
+      { kind: "type", type: { tag: "String" } },
+      { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }] } },
+      { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }] } },
+      {
+        kind: "type",
+        type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }] },
+      },
+      {
+        kind: "type",
+        type: {
+          tag: "Function",
+          of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }, { tag: "Any" }],
+        },
+      },
+    ],
+  },
 ];
 
 // export const symbols = keyBy(

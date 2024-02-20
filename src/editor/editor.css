@@ -22,8 +22,17 @@
   font-size: 14px;
 }
 .block-outer-container:hover:not(:has(.block-outer-container:hover))
-  > .block:not(.block-drop-will-delete) {
+  > .block:not(.block-drop-will-delete).block-draggable {
   outline: 0.2em solid #1fdcd9;
+}
+
+.block-outer-container:hover:not(:has(.block-outer-container:hover)) > .block.block-nameable {
+  outline: 0.25em solid #ff7cb1;
+}
+
+.block-outer-container:hover:not(:has(.block-outer-container:hover))
+  > .block:not(.block-dragging):not(.block-draggable):not(.block-nameable) {
+  outline: 0.2em solid #9f9f9f;
 }
 
 .block-hat {
@@ -180,10 +189,13 @@
 
 .block-ident,
 .block-name-binding,
+.block-type,
 .block-symbol,
 .block-bool,
 .block-number {
   display: flex;
+  align-items: baseline;
+  gap: 0.5em;
 
   width: fit-content;
   padding: 0.25em;
@@ -197,6 +209,12 @@
 
 .block-name-binding {
   background: #bcff02;
+}
+
+.block-type {
+  background: #cdceff;
+  border-radius: 0.45em;
+  font-size: 0.85em;
 }
 
 .block-symbol {
@@ -230,6 +248,25 @@
   padding: 0.2em;
   border: 1px solid #333;
   border-radius: 0.5em;
+}
+.block-name-hole-symbol::before {
+  content: "…";
+  font-family: sans-serif;
+  font-weight: bold;
+
+  position: absolute;
+  top: -0.45em;
+  left: 0.01em;
+
+  width: 100%;
+}
+.block-name-hole-symbol {
+  position: relative;
+
+  width: 100%;
+  padding: 0.3em;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
 }
 
 .drag-overlay > .menu-trigger > .block-outer-container > .block-dragging {

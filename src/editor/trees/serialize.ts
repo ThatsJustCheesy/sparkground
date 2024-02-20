@@ -2,6 +2,7 @@ import { Expr, getIdentifier } from "../../expr/expr";
 import { serializeDatum } from "../../datum/serialize";
 import { isHole } from "./tree";
 import { serializeAttributes } from "../../expr/attributes";
+import { serializeType } from "../../typechecker/serialize";
 
 export function serializeExprWithAttributes(expr: Expr): string {
   return (
@@ -22,8 +23,14 @@ export function serializeExpr(expr: Expr): string {
       if (isHole(expr)) return "·";
       return `(quote ${serializeDatum(expr)})`;
 
+    // Type
+    case "type":
+      return `(type ${serializeType(expr.type)})`;
+
     // Expr
     case "name-binding":
+      if (expr.type) return `(${expr.id} ${serializeType(expr.type)})`;
+      return expr.id;
     case "var":
       return expr.id;
     case "call":
@@ -34,7 +41,7 @@ export function serializeExpr(expr: Expr): string {
         ")"
       );
     case "define":
-      return "(define " + getIdentifier(expr.name) + " " + serializeExpr(expr.value) + ")";
+      return "(define " + serializeExpr(expr.name) + " " + serializeExpr(expr.value) + ")";
     case "let":
     case "letrec":
       return (
@@ -42,7 +49,7 @@ export function serializeExpr(expr: Expr): string {
         expr.kind +
         " (" +
         expr.bindings.map(
-          ([name, valueExpr]) => "(" + getIdentifier(name) + " " + serializeExpr(valueExpr) + ")"
+          ([name, valueExpr]) => "(" + serializeExpr(name) + " " + serializeExpr(valueExpr) + ")"
         ) +
         ") " +
         serializeExpr(expr.body) +
@@ -51,7 +58,7 @@ export function serializeExpr(expr: Expr): string {
     case "lambda":
       return (
         "(lambda (" +
-        expr.params.map(getIdentifier).join(" ") +
+        expr.params.map(serializeExpr).join(" ") +
         ") " +
         serializeExpr(expr.body) +
         ")"

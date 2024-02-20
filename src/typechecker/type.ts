@@ -1,5 +1,3 @@
-import { mapValues } from "lodash";
-
 /**
  * Static type (of an expression).
  *
@@ -12,14 +10,17 @@ import { mapValues } from "lodash";
 export type Type = ConcreteType | TypeVar;
 
 /**
- * Static type (of an expression) containing no type variables.
+ * Static type (of an expression).
  *
  * e.g.,
  *  - `Int`
  *  - `List[Any]`
  *  - `Function[Int, String]`
  */
-export type ConcreteType = Types[keyof Types];
+export type ConcreteType = {
+  tag: string;
+  of?: Type[];
+};
 
 /**
  * Placeholder for a type in a polymorphic type expression.
@@ -39,7 +40,7 @@ export type TypeVar = {
   /** Supertype contraint: `b <: a` or `a :> b` */
   above?: Type;
 };
-export function isTypeVar(type: InferrableType): type is TypeVar {
+export function isTypeVar(type: Type | InferrableType): type is TypeVar {
   // FIXME: Prone to break if anyone uses this as a type parameter name!
   //        Use a special name to ensure no collisions.
   return "var" in type;
@@ -56,46 +57,34 @@ export function assertNoTypeVar(type: InferrableType, message?: string) {
 export function hasNoTypeVar(type: Type): type is ConcreteType;
 export function hasNoTypeVar(type: InferrableType): type is ConcreteInferrableType;
 export function hasNoTypeVar(type: InferrableType) {
-  return (
-    isUnknown(type) || (!isTypeVar(type) && Object.values(typeParams(type)).every(hasNoTypeVar))
-  );
+  return isUnknown(type) || (!isTypeVar(type) && (type.of?.every(hasNoTypeVar) ?? true));
 }
 
-export type Types = {
-  [Tag in keyof typeof TypeDefs]: {
-    tag: Tag;
-  } & {
-    [Param in (typeof TypeDefs)[Tag][number]]: Type;
-  };
-};
+export type BuiltinType =
+  | { tag: "Any" }
+  | { tag: "Never" }
+  | { tag: "Null" }
+  | { tag: "Number" }
+  | { tag: "Integer" }
+  | { tag: "Boolean" }
+  | { tag: "String" }
+  | { tag: "Symbol" }
+  | { tag: "List"; of: [element: Type] }
+  | { tag: "Function"; of: Type[] }
+  | { tag: "Promise"; of: [value: Type] };
 
-const TypeDefs = {
-  Any: [],
-  Never: [],
-  Null: [],
-  Number: [],
-  Integer: [],
-  Boolean: [],
-  String: [],
-  Symbol: [],
-  List: ["element"],
-  Function: ["in", "out"],
-  Procedure: ["out"],
-  Promise: ["value"],
-} as const satisfies Record<string, Readonly<string[]>>;
+export function isAny(type: Type): type is { tag: "Any" } {
+  return !isTypeVar(type) && type.tag === "Any";
+}
 
 // For type inference algorithm only.
 export type InferrableType = ConcreteInferrableType | TypeVar;
-export type ConcreteInferrableType = InferrableTypes[keyof InferrableTypes] | Unknown;
-
-// Ditto.
-export type InferrableTypes = {
-  [Tag in keyof typeof TypeDefs]: {
-    tag: Tag;
-  } & {
-    [Param in (typeof TypeDefs)[Tag][number]]: InferrableType | Unknown;
-  };
-};
+export type ConcreteInferrableType =
+  | {
+      tag: string;
+      of?: InferrableType[];
+    }
+  | Unknown;
 
 // Ditto.
 export type Unknown = { unknown: string };
@@ -110,27 +99,7 @@ export function assertNoUnknown(type: InferrableType, message?: string): asserts
   if (!hasNoUnknown(type)) throw `assertion failed: ${message ?? "type has unknown"}`;
 }
 export function hasNoUnknown(type: InferrableType): type is Type {
-  return (
-    isTypeVar(type) || (!isUnknown(type) && Object.values(typeParams(type)).every(hasNoUnknown))
-  );
-}
-
-/**
- * Type parameters of `type`, in order and keyed by name.
- *
- * e.g.,
- *  - `typeParams(Int) == {}`
- *  - `typeParams(List[Int]) == typeParams(List[element: Int]) == { element: Int }`
- *  - `typeParams(T[U1, U2, ..., UN]) == typeParams(T[key1: U1, key2: U2, ..., keyN: UN]) == { key1: U1, key2: U2, ..., keyN: UN] }`
- */
-export function typeParams(type: InferrableType): Record<string, Type>;
-export function typeParams(type: InferrableType): Record<string, InferrableType>;
-
-export function typeParams(type: InferrableType): Record<string, InferrableType> {
-  if (isUnknown(type) || isTypeVar(type)) return {};
-  const params: Omit<Type, "tag"> & Partial<Pick<ConcreteType, "tag">> = { ...type };
-  delete params.tag;
-  return params as Omit<Type, "tag">;
+  return isTypeVar(type) || (!isUnknown(type) && (type.of?.every(hasNoUnknown) ?? true));
 }
 
 /**
@@ -148,6 +117,6 @@ export function typeStructureMap(
   if (isUnknown(t) || isTypeVar(t)) return t;
   return {
     tag: t.tag,
-    ...mapValues(typeParams(t), (type) => fn(type)),
+    of: t.of?.map(fn),
   } as InferrableType;
 }

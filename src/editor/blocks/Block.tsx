@@ -54,6 +54,7 @@ export type BlockData =
   | Identifier
   | NameBinding
   | NameHole
+  | TypeData
   | Symbol
   | Number
   | Bool
@@ -101,6 +102,10 @@ type NameBinding = {
 type NameHole = {
   type: "name-hole";
 };
+type TypeData = {
+  type: "type";
+  id: string;
+};
 type Symbol = {
   type: "symbol";
   id: string;
@@ -139,48 +144,57 @@ export default function Block({
   const rerender = useContext(RerenderContext);
   useContext(RenderCounterContext);
 
+  const isAnyType = data.type === "type" && data.id === "?";
+  const nameable = data.type === "name-hole" && !indexPath.tree.id.startsWith("library");
+  const preventDrag = nameable || isAnyType;
+
   // Drop area, if applicable
-  let { isOver, setNodeRef: setNodeRef1 } = useDroppable({
+  const droppable = !(isCopySource || indexPath.path?.length === 0);
+  // Need to call useDroppable hook on *every* render
+  const usedDroppable = useDroppable({
     id,
     data: { indexPath },
   });
-  if (isCopySource || indexPath.path.length === 0) {
-    // Not a drop area
-    isOver = false;
-    setNodeRef1 = () => {};
-  }
+  let { isOver, setNodeRef: setNodeRef1 } = droppable
+    ? usedDroppable
+    : {
+        isOver: false,
+        setNodeRef: () => {},
+      };
 
   const contextHelpSubject = contextHelpSubjectFromData();
 
   // Draggable, if applicable
-  let draggable = true;
+  const draggable = !(
+    forDragOverlay ||
+    data.type === "hole" ||
+    data.type === "name-hole" ||
+    isAnyType
+  );
+  // Also need to call useDraggable hook on *every* render
+  const usedDraggable = useDraggable({
+    id,
+    data: {
+      indexPath,
+      copyOnDrop: isCopySource,
+      contextHelpSubject: contextHelpSubject,
+    },
+  });
   let {
     active,
     over,
     attributes,
     listeners,
     setNodeRef: setNodeRef2,
-  } = forDragOverlay
-    ? ({} as any)
-    : useDraggable({
-        id,
-        data: {
-          indexPath,
-          copyOnDrop: isCopySource,
-          contextHelpSubject: contextHelpSubject,
-        },
-      });
-  if (forDragOverlay || data.type === "hole" || data.type === "name-hole") {
-    // Not draggable
-    draggable = false;
-    active = null;
-    over = typeof forDragOverlay === "object" ? forDragOverlay : null;
-    attributes = [] as any;
-    listeners = [] as any;
-    setNodeRef2 = () => {};
-  }
-
-  const nameable = data.type === "name-hole" && !indexPath.tree.id.startsWith("library");
+  } = draggable
+    ? usedDraggable
+    : {
+        active: null,
+        over: typeof forDragOverlay === "object" ? forDragOverlay : null,
+        attributes: [],
+        listeners: [],
+        setNodeRef: () => {},
+      };
 
   const expr = (() => {
     try {
@@ -288,6 +302,12 @@ export default function Block({
           <br />
         </div>
       )}
+      {isAnyType && (
+        <div className="mt-2">
+          <small>Unknown type; you can drop a more specific type here</small>
+          <br />
+        </div>
+      )}
       {contextHelp && (
         <div className="mt-2">
           <b>Help:</b>
@@ -302,7 +322,9 @@ export default function Block({
       case "ident":
         return "block-menu-var";
       case "name-binding":
-        return "block-menu-namebinding";
+        return data.binding.attributes?.typeAnnotation
+          ? "block-menu-namebinding-annotated"
+          : "block-menu-namebinding";
       case "name-hole":
         return "block-menu-namehole";
       case "h":
@@ -314,6 +336,9 @@ export default function Block({
     }
     return "block-menu";
   })();
+
+  const validDraggedOver =
+    isOver && (data.type !== "type" || (activeDrag?.node.kind === "type" && data.type === "type"));
 
   return (
     <>
@@ -365,7 +390,7 @@ export default function Block({
             onContextMenu={(event) => {
               onContextMenu?.(indexPath);
             }}
-            data-no-dnd={nameable}
+            data-no-dnd={preventDrag}
             onClick={
               nameable
                 ? (event) => {
@@ -398,7 +423,9 @@ export default function Block({
                 zIndex: indexPath.tree.zIndex,
               }}
               className={`block block-${data.type} ${
-                forDragOverlay ? "block-dragging" : isOver ? "block-dragged-over" : ""
+                draggable || forDragOverlay ? "block-draggable" : ""
+              } ${nameable ? "block-nameable" : ""} ${
+                forDragOverlay ? "block-dragging" : validDraggedOver ? "block-dragged-over" : ""
               } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
                 hasError ? "block-error" : ""
               } ${identifierTag ? `block-identifier-${identifierTag}` : ""}`}
@@ -524,11 +551,23 @@ export default function Block({
       }
 
       case "ident":
-      case "name-binding":
       case "symbol": {
         const { id } = data;
 
         return id;
+      }
+
+      case "name-binding":
+      case "type": {
+        const { id } = data;
+
+        return (
+          <>
+            {id}
+
+            {children}
+          </>
+        );
       }
 
       case "number": {
@@ -543,9 +582,12 @@ export default function Block({
         return <div>{value ? "true" : "false"}</div>;
       }
 
-      case "name-hole":
       case "hole": {
         return <div className="block-hole-symbol" />;
+      }
+
+      case "name-hole": {
+        return <div className="block-name-hole-symbol" />;
       }
     }
   }

@@ -1,14 +1,18 @@
 import { Tree } from "./trees";
 import { isEqual } from "lodash";
-import { Expr, Hole, NameBinding, Var } from "../../expr/expr";
+import { Expr, Hole, NameBinding, Var, VarSlot } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { serializeExpr } from "./serialize";
 import { Parser as DatumParser } from "../../datum/parse";
+import { Type, isAny as isAnyType, isTypeVar } from "../../typechecker/type";
+import { Parser as TypeParser } from "../../typechecker/parse";
+import { Parser as ExprParser } from "../../expr/parse";
+import { flattenDatum } from "../../datum/flattened";
 
 export function isAtomic(node: Expr) {
-  return (
-    ["number", "bool", "string", "symbol", "var", "name-binding"] satisfies Expr["kind"][]
-  ).includes(node.kind as any);
+  return (["number", "bool", "string", "symbol", "var"] satisfies Expr["kind"][]).includes(
+    node.kind as any
+  );
 }
 
 export function children(node: Expr): (Expr | undefined)[] {
@@ -17,7 +21,20 @@ export function children(node: Expr): (Expr | undefined)[] {
     case "list":
       return [node.tail, ...node.heads];
 
+    // Type
+    case "type": {
+      const type = node.type;
+
+      if (!type) return [];
+      if (isTypeVar(type)) return [];
+      if (!type.of) return [];
+
+      return type.of.map((type) => ({ kind: "type", type }));
+    }
+
     // Expr
+    case "name-binding":
+      return node.type ? [{ kind: "type", type: node.type }] : [];
     case "call":
       return [node.called, ...node.args];
     case "define":
@@ -52,7 +69,20 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       else node.heads[index - 1] = asDatum(newChild);
       break;
 
+    // Type
+    case "type": {
+      const type = node.type;
+      if (isTypeVar(type)) break;
+
+      type.of ??= [];
+      type.of[index] = asType(newChild);
+      break;
+    }
+
     // Expr
+    case "name-binding":
+      if (index === 0) node.type = asType(newChild);
+      break;
     case "call":
       if (index === 0) node.called = newChild;
       else node.args[index - 1] = newChild;
@@ -70,7 +100,7 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       if (index === 2 * node.bindings.length) node.body = newChild;
       break;
     case "lambda":
-      if (index < node.params.length) node.params[index] = newChild as NameBinding;
+      if (index < node.params.length) node.params[index] = asVarSlot(newChild);
       if (index === node.params.length) node.body = newChild;
       break;
     case "sequence":
@@ -108,9 +138,35 @@ function asDatum(node: Expr): Datum {
   }
 }
 
+function asType(node: Expr): Type {
+  switch (node.kind) {
+    // Type
+    case "type":
+      return node.type;
+
+    // Expr
+    default:
+      if (isHole(node)) return { tag: "Any" };
+
+      // Serialize the expression, then parse it back
+      // Bit of a hack, but it should work
+      return TypeParser.parseToType(serializeExpr(node));
+  }
+}
+
+function asVarSlot(node: Expr): VarSlot {
+  if (isHole(node) || node.kind === "name-binding") return node;
+
+  // Once again: Serialize the expression, then parse it back
+  return new ExprParser().parseVarSlot(flattenDatum(asDatum(node)));
+}
+
 export const hole: Hole = { kind: "symbol", value: "·" };
 export function isHole(node: Expr | undefined): node is Hole {
   return node?.kind === "symbol" && node.value === "·";
+}
+export function isHoleForEditor(node: Expr | undefined): boolean {
+  return isHole(node) || (node?.kind === "type" && isAnyType(node.type));
 }
 
 export type TreeIndexPath = {

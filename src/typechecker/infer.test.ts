@@ -1,6 +1,6 @@
 import { Lambda } from "../expr/expr"
 import { TypeInferrer } from "./infer"
-import { Type } from "./type"
+import { BuiltinType, Type } from "./type"
 
 describe("TypeInferrer", () => {
   let inferrer: TypeInferrer
@@ -9,15 +9,15 @@ describe("TypeInferrer", () => {
   })
 
   it("infers basic atomic types", () => {
-    expect(inferrer.infer({ kind: "number", value: 42 })).toEqual<Type>({ tag: "Integer" })
-    expect(inferrer.infer({ kind: "bool", value: true })).toEqual<Type>({ tag: "Boolean" })
-    expect(inferrer.infer({ kind: "string", value: "hello" })).toEqual<Type>({ tag: "String" })
+    expect(inferrer.infer({ kind: "number", value: 42 })).toEqual<BuiltinType>({ tag: "Integer" })
+    expect(inferrer.infer({ kind: "bool", value: true })).toEqual<BuiltinType>({ tag: "Boolean" })
+    expect(inferrer.infer({ kind: "string", value: "hello" })).toEqual<BuiltinType>({ tag: "String" })
   })
 
   it("infers variable types", () => {
     expect(() => inferrer.infer({ kind: "var", id: "x" })).toThrow()
     expect(inferrer.error?.tag).toEqual("UnboundVariable")
-    expect(inferrer.infer({ kind: "var", id: "x" }, { x: { tag: "Integer" } })).toEqual<Type>({ tag: "Integer" })
+    expect(inferrer.infer({ kind: "var", id: "x" }, { x: { tag: "Integer" } })).toEqual<BuiltinType>({ tag: "Integer" })
   })
 
   it("infers sequence types", () => {
@@ -29,19 +29,19 @@ describe("TypeInferrer", () => {
           { kind: "bool", value: false },
         ],
       })
-    ).toEqual<Type>({ tag: "Boolean" })
+    ).toEqual<BuiltinType>({ tag: "Boolean" })
   })
 
   it("infers procedure types", () => {
     const const42: Lambda = { kind: "lambda", params: [], body: { kind: "number", value: 42 } }
-    expect(inferrer.infer(const42)).toEqual<Type>({ tag: "Procedure", out: { tag: "Integer" } })
-    expect(inferrer.infer({ kind: "call", called: const42, args: [] })).toEqual<Type>({ tag: "Integer" })
+    expect(inferrer.infer(const42)).toEqual<BuiltinType>({ tag: "Function", of: [{ tag: "Integer" }] })
+    expect(inferrer.infer({ kind: "call", called: const42, args: [] })).toEqual<BuiltinType>({ tag: "Integer" })
   })
 
   it("infers unary function types", () => {
     const id: Lambda = { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } }
-    expect(inferrer.infer(id)).toEqual<Type>({ tag: "Function", in: { var: "a" }, out: { var: "a" } })
-    expect(inferrer.infer({ kind: "call", called: id, args: [{ kind: "number", value: 1 }] })).toEqual<Type>({ tag: "Integer" })
+    expect(inferrer.infer(id)).toEqual<BuiltinType>({ tag: "Function", of: [{ var: "a" }, { var: "a" }] })
+    expect(inferrer.infer({ kind: "call", called: id, args: [{ kind: "number", value: 1 }] })).toEqual<BuiltinType>({ tag: "Integer" })
   })
 
   it("infers binary function types", () => {
@@ -53,10 +53,9 @@ describe("TypeInferrer", () => {
       ],
       body: { kind: "var", id: "y" },
     }
-    expect(inferrer.infer(second)).toEqual<Type>({
+    expect(inferrer.infer(second)).toEqual<BuiltinType>({
       tag: "Function",
-      in: { var: "a" },
-      out: { tag: "Function", in: { var: "b" }, out: { var: "b" } },
+      of: [{ var: "a" }, { tag: "Function", of: [{ var: "b" }, { var: "b" }] }],
     })
     expect(
       inferrer.infer({
@@ -67,6 +66,6 @@ describe("TypeInferrer", () => {
           { kind: "string", value: "" },
         ],
       })
-    ).toEqual<Type>({ tag: "String" })
+    ).toEqual<BuiltinType>({ tag: "String" })
   })
 })

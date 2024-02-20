@@ -24,6 +24,7 @@ p,
 .contextmenu {
   border: 0.09em solid #bdbdbd !important;
   padding: 0.35em 0 !important;
+  width: fit-content !important;
   z-index: calc(99999 + 1) !important;
 }
 .contextmenu__item {

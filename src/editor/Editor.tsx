@@ -213,7 +213,7 @@ export default function Editor({
         nodeAtIndexPath({
           tree: codeEditorSubject.tree,
           path: codeEditorSubject.path.slice(0, -1),
-        }) as Call,
+        }),
         codeEditorSubject.path.at(-1)!,
         newExpr
       );
@@ -273,9 +273,15 @@ export default function Editor({
       /* Dropped on top of nothing */
       !overIndexPath ||
       /* Dropped on root of a tree; just treat like movement */
-      over?.data.current?.indexPath.path.length === 0 ||
+      overIndexPath.path.length === 0 ||
       /* Dropped on a descendant of itself; just treat like movement */
-      isAncestor(activeIndexPath, overIndexPath)
+      isAncestor(activeIndexPath, overIndexPath) ||
+      /* Non-type block dropped in type context */
+      (nodeAtIndexPath({
+        tree: overIndexPath.tree,
+        path: overIndexPath.path.slice(0, -1),
+      }).kind === "type" &&
+        nodeAtIndexPath(activeIndexPath).kind !== "type")
     ) {
       const orphanTree = orphanExpr(
         activeIndexPath,

@@ -15,6 +15,7 @@ export type Binding<Domain> = {
 };
 
 export type BindingAttributes = {
+  typeAnnotation?: Type;
   binder?: TreeIndexPath;
   doc?: string;
 
@@ -88,8 +89,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       minArgCount: 2,
       maxArgCount: 2,
       argTypes: [
-        { tag: "Function", in: { tag: "Any" }, out: { var: "Out" } },
-        { tag: "List", element: { tag: "Any" } },
+        { tag: "Function", of: [{ tag: "Any" }, { var: "Out" }] },
+        { tag: "List", of: [{ tag: "Any" }] },
       ],
       retType: { var: "Out" },
     },
@@ -142,10 +143,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Applies `function` elementwise to the elements of `lists` and returns a list of the results, in order.",
       minArgCount: 1,
       argTypes: [
-        { tag: "Function", in: { var: "Element" }, out: { var: "NewElement" } },
-        { tag: "List", element: { var: "Element" } },
+        { tag: "Function", of: [{ var: "Element" }, { var: "NewElement" }] },
+        { tag: "List", of: [{ var: "Element" }] },
       ],
-      retType: { tag: "List", element: { var: "NewElement" } },
+      retType: { tag: "List", of: [{ var: "NewElement" }] },
     },
   },
   {
@@ -188,8 +189,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Runs `proc` on the elements of `lists`, in order from the first element to the last. Any values that `proc` returns are discarded.",
       minArgCount: 1,
       argTypes: [
-        { tag: "Function", in: { var: "Element" }, out: { tag: "Any" } },
-        { tag: "List", element: { var: "Element" } },
+        { tag: "Function", of: [{ var: "Element" }, { tag: "Any" }] },
+        { tag: "List", of: [{ var: "Element" }] },
       ],
       retType: { tag: "Any" },
     },
@@ -209,7 +210,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Continues the delayed computation represented by `promise`.",
       minArgCount: 1,
       maxArgCount: 1,
-      argTypes: [{ tag: "Promise", value: { var: "Value" } }],
+      argTypes: [{ tag: "Promise", of: [{ var: "Value" }] }],
       retType: { var: "Value" },
     },
   },
@@ -231,8 +232,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       argTypes: [
         {
           tag: "Function",
-          in: { tag: "Function", in: { var: "Result" }, out: { tag: "Never" } },
-          out: { var: "Result" },
+          of: [{ tag: "Function", of: [{ var: "Result" }, { tag: "Never" }] }, { var: "Result" }],
         },
       ],
       retType: { var: "Result" },
@@ -721,7 +721,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Constructs a list from the given `elements`.",
       argTypes: [{ var: "Element" }],
-      retType: { tag: "List", element: { var: "Element" } },
+      retType: { tag: "List", of: [{ var: "Element" }] },
     },
   },
   {
@@ -739,10 +739,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Constructs a list consisting of the given `lists` concatenated together.",
       argTypes: [
-        { tag: "List", element: { var: "Element" } },
-        { tag: "List", element: { var: "Element" } },
+        { tag: "List", of: [{ var: "Element" }] },
+        { tag: "List", of: [{ var: "Element" }] },
       ],
-      retType: { tag: "List", element: { var: "Element" } },
+      retType: { tag: "List", of: [{ var: "Element" }] },
     },
   },
   {
@@ -760,8 +760,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Constructs a new list consisting of the elements of `list` in reverse order.",
       minArgCount: 1,
       maxArgCount: 1,
-      argTypes: [{ tag: "List", element: { var: "Element" } }],
-      retType: { tag: "List", element: { var: "Element" } },
+      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
+      retType: { tag: "List", of: [{ var: "Element" }] },
     },
   },
   {
@@ -781,7 +781,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Returns the first element of `pair`. (If `pair` is a list, this is the head.)",
       minArgCount: 1,
       maxArgCount: 1,
-      argTypes: [{ tag: "List", element: { var: "Element" } }],
+      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
       retType: { var: "Element" },
     },
   },
@@ -805,8 +805,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Returns the second element of `pair`. (If `pair` is a list, this is the tail.)",
       minArgCount: 1,
       maxArgCount: 1,
-      argTypes: [{ tag: "List", element: { var: "Element" } }],
-      retType: { tag: "List", element: { var: "Element" } },
+      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
+      retType: { tag: "List", of: [{ var: "Element" }] },
     },
   },
   {
@@ -825,8 +825,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Returns whether `obj` is the empty list.",
       minArgCount: 1,
       maxArgCount: 1,
-      argTypes: [{ tag: "List", element: { var: "Element" } }],
-      retType: { tag: "List", element: { var: "Element" } },
+      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
+      retType: { tag: "List", of: [{ var: "Element" }] },
     },
   },
   {
@@ -851,7 +851,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Returns the number of elements in `list`.",
       minArgCount: 1,
       maxArgCount: 1,
-      argTypes: [{ tag: "List", element: { var: "Element" } }],
+      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
       retType: { tag: "Integer" },
     },
   },

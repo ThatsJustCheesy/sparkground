@@ -131,6 +131,7 @@ export class Evaluator {
 
       case "cond":
       case "name-binding":
+      case "type":
         throw "TODO";
     }
   }

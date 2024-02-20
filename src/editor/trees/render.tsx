@@ -30,6 +30,7 @@ import { Datum } from "../../datum/datum";
 import { memo } from "react";
 import { Binding, Environment, makeEnv, mergeEnvs } from "../library/environments";
 import { Value } from "../../evaluator/value";
+import { Type, isTypeVar } from "../../typechecker/type";
 
 const BlockMemo = memo(Block);
 
@@ -90,6 +91,9 @@ export class Renderer {
       case "symbol":
       case "list":
         return this.#renderDatum(expr);
+
+      case "type":
+        return this.#renderType(expr.type);
 
       case "name-binding":
       case "var":
@@ -157,7 +161,9 @@ export class Renderer {
     this.isCopySource = true;
     this.environment = environment ?? this.environment;
 
-    const rendered = this.#renderVarSlotContent(varSlot);
+    const rendered = isHole(varSlot)
+      ? this.#block({ type: "name-hole" })
+      : this.#renderNameBinding(varSlot);
 
     this.indexPath = parentIndexPath;
     this.isCopySource = parentIsCopySource;
@@ -229,6 +235,37 @@ export class Renderer {
     return rendered;
   }
 
+  #renderType(type: Type): JSX.Element {
+    if (isTypeVar(type)) {
+      return this.#block({
+        type: "type",
+        id: type.var,
+      });
+    }
+
+    return this.#block(
+      {
+        type: "type",
+        id: type.tag === "Any" ? "?" : type.tag,
+      },
+      (type.of ?? []).map((typeArg, index) => this.#renderTypeArg(typeArg, index))
+    );
+  }
+
+  #renderTypeArg(typeArg: Type, index: number) {
+    const parentIndexPath = this.indexPath;
+    const parentIsCopySource = this.isCopySource;
+
+    this.indexPath = extendIndexPath(this.indexPath, index);
+    this.isCopySource = false;
+
+    const rendered = this.#renderType(typeArg);
+
+    this.indexPath = parentIndexPath;
+    this.isCopySource = parentIsCopySource;
+    return rendered;
+  }
+
   #renderIdentifier(expr: NameBinding | Var): JSX.Element {
     return this.#block({
       type: "ident",
@@ -237,17 +274,26 @@ export class Renderer {
     });
   }
 
-  #renderVarSlotContent(varSlot: VarSlot) {
+  #renderNameBinding(nb: NameBinding) {
+    const { id } = nb;
+    const binding = this.environment[id]!;
+
+    const body: JSX.Element = nb.type ? (
+      <>
+        <span style={{ marginLeft: "-0.2em", marginRight: "-0.05em" }}>:</span>
+        {this.#renderTypeArg(nb.type, 0)}
+      </>
+    ) : (
+      <></>
+    );
+
     return this.#block(
-      isHole(varSlot)
-        ? {
-            type: "name-hole",
-          }
-        : {
-            type: "name-binding",
-            id: varSlot.id,
-            binding: this.environment[varSlot.id]!,
-          }
+      {
+        type: "name-binding",
+        id,
+        binding,
+      },
+      body
     );
   }
 
@@ -333,6 +379,8 @@ export class Renderer {
   }
 
   #renderDefine(expr: Define): JSX.Element {
+    this.environment = this.#extendedEnvironment([expr.name]);
+
     const heading = this.#renderVarSlot(expr.name, 0);
     const body = this.#renderSubexpr(expr.value, 1);
 
@@ -434,6 +482,7 @@ export class Renderer {
               name: (slot as NameBinding).id,
               cell: {},
               attributes: {
+                typeAnnotation: (slot as NameBinding).type,
                 binder: extendIndexPath(this.indexPath, index),
               },
             })
