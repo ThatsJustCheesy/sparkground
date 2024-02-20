@@ -1,4 +1,4 @@
-import { Expr, getIdentifier } from "../../expr/expr";
+import { Expr } from "../../expr/expr";
 import { serializeDatum } from "../../datum/serialize";
 import { isHole } from "./tree";
 import { serializeAttributes } from "../../expr/attributes";
@@ -48,9 +48,11 @@ export function serializeExpr(expr: Expr): string {
         "(" +
         expr.kind +
         " (" +
-        expr.bindings.map(
-          ([name, valueExpr]) => "(" + serializeExpr(name) + " " + serializeExpr(valueExpr) + ")"
-        ) +
+        expr.bindings
+          .map(
+            ([name, valueExpr]) => "(" + serializeExpr(name) + " " + serializeExpr(valueExpr) + ")"
+          )
+          .join(" ") +
         ") " +
         serializeExpr(expr.body) +
         ")"
