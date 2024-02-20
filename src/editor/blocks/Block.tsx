@@ -280,41 +280,38 @@ export default function Block({
       </>
     ) : undefined;
 
-  const tooltipContent = (
-    <div className="mb-1">
-      <b>Type:</b>{" "}
-      {typeof type === "string" ? (
-        <span className="text-warning">
-          Error: <i>{type}</i>{" "}
-        </span>
-      ) : (
-        serializeType(type)
-      )}
-      {data.type === "name-binding" && (
-        <div className="mt-2">
-          <small>Right-click to rename this variable</small>
-          <br />
-        </div>
-      )}
-      {nameable && (
-        <div className="mt-2">
-          <small>Click to name this variable</small>
-          <br />
-        </div>
-      )}
-      {isAnyType && (
-        <div className="mt-2">
-          <small>Unknown type; you can drop a more specific type here</small>
-          <br />
-        </div>
-      )}
-      {contextHelp && (
-        <div className="mt-2">
-          <b>Help:</b>
-          <div className="mt-1 ms-2">{contextHelp}</div>
-        </div>
-      )}
+  const tooltipContentParts = [
+    data.type !== "type" && (
+      <>
+        <b>Type:</b>{" "}
+        {typeof type === "string" ? (
+          <span className="text-warning">
+            Error: <i>{type}</i>{" "}
+          </span>
+        ) : (
+          serializeType(type)
+        )}
+      </>
+    ),
+    data.type === "name-binding" && <small>Right-click to rename this variable</small>,
+    nameable && <small>Click to name this variable</small>,
+    isAnyType && <small>Unknown type; you can drop a more specific type here</small>,
+    contextHelp && (
+      <>
+        <b>Help:</b>
+        <div className="mt-1 ms-2">{contextHelp}</div>
+      </>
+    ),
+  ].filter((x) => x);
+
+  const tooltipContent = tooltipContentParts.length ? (
+    <div className="d-flex flex-column mb-1" style={{ gap: "0.5em" }}>
+      {tooltipContentParts.map((part, index) => (
+        <div key={index}>{part}</div>
+      ))}
     </div>
+  ) : (
+    ""
   );
 
   const contextMenuID = (() => {
@@ -364,7 +361,7 @@ export default function Block({
         <Tippy
           content={tooltipContent}
           className={"text-bg-primary"}
-          visible={tooltipVisible && !forDragOverlay}
+          visible={!!tooltipContent && tooltipVisible && !forDragOverlay}
           arrow={false}
           plugins={[followCursor]}
           followCursor={true}
