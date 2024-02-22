@@ -88,7 +88,7 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       else node.args[index - 1] = newChild;
       break;
     case "define":
-      if (index === 0) node.name = newChild as NameBinding;
+      if (index === 0) node.name = asVarSlot(newChild);
       if (index === 1) node.value = newChild;
       break;
     case "let":
