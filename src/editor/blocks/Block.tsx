@@ -2,12 +2,17 @@ import { PropsWithChildren, ReactNode, useContext, useEffect, useRef, useState }
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
-import { TreeIndexPath, nodeAtIndexPath, extendIndexPath, isHole } from "../trees/tree";
+import {
+  TreeIndexPath,
+  nodeAtIndexPath,
+  extendIndexPath,
+  isHole,
+  parentIndexPath,
+} from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
 import { Type } from "../../typechecker/type";
-import { TypeInferrer } from "../../typechecker/infer";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
 import {
@@ -18,9 +23,10 @@ import {
 } from "../editor-contexts";
 import { Binding } from "../library/environments";
 import { Value } from "../../evaluator/value";
-import { InitialTypeEnvironment } from "../typecheck";
+import { InitialTypeContext } from "../typecheck";
 import { Point, newTree } from "../trees/trees";
 import { moveExprInTree } from "../trees/mutate";
+import { Typechecker } from "../../typechecker/typecheck";
 
 // TODO: Move this somewhere else or make it obsolete
 let isShiftDown = false;
@@ -38,8 +44,7 @@ type Props = PropsWithChildren<{
   data: BlockData;
   isCopySource?: boolean;
 
-  inferrer: TypeInferrer;
-  hasError?: boolean;
+  typechecker: Typechecker;
   identifierTag?: string;
 
   forDragOverlay?: boolean | Over;
@@ -97,7 +102,7 @@ type Identifier = {
 type NameBinding = {
   type: "name-binding";
   id: string;
-  binding: Binding<Value>;
+  binding?: Binding<Value>;
 };
 type NameHole = {
   type: "name-hole";
@@ -129,8 +134,7 @@ export default function Block({
   data,
   isCopySource,
 
-  inferrer,
-  hasError,
+  typechecker,
   identifierTag,
 
   forDragOverlay,
@@ -211,9 +215,9 @@ export default function Block({
 
   useEffect(() => {
     try {
-      setType(inferrer.inferSubexpr(indexPath, InitialTypeEnvironment));
+      setType(typechecker.inferSubexprType(indexPath, InitialTypeContext));
     } catch (error) {
-      setType(inferrer.error ? describeInferenceError(inferrer.error) : `${error}`);
+      setType(describeInferenceError(error) ?? `${error}`);
     }
 
     if (identifierTag) {
@@ -280,7 +284,21 @@ export default function Block({
       </>
     ) : undefined;
 
+  let typecheckingError = typechecker.errors.for(indexPath);
+  if (!typecheckingError && nodeAtIndexPath(indexPath).kind === "call") {
+    typecheckingError = typechecker.errors.for(extendIndexPath(indexPath, 0));
+  }
+
   const tooltipContentParts = [
+    // Uncomment to see each block's index path in its tooltip:
+    // <>
+    //   <b>Index Path:</b> {indexPath.path.map((x) => `${x}`).join(" ")}
+    // </>,
+    !!typecheckingError && (
+      <span className="text-warning">
+        <b>Type Error:</b> <i>{describeInferenceError(typecheckingError)}</i>{" "}
+      </span>
+    ),
     data.type !== "type" && (
       <>
         <b>Type:</b>{" "}
@@ -319,7 +337,7 @@ export default function Block({
       case "ident":
         return "block-menu-var";
       case "name-binding":
-        return data.binding.attributes?.typeAnnotation
+        return data.binding?.attributes?.typeAnnotation
           ? "block-menu-namebinding-annotated"
           : "block-menu-namebinding";
       case "name-hole":
@@ -424,7 +442,7 @@ export default function Block({
               } ${nameable ? "block-nameable" : ""} ${
                 forDragOverlay ? "block-dragging" : validDraggedOver ? "block-dragged-over" : ""
               } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
-                hasError ? "block-error" : ""
+                !!typecheckingError ? "block-error" : ""
               } ${identifierTag ? `block-identifier-${identifierTag}` : ""}`}
               onMouseOver={(event) => {
                 if ((event.target as Element).closest(".block") === divRef.current) {

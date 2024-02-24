@@ -24,13 +24,12 @@ import {
   Letrec,
   VarSlot,
 } from "../../expr/expr";
-import { TypeInferrer } from "../../typechecker/infer";
-import { errorInvolvesExpr } from "../../typechecker/errors";
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
 import { Binding, Environment, makeEnv, mergeEnvs } from "../library/environments";
 import { Value } from "../../evaluator/value";
 import { Type, isTypeVar } from "../../typechecker/type";
+import { Typechecker } from "../../typechecker/typecheck";
 
 const BlockMemo = memo(Block);
 
@@ -43,7 +42,7 @@ export class Renderer {
   constructor(
     private tree: Tree,
     private environment: Environment,
-    private inferrer: TypeInferrer,
+    private typechecker: Typechecker,
     options: {
       forDragOverlay?: boolean | Over;
     } = {}
@@ -122,7 +121,6 @@ export class Renderer {
 
   #block(data: BlockData, body: JSX.Element | JSX.Element[] = []) {
     const key = this.#keyForIndexPath(this.indexPath);
-    const expr = nodeAtIndexPath(this.indexPath);
 
     const binding = "binding" in data ? data.binding : undefined;
     return (
@@ -132,10 +130,7 @@ export class Renderer {
         indexPath={this.indexPath}
         data={data}
         isCopySource={this.isCopySource}
-        inferrer={this.inferrer}
-        hasError={
-          this.inferrer.error && errorInvolvesExpr(this.inferrer.error, expr as Expr /* TODO */)
-        }
+        typechecker={this.typechecker}
         identifierTag={
           binding?.attributes?.binder
             ? this.#keyForIndexPath(binding.attributes.binder).trim().replace(/\s/g, "-").trim()

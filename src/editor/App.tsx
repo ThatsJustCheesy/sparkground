@@ -26,6 +26,7 @@ import { Datum } from "../datum/datum";
 import { Defines } from "../evaluator/defines";
 import { Cell } from "./library/environments";
 import { Value } from "../evaluator/value";
+import { Any } from "../typechecker/type";
 
 function App() {
   const [renderCounter, setRenderCounter] = useState(0);
@@ -101,7 +102,7 @@ function App() {
     const nameBinding = nodeAtIndexPath(blockContextMenuSubject);
     if (nameBinding.kind !== "name-binding") return;
 
-    nameBinding.type = { tag: "Any" };
+    nameBinding.type = Any;
     rerender();
   }
 

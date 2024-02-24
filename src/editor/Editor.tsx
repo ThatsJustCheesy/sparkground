@@ -169,7 +169,10 @@ export default function Editor({
                         zIndex: tree.zIndex,
                       }}
                     >
-                      {new Renderer(tree, InitialEnvironment, tree.inferrer).render(tree.root, {})}
+                      {new Renderer(tree, InitialEnvironment, tree.typechecker).render(
+                        tree.root,
+                        {}
+                      )}
                     </div>
                   ))}
                 </div>
@@ -180,7 +183,7 @@ export default function Editor({
                       activeDrag.indexPath.tree,
                       // TODO: Do we need to use a better symbol table here?
                       InitialEnvironment,
-                      activeDrag.indexPath.tree.inferrer,
+                      activeDrag.indexPath.tree.typechecker,
                       {
                         forDragOverlay: activeDragOver ?? true,
                       }

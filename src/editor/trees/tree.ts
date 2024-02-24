@@ -4,7 +4,7 @@ import { Expr, Hole, NameBinding, Var, VarSlot } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { serializeExpr } from "./serialize";
 import { Parser as DatumParser } from "../../datum/parse";
-import { Type, isAny as isAnyType, isTypeVar } from "../../typechecker/type";
+import { Any, Type, hasTag, isTypeVar } from "../../typechecker/type";
 import { Parser as TypeParser } from "../../typechecker/parse";
 import { Parser as ExprParser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
@@ -146,7 +146,7 @@ function asType(node: Expr): Type {
 
     // Expr
     default:
-      if (isHole(node)) return { tag: "Any" };
+      if (isHole(node)) return Any;
 
       // Serialize the expression, then parse it back
       // Bit of a hack, but it should work
@@ -166,7 +166,7 @@ export function isHole(node: Expr | undefined): node is Hole {
   return node?.kind === "symbol" && node.value === "·";
 }
 export function isHoleForEditor(node: Expr | undefined): boolean {
-  return isHole(node) || (node?.kind === "type" && isAnyType(node.type));
+  return isHole(node) || (node?.kind === "type" && hasTag(node.type, "Any"));
 }
 
 export type TreeIndexPath = {

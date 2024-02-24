@@ -1,19 +1,37 @@
-import { TypeEnv } from "../typechecker/infer";
 import { mapValues } from "lodash";
-import { Type } from "../typechecker/type";
+import { Any, SimpleConcreteType, Type, VariadicFunctionType } from "../typechecker/type";
 import { Binding, Environment, InitialEnvironment } from "./library/environments";
 import { Value } from "../evaluator/value";
+import { TypeContext } from "../typechecker/typecheck";
 
-export const InitialTypeEnvironment = envAsTypeEnv(InitialEnvironment);
+export const InitialTypeContext = typeContextFromEnv(InitialEnvironment);
 
-export function envAsTypeEnv(environment: Environment): TypeEnv {
+export function typeContextFromEnv(environment: Environment): TypeContext {
   return mapValues(environment, typeOfBinding);
 }
 export function typeOfBinding(binding: Binding<Value>): Type {
-  return (
-    binding.attributes?.argTypes?.reduceRight(
-      (retType, argType) => ({ tag: "Function", in: argType, out: retType }),
-      binding.attributes?.retType!
-    ) ?? { tag: "Any" } // FIXME: Don't give "Any" as a fallback
-  );
+  const attrs = binding.attributes;
+  if (!attrs) return Any;
+
+  if (attrs.typeAnnotation) return attrs.typeAnnotation;
+
+  const { argTypes, retType, minArgCount, maxArgCount } = attrs;
+
+  if (minArgCount !== undefined && minArgCount === maxArgCount) {
+    // Simple function
+
+    return {
+      tag: "Function",
+      of: [...(argTypes ?? Array(minArgCount).fill(Any)), retType ?? Any],
+    } satisfies SimpleConcreteType<"Function">;
+  } else {
+    // Variadic function
+
+    return {
+      tag: "Function*",
+      of: [...(argTypes ?? Array((minArgCount ?? 1) - 1).fill(Any)), retType ?? Any],
+      minArgCount,
+      maxArgCount,
+    } satisfies VariadicFunctionType;
+  }
 }

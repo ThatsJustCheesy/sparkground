@@ -5,7 +5,7 @@
  * However, they may be polymorphic; e.g.,, the identity function has type `Function[a, a]`,
  * where `a` is an unconstrained polymorphic type variable (`TypeVar`).
  *
- * To find the best available `Type` for an expression, use `TypeInferrer`.
+ * To find the best available `Type` for an expression, use `Typechecker`.
  */
 export type Type = ConcreteType | TypeVar;
 
@@ -17,10 +17,43 @@ export type Type = ConcreteType | TypeVar;
  *  - `List[Any]`
  *  - `Function[Int, String]`
  */
-export type ConcreteType = {
-  tag: string;
+export type ConcreteType = SimpleConcreteType | VariadicFunctionType;
+
+export type SimpleConcreteType<Tag extends string = string> = {
+  tag: Tag;
   of?: Type[];
 };
+
+export type VariadicFunctionType = {
+  tag: "Function*";
+  of: Type[];
+
+  minArgCount?: number;
+  maxArgCount?: number;
+};
+
+export function typeParams(type: Type) {
+  if (isTypeVar(type)) return [];
+  return type.of ?? [];
+}
+
+export function functionParamTypes(
+  fnType: SimpleConcreteType<"Function"> | VariadicFunctionType
+): Type[] {
+  return typeParams(fnType).slice(0, -1);
+}
+export function functionResultType(
+  fnType: SimpleConcreteType<"Function"> | VariadicFunctionType
+): Type {
+  return typeParams(fnType).at(-1) ?? Any;
+}
+
+export function hasTag<Tag extends string>(type: Type, tag: Tag): type is SimpleConcreteType<Tag>;
+export function hasTag(type: Type, tag: "Function*"): type is VariadicFunctionType;
+
+export function hasTag<Tag extends string>(type: Type, tag: Tag): boolean {
+  return !isTypeVar(type) && type.tag === tag;
+}
 
 /**
  * Placeholder for a type in a polymorphic type expression.
@@ -73,9 +106,8 @@ export type BuiltinType =
   | { tag: "Function"; of: Type[] }
   | { tag: "Promise"; of: [value: Type] };
 
-export function isAny(type: Type): type is { tag: "Any" } {
-  return !isTypeVar(type) && type.tag === "Any";
-}
+export const Any = { tag: "Any" };
+export const Never = { tag: "Never" };
 
 // For type inference algorithm only.
 export type InferrableType = ConcreteInferrableType | TypeVar;

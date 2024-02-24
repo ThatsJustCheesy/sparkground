@@ -1,11 +1,11 @@
 import "./library.css";
 import { Renderer } from "../trees/render";
 import { LibraryCategories, LibraryCategory } from "./library-defs";
-import { TypeInferrer } from "../../typechecker/infer";
 import { Tree } from "../trees/trees";
 import Nav from "react-bootstrap/Nav";
 import Tab from "react-bootstrap/Tab";
 import { InitialEnvironment } from "./environments";
+import { Typechecker } from "../../typechecker/typecheck";
 
 export default function LibraryBlocks() {
   return <LibraryCategoryTabs categories={LibraryCategories} />;
@@ -33,10 +33,10 @@ function LibraryCategoryTabs({ categories }: { categories?: LibraryCategory[] })
                 root: expr,
                 location: { x: 0, y: 0 },
                 zIndex: 1,
-                inferrer: new TypeInferrer(),
+                typechecker: new Typechecker(),
               };
 
-              return new Renderer(tree, InitialEnvironment, tree.inferrer, {}).render(expr, {
+              return new Renderer(tree, InitialEnvironment, tree.typechecker, {}).render(expr, {
                 isCopySource: true,
               });
             })}

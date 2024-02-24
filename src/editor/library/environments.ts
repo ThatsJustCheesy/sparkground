@@ -701,6 +701,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Constructs a pair with `head` as the head and `tail` as the tail. If `tail` is a list, the resulting pair is a list.",
       minArgCount: 2,
       maxArgCount: 2,
+      argTypes: [{ tag: "Any" }, { tag: "Any" }],
+      retType: { tag: "List", of: [{ tag: "Any" }] },
     },
   },
   {

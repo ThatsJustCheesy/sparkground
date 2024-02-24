@@ -232,6 +232,7 @@ export const LibraryCategories: LibraryCategory[] = [
       { kind: "type", type: { tag: "Number" } },
       { kind: "type", type: { tag: "Integer" } },
       { kind: "type", type: { tag: "String" } },
+      { kind: "type", type: { tag: "List", of: [{ tag: "Any" }] } },
       { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }] } },
       { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }] } },
       {
