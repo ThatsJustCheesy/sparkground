@@ -177,42 +177,57 @@ export default function Editor({
       )}
 
       <Split
-        className="editor"
+        className="editor-split split"
+        direction="horizontal"
+        cursor="col-resize"
         sizes={[78, 22]}
         minSize={[0, 0]}
         snapOffset={120}
         gutterSize={12}
         gutterAlign="center"
       >
-        {provideEditorContext(
-          <div className="blocks" ref={blocksArea}>
-            <div
-              style={{
-                width:
-                  Math.max(...trees.map((tree) => tree.location.x)) +
-                  document.documentElement.clientWidth / 2,
-                height:
-                  Math.max(...trees.map((tree) => tree.location.y)) +
-                  document.documentElement.clientHeight / 2,
-              }}
-            />
-            {trees.map((tree) => (
-              <div
-                key={tree.id}
-                className="block-pos-container"
-                style={{
-                  position: "absolute",
-                  width: "fit-content",
-                  top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
-                  left: `calc(max(40px, ${tree.location.x}px))`,
-                  zIndex: tree.zIndex,
-                }}
-              >
-                {new Renderer(tree, InitialEnvironment, tree.typechecker).render(tree.root, {})}
+        <Split
+          className="canvas-split split"
+          direction="vertical"
+          cursor="row-resize"
+          sizes={[100]}
+          minSize={[0]}
+          snapOffset={120}
+          gutterSize={12}
+          gutterAlign="center"
+        >
+          {provideEditorContext(
+            <>
+              <div className="blocks" ref={blocksArea}>
+                <div
+                  style={{
+                    width:
+                      Math.max(...trees.map((tree) => tree.location.x)) +
+                      document.documentElement.clientWidth / 2,
+                    height:
+                      Math.max(...trees.map((tree) => tree.location.y)) +
+                      document.documentElement.clientHeight / 2,
+                  }}
+                />
+                {trees.map((tree) => (
+                  <div
+                    key={tree.id}
+                    className="block-pos-container"
+                    style={{
+                      position: "absolute",
+                      width: "fit-content",
+                      top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
+                      left: `calc(max(40px, ${tree.location.x}px))`,
+                      zIndex: tree.zIndex,
+                    }}
+                  >
+                    {new Renderer(tree, InitialEnvironment, tree.typechecker).render(tree.root, {})}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </>
+          )}
+        </Split>
 
         <Library />
       </Split>
@@ -282,13 +297,18 @@ export default function Editor({
       return;
     }
 
-    const overIndexPath = indexPathFromDragged(over);
+    const dragBounds = active!.rect.current.translated!;
 
     // Adjust coordinates of drop point to account for context of scrolled container
-    active!.rect.current.translated!.top += blocksArea.current!.scrollTop + 4.5;
-    active!.rect.current.translated!.bottom += blocksArea.current!.scrollTop;
-    active!.rect.current.translated!.left += blocksArea.current!.scrollLeft;
-    active!.rect.current.translated!.right += blocksArea.current!.scrollLeft;
+    const blocksAreaEl = blocksArea.current!;
+    const shiftY = blocksAreaEl.scrollTop - blocksAreaEl.getBoundingClientRect().top + 48;
+    const shiftX = blocksAreaEl.scrollLeft;
+    dragBounds.top += shiftY;
+    dragBounds.bottom += shiftY;
+    dragBounds.left += shiftX;
+    dragBounds.right += shiftX;
+
+    const overIndexPath = indexPathFromDragged(over);
 
     if (
       /* Dropped on top of nothing */
@@ -307,8 +327,8 @@ export default function Editor({
       const orphanTree = orphanExpr(
         activeIndexPath,
         {
-          x: active!.rect.current.translated!.left,
-          y: active!.rect.current.translated!.top,
+          x: dragBounds.left,
+          y: dragBounds.top,
         },
         shouldCopy
       );
@@ -316,13 +336,13 @@ export default function Editor({
     } else {
       if (shouldCopy) {
         copyExprInTree(activeIndexPath, overIndexPath, {
-          x: active!.rect.current.translated!.right,
-          y: active!.rect.current.translated!.bottom,
+          x: dragBounds.right,
+          y: dragBounds.bottom,
         });
       } else {
         moveExprInTree(activeIndexPath, overIndexPath, {
-          x: active!.rect.current.translated!.right,
-          y: active!.rect.current.translated!.bottom,
+          x: dragBounds.right,
+          y: dragBounds.bottom,
         });
       }
     }

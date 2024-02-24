@@ -34,31 +34,6 @@ export const LibraryCategories: LibraryCategory[] = [
     ],
   },
   {
-    name: "Typecheck & Convert",
-    subcategories: [
-      {
-        name: "Typecheck",
-        entries: [
-          { kind: "call", called: { kind: "var", id: "boolean?" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "symbol?" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "number?" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "string?" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "list?" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "procedure?" }, args: [] },
-        ],
-      },
-      {
-        name: "Convert",
-        entries: [
-          { kind: "call", called: { kind: "var", id: "string->number" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "number->string" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "string->symbol" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "symbol->string" }, args: [] },
-        ],
-      },
-    ],
-  },
-  {
     name: "Logic",
     entries: [
       { kind: "bool", value: true },
@@ -225,26 +200,51 @@ export const LibraryCategories: LibraryCategory[] = [
     ],
   },
   {
-    name: "Types",
-    entries: [
-      { kind: "type", type: { tag: "Boolean" } },
-      { kind: "type", type: { tag: "Symbol" } },
-      { kind: "type", type: { tag: "Number" } },
-      { kind: "type", type: { tag: "Integer" } },
-      { kind: "type", type: { tag: "String" } },
-      { kind: "type", type: { tag: "List", of: [{ tag: "Any" }] } },
-      { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }] } },
-      { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }] } },
+    name: "Typing",
+    subcategories: [
       {
-        kind: "type",
-        type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }] },
+        name: "Annotate",
+        entries: [
+          { kind: "type", type: { tag: "Boolean" } },
+          { kind: "type", type: { tag: "Symbol" } },
+          { kind: "type", type: { tag: "Number" } },
+          { kind: "type", type: { tag: "Integer" } },
+          { kind: "type", type: { tag: "String" } },
+          { kind: "type", type: { tag: "List", of: [{ tag: "Any" }] } },
+          { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }] } },
+          { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }] } },
+          {
+            kind: "type",
+            type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }] },
+          },
+          {
+            kind: "type",
+            type: {
+              tag: "Function",
+              of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }, { tag: "Any" }],
+            },
+          },
+        ],
       },
       {
-        kind: "type",
-        type: {
-          tag: "Function",
-          of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }, { tag: "Any" }],
-        },
+        name: "Typecheck",
+        entries: [
+          { kind: "call", called: { kind: "var", id: "boolean?" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "symbol?" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "number?" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "string?" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "list?" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "procedure?" }, args: [] },
+        ],
+      },
+      {
+        name: "Convert",
+        entries: [
+          { kind: "call", called: { kind: "var", id: "string->number" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "number->string" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "string->symbol" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "symbol->string" }, args: [] },
+        ],
       },
     ],
   },

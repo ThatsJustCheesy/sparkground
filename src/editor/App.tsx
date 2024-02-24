@@ -48,9 +48,15 @@ function App() {
   function mouseCursorLocation(event: SyntheticEvent): Point {
     const clickEvent = event.nativeEvent as MouseEvent;
     const blocksArea = document.querySelector(".blocks");
+
+    const shiftX = blocksArea ? blocksArea.scrollLeft : 0;
+    const shiftY = blocksArea
+      ? blocksArea.scrollTop - blocksArea.getBoundingClientRect().top + 48
+      : 0;
+
     return {
-      x: clickEvent.clientX + (blocksArea?.scrollLeft ?? 0),
-      y: clickEvent.clientY + (blocksArea?.scrollTop ?? 0),
+      x: clickEvent.clientX + shiftX,
+      y: clickEvent.clientY + shiftY,
     };
   }
 
@@ -201,6 +207,11 @@ function App() {
       <MenuItemSeparator />
       <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
       <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
+    </>
+  );
+
+  const evaluateContextMenu = (
+    <>
       <MenuItemSeparator />
       <ContextMenuItem onClick={evaluateContextMenuSubject}>Evaluate</ContextMenuItem>
     </>
