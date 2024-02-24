@@ -8,6 +8,7 @@ import { Any, Type, hasTag, isTypeVar } from "../../typechecker/type";
 import { Parser as TypeParser } from "../../typechecker/parse";
 import { Parser as ExprParser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
+import { Environment, extendEnv } from "../library/environments";
 
 export function isAtomic(node: Expr) {
   return (["number", "bool", "string", "symbol", "var"] satisfies Expr["kind"][]).includes(
@@ -256,5 +257,61 @@ export function referencesToBinding(id: string, root: TreeIndexPath): Var[] {
     }
 
     return referencesToBinding(id, childIndexPath);
+  });
+}
+
+/**
+ * Returns all unbound (free) variable references in the expression at `root`
+ * with contextual bindings in `env`.
+ */
+export function unboundReferences(root: TreeIndexPath, env: Environment = {}): Var[] {
+  const parent = nodeAtIndexPath(root);
+
+  if (parent.kind === "var") {
+    return env[parent.id] ? [] : [parent];
+  }
+
+  return children(nodeAtIndexPath(root)).flatMap((child, childIndex): Var[] => {
+    if (!child) return [];
+    const childIndexPath = extendIndexPath(root, childIndex);
+
+    switch (parent.kind) {
+      case "lambda":
+        if (childIndex < parent.params.length) {
+          return unboundReferences(childIndexPath, env);
+        } else {
+          return unboundReferences(childIndexPath, extendEnv(env, root, parent.params));
+        }
+
+      case "define":
+        return unboundReferences(childIndexPath, extendEnv(env, root, [parent.name]));
+
+      case "let":
+        if (childIndex < 2 * parent.bindings.length) {
+          return unboundReferences(childIndexPath, env);
+        } else {
+          return unboundReferences(
+            childIndexPath,
+            extendEnv(
+              env,
+              root,
+              parent.bindings.map(([name]) => name)
+            )
+          );
+        }
+
+      case "letrec":
+        return unboundReferences(
+          childIndexPath,
+          extendEnv(
+            env,
+            root,
+            parent.bindings.map(([name]) => name)
+          )
+        );
+
+      default:
+        return unboundReferences(childIndexPath, env);
+    }
   });
 }

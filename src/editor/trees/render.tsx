@@ -1,11 +1,4 @@
-import {
-  TreeIndexPath,
-  extendIndexPath,
-  rootIndexPath,
-  hole,
-  nodeAtIndexPath,
-  isHole,
-} from "./tree";
+import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, isHole } from "./tree";
 import BlockHint from "../blocks/BlockHint";
 import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
@@ -26,8 +19,7 @@ import {
 } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
-import { Binding, Environment, makeEnv, mergeEnvs } from "../library/environments";
-import { Value } from "../../evaluator/value";
+import { Environment, extendEnv } from "../library/environments";
 import { Type, isTypeVar } from "../../typechecker/type";
 import { Typechecker } from "../../typechecker/typecheck";
 
@@ -467,22 +459,6 @@ export class Renderer {
   }
 
   #extendedEnvironment(varSlots: VarSlot[]) {
-    return mergeEnvs(
-      this.environment,
-      makeEnv(
-        varSlots
-          .filter((slot) => slot.kind === "name-binding")
-          .map(
-            (slot, index): Binding<Value> => ({
-              name: (slot as NameBinding).id,
-              cell: {},
-              attributes: {
-                typeAnnotation: (slot as NameBinding).type,
-                binder: extendIndexPath(this.indexPath, index),
-              },
-            })
-          )
-      )
-    );
+    return extendEnv(this.environment, this.indexPath, varSlots);
   }
 }

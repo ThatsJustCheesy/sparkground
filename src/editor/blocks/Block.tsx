@@ -7,7 +7,7 @@ import {
   nodeAtIndexPath,
   extendIndexPath,
   isHole,
-  parentIndexPath,
+  unboundReferences,
 } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
@@ -294,6 +294,14 @@ export default function Block({
     // <>
     //   <b>Index Path:</b> {indexPath.path.map((x) => `${x}`).join(" ")}
     // </>,
+    // Uncomment to see unbound references in each block's subtree, when considered
+    // in isolation from its true context:
+    // <>
+    //   <b>Subtree Unbound References:</b>{" "}
+    //   {unboundReferences(indexPath)
+    //     .map((varRef) => varRef.id)
+    //     .join(", ")}
+    // </>,
     !!typecheckingError && (
       <span className="text-warning">
         <b>Type Error:</b> <i>{describeInferenceError(typecheckingError)}</i>{" "}
@@ -333,6 +341,8 @@ export default function Block({
   );
 
   const contextMenuID = (() => {
+    const evaluable = expr && unboundReferences(indexPath).length === 0 ? "-evaluable" : "";
+
     switch (data.type) {
       case "ident":
         return "block-menu-var";
@@ -344,12 +354,12 @@ export default function Block({
         return "block-menu-namehole";
       case "h":
       case "v":
-        if (data.calledIsVar) return "block-menu-call";
-        break;
+        return (data.calledIsVar ? "block-menu-call" : "block-menu") + evaluable;
       case "happly":
-        if (data) return "block-menu-apply";
+        return (data ? "block-menu-apply" : "block-menu") + evaluable;
     }
-    return "block-menu";
+
+    return "block-menu" + evaluable;
   })();
 
   const validDraggedOver =
@@ -412,7 +422,7 @@ export default function Block({
                     event.preventDefault();
                     event.stopPropagation();
 
-                    const nameHole = nodeAtIndexPath(indexPath);
+                    const nameHole = expr;
                     if (!isHole(nameHole)) return;
 
                     const newName = prompt("Enter variable name:");

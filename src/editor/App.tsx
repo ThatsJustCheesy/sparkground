@@ -254,6 +254,11 @@ function App() {
         {commonContextMenu}
       </ContextMenu>
 
+      <ContextMenu id="block-menu-evaluable" hideOnLeave={false}>
+        {commonContextMenu}
+        {evaluateContextMenu}
+      </ContextMenu>
+
       <ContextMenu id="block-menu-namebinding" hideOnLeave={false}>
         <ContextMenuItem onClick={typeAnnotateContextMenuSubject}>
           Annotate Variable Type
@@ -280,13 +285,30 @@ function App() {
         {commonContextMenu}
       </ContextMenu>
 
+      <ContextMenu id="block-menu-var-evaluable" hideOnLeave={false}>
+        <ContextMenuItem onClick={applyContextMenuSubject}>Apply</ContextMenuItem>
+        {commonContextMenu}
+        {evaluateContextMenu}
+      </ContextMenu>
+
       <ContextMenu id="block-menu-call" hideOnLeave={false}>
         <ContextMenuItem onClick={unapplyContextMenuSubject}>Unapply</ContextMenuItem>
         {commonContextMenu}
       </ContextMenu>
 
+      <ContextMenu id="block-menu-call-evaluable" hideOnLeave={false}>
+        <ContextMenuItem onClick={unapplyContextMenuSubject}>Unapply</ContextMenuItem>
+        {commonContextMenu}
+        {evaluateContextMenu}
+      </ContextMenu>
+
       <ContextMenu id="block-menu-apply" hideOnLeave={false}>
         {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-apply-evaluable" hideOnLeave={false}>
+        {commonContextMenu}
+        {evaluateContextMenu}
       </ContextMenu>
     </>
   );

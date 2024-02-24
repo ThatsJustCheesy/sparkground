@@ -2,7 +2,8 @@ import { keyBy, multiply, reduce, sumBy } from "lodash";
 import { ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
 import { FnValue, ListValue, Value, getVariadic, listValueAsVector } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
-import { TreeIndexPath } from "../trees/tree";
+import { TreeIndexPath, extendIndexPath } from "../trees/tree";
+import { NameBinding, VarSlot } from "../../expr/expr";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -37,6 +38,30 @@ export function makeEnv(bindings: Binding<Value>[]): Environment {
 }
 export function mergeEnvs(...environments: Environment[]): Environment {
   return Object.assign({}, ...environments);
+}
+
+export function extendEnv(
+  environment: Environment,
+  parentIndexPath: TreeIndexPath,
+  varSlots: VarSlot[]
+) {
+  return mergeEnvs(
+    environment,
+    makeEnv(
+      varSlots
+        .filter((slot) => slot.kind === "name-binding")
+        .map(
+          (slot, index): Binding<Value> => ({
+            name: (slot as NameBinding).id,
+            cell: {},
+            attributes: {
+              typeAnnotation: (slot as NameBinding).type,
+              binder: extendIndexPath(parentIndexPath, index),
+            },
+          })
+        )
+    )
+  );
 }
 
 // TODO: Move this
