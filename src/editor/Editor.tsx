@@ -36,6 +36,7 @@ import {
 } from "./editor-contexts";
 import { InitialEnvironment } from "./library/environments";
 import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors";
+import Split from "react-split";
 
 export type Props = {
   trees: Tree[];
@@ -131,74 +132,91 @@ export default function Editor({
 
   const blocksArea = useRef<HTMLDivElement>(null);
 
-  return (
-    <div className="editor">
-      <DndContext
-        autoScroll={false}
-        sensors={useSensors(useSensor(CustomPointerSensor), useSensor(CustomKeyboardSensor))}
-        collisionDetection={collisionDetection}
-        onDragStart={onBlockDragStart}
-        onDragOver={onBlockDragOver}
-        onDragEnd={onBlockDragEnd}
-      >
-        <OnContextMenuContext.Provider value={onBlockContextMenu}>
-          <ActiveDragContext.Provider value={activeDrag}>
-            <RerenderContext.Provider value={weakRerender}>
-              <RenderCounterContext.Provider value={renderCounter}>
-                <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
-                <div className="blocks" ref={blocksArea}>
-                  <div
-                    style={{
-                      width:
-                        Math.max(...trees.map((tree) => tree.location.x)) +
-                        document.documentElement.clientWidth / 2,
-                      height:
-                        Math.max(...trees.map((tree) => tree.location.y)) +
-                        document.documentElement.clientHeight / 2,
-                    }}
-                  />
-                  {trees.map((tree) => (
-                    <div
-                      key={tree.id}
-                      className="block-pos-container"
-                      style={{
-                        position: "absolute",
-                        width: "fit-content",
-                        top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
-                        left: `calc(max(40px, ${tree.location.x}px))`,
-                        zIndex: tree.zIndex,
-                      }}
-                    >
-                      {new Renderer(tree, InitialEnvironment, tree.typechecker).render(
-                        tree.root,
-                        {}
-                      )}
-                    </div>
-                  ))}
-                </div>
+  function provideEditorContext(body: JSX.Element) {
+    return (
+      <OnContextMenuContext.Provider value={onBlockContextMenu}>
+        <ActiveDragContext.Provider value={activeDrag}>
+          <RerenderContext.Provider value={weakRerender}>
+            <RenderCounterContext.Provider value={renderCounter}>
+              {body}
+            </RenderCounterContext.Provider>
+          </RerenderContext.Provider>
+        </ActiveDragContext.Provider>
+      </OnContextMenuContext.Provider>
+    );
+  }
 
-                <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
-                  {activeDrag &&
-                    new Renderer(
-                      activeDrag.indexPath.tree,
-                      // TODO: Do we need to use a better symbol table here?
-                      InitialEnvironment,
-                      activeDrag.indexPath.tree.typechecker,
-                      {
-                        forDragOverlay: activeDragOver ?? true,
-                      }
-                    ).render(activeDrag.node, {
-                      indexPath: activeDrag.indexPath,
-                    })}
-                </DragOverlay>
-              </RenderCounterContext.Provider>
-            </RerenderContext.Provider>
-          </ActiveDragContext.Provider>
-        </OnContextMenuContext.Provider>
+  return (
+    <DndContext
+      autoScroll={false}
+      sensors={useSensors(useSensor(CustomPointerSensor), useSensor(CustomKeyboardSensor))}
+      collisionDetection={collisionDetection}
+      onDragStart={onBlockDragStart}
+      onDragOver={onBlockDragOver}
+      onDragEnd={onBlockDragEnd}
+    >
+      {provideEditorContext(
+        <>
+          <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
+
+          <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
+            {activeDrag &&
+              new Renderer(
+                activeDrag.indexPath.tree,
+                // TODO: Do we need to use a better symbol table here?
+                InitialEnvironment,
+                activeDrag.indexPath.tree.typechecker,
+                {
+                  forDragOverlay: activeDragOver ?? true,
+                }
+              ).render(activeDrag.node, {
+                indexPath: activeDrag.indexPath,
+              })}
+          </DragOverlay>
+        </>
+      )}
+
+      <Split
+        className="editor"
+        sizes={[78, 22]}
+        minSize={[0, 0]}
+        snapOffset={120}
+        gutterSize={12}
+        gutterAlign="center"
+      >
+        {provideEditorContext(
+          <div className="blocks" ref={blocksArea}>
+            <div
+              style={{
+                width:
+                  Math.max(...trees.map((tree) => tree.location.x)) +
+                  document.documentElement.clientWidth / 2,
+                height:
+                  Math.max(...trees.map((tree) => tree.location.y)) +
+                  document.documentElement.clientHeight / 2,
+              }}
+            />
+            {trees.map((tree) => (
+              <div
+                key={tree.id}
+                className="block-pos-container"
+                style={{
+                  position: "absolute",
+                  width: "fit-content",
+                  top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
+                  left: `calc(max(40px, ${tree.location.x}px))`,
+                  zIndex: tree.zIndex,
+                }}
+              >
+                {new Renderer(tree, InitialEnvironment, tree.typechecker).render(tree.root, {})}
+              </div>
+            ))}
+          </div>
+        )}
 
         <Library />
-      </DndContext>
-    </div>
+      </Split>
+    </DndContext>
   );
 
   function onCodeEditorClose(newSource?: string) {

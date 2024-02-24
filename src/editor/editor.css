@@ -8,8 +8,22 @@
   user-select: none;
 }
 
+.editor > * {
+  box-sizing: border-box;
+}
+
+.editor > .gutter {
+  background-color: #eee;
+  background-repeat: no-repeat;
+  background-position: 50%;
+}
+
+.editor > .gutter.gutter-horizontal {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==");
+  cursor: col-resize;
+}
+
 .blocks {
-  flex: 80%;
   position: relative;
   overflow: auto;
 }
