@@ -285,7 +285,7 @@ export default function Block({
     ) : undefined;
 
   let typecheckingError = typechecker.errors.for(indexPath);
-  if (!typecheckingError && nodeAtIndexPath(indexPath).kind === "call") {
+  if (!typecheckingError && expr?.kind === "call") {
     typecheckingError = typechecker.errors.for(extendIndexPath(indexPath, 0));
   }
 
