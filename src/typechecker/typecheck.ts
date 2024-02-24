@@ -279,20 +279,12 @@ export class Typechecker {
           }
 
           expr.args.forEach((arg, index) => {
-            if (
-              !this.#checkType(
-                arg,
-                variadicParamTypes[index] ?? variadicParamTypes.at(-1)!,
-                context,
-                extendIndexPath(indexPath, index + 1)
-              )
-            ) {
-              this.errors.add(extendIndexPath(indexPath, index + 1), {
-                tag: "InvalidAssignment",
-                expr: arg,
-                type: variadicParamTypes[index] ?? variadicParamTypes.at(-1)!,
-              } satisfies InvalidAssignment);
-            }
+            this.#checkType(
+              arg,
+              variadicParamTypes[index] ?? variadicParamTypes.at(-1)!,
+              context,
+              extendIndexPath(indexPath, index + 1)
+            );
           });
 
           return resultType;
@@ -314,20 +306,12 @@ export class Typechecker {
           }
 
           expr.args.forEach((arg, index) => {
-            if (
-              !this.#checkType(
-                arg,
-                paramTypes[index]!,
-                context,
-                extendIndexPath(indexPath, index + 1)
-              )
-            ) {
-              this.errors.add(extendIndexPath(indexPath, index + 1), {
-                tag: "InvalidAssignment",
-                expr: arg,
-                type: paramTypes[index]!,
-              } satisfies InvalidAssignment);
-            }
+            this.#checkType(
+              arg,
+              paramTypes[index]!,
+              context,
+              extendIndexPath(indexPath, index + 1)
+            );
           });
 
           return resultType;
@@ -431,7 +415,17 @@ export class Typechecker {
   /**
    * Checks that `expr` has `type` in `context`.
    */
-  #checkType(expr: Expr, type: Type, context: TypeContext, indexPath: TreeIndexPath) {
+  #checkType(expr: Expr, type: Type, context: TypeContext, indexPath: TreeIndexPath): void {
+    if (!this.#checkType_(expr, type, context, indexPath)) {
+      this.errors.add(indexPath, {
+        tag: "InvalidAssignment",
+        expr,
+        type,
+      } satisfies InvalidAssignment);
+    }
+  }
+
+  #checkType_(expr: Expr, type: Type, context: TypeContext, indexPath: TreeIndexPath): boolean {
     const exprType = this.#inferType(expr, context, indexPath);
 
     if (hasTag(type, "Any")) return true;

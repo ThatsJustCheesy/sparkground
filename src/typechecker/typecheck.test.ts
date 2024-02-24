@@ -1,5 +1,5 @@
 import { Lambda } from "../expr/expr"
-import { InferenceError } from "./errors"
+import { InferenceError, describeInferenceError } from "./errors"
 import { BuiltinType } from "./type"
 import { Typechecker } from "./typecheck"
 
@@ -212,6 +212,33 @@ describe("Typechecker", () => {
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
 
     checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "string", value: "foo" }] })
+    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
+
+    checker.inferType({
+      kind: "call",
+      called: {
+        kind: "lambda",
+        params: [
+          {
+            kind: "name-binding",
+            id: "foo",
+            type: {
+              tag: "Function",
+              of: [
+                { tag: "Function", of: [{ tag: "Integer" }, { tag: "Number" }] },
+                { tag: "Integer" },
+                { tag: "Boolean" } /* should be Number */,
+              ],
+            },
+          },
+        ],
+        body: {
+          kind: "var",
+          id: "foo",
+        },
+      },
+      args: [callIntToNumber],
+    })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
 
     checker.inferType({ kind: "call", called: uncallable, args: [{ kind: "number", value: 42 }] })
