@@ -1,6 +1,6 @@
 import { Lambda } from "../expr/expr"
-import { InferenceError, describeInferenceError } from "./errors"
-import { BuiltinType } from "./type"
+import { InferenceError } from "./errors"
+import { Any, BuiltinType } from "./type"
 import { Typechecker } from "./typecheck"
 
 describe("Typechecker", () => {
@@ -243,5 +243,51 @@ describe("Typechecker", () => {
 
     checker.inferType({ kind: "call", called: uncallable, args: [{ kind: "number", value: 42 }] })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
+  })
+
+  it("infers list types", () => {
+    expect(
+      checker.inferType({
+        kind: "list",
+        heads: [
+          { kind: "number", value: 42 },
+          { kind: "number", value: 24 },
+        ],
+      })
+    ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "Integer" }] })
+    expectNoErrors()
+
+    expect(
+      checker.inferType({
+        kind: "list",
+        heads: [
+          { kind: "number", value: 42 },
+          { kind: "number", value: 2.4 },
+        ],
+      })
+    ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "Number" }] })
+    expectNoErrors()
+
+    expect(
+      checker.inferType({
+        kind: "list",
+        heads: [
+          { kind: "number", value: 42 },
+          { kind: "bool", value: true },
+        ],
+      })
+    ).toEqual<BuiltinType>({ tag: "List", of: [Any] })
+    expectNoErrors()
+
+    expect(
+      checker.inferType({
+        kind: "list",
+        heads: [
+          { kind: "list", heads: [{ kind: "number", value: 42 }] },
+          { kind: "list", heads: [{ kind: "bool", value: true }] },
+        ],
+      })
+    ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "List", of: [Any] }] })
+    expectNoErrors()
   })
 })
