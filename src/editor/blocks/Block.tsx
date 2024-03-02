@@ -290,10 +290,15 @@ export default function Block({
   }
 
   const tooltipContentParts = [
+    data.type === "name-binding" && <small>Right-click to rename this variable</small>,
+    nameable && <small>Click to name this variable</small>,
+    isAnyType && <small>Unknown type; you can drop a more specific type here</small>,
+
     // Uncomment to see each block's index path in its tooltip:
     // <>
     //   <b>Index Path:</b> {indexPath.path.map((x) => `${x}`).join(" ")}
     // </>,
+
     // Uncomment to see unbound references in each block's subtree, when considered
     // in isolation from its true context:
     // <>
@@ -302,6 +307,7 @@ export default function Block({
     //     .map((varRef) => varRef.id)
     //     .join(", ")}
     // </>,
+
     !!typecheckingError && (
       <span className="text-warning">
         <b>Type Error:</b> <i>{describeInferenceError(typecheckingError)}</i>{" "}
@@ -319,9 +325,7 @@ export default function Block({
         )}
       </>
     ),
-    data.type === "name-binding" && <small>Right-click to rename this variable</small>,
-    nameable && <small>Click to name this variable</small>,
-    isAnyType && <small>Unknown type; you can drop a more specific type here</small>,
+
     contextHelp && (
       <>
         <b>Help:</b>
