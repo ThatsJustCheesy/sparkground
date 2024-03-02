@@ -16,6 +16,7 @@ describe("Typechecker", () => {
 
   beforeEach(() => {
     checker = new Typechecker()
+    checker.autoReset = true
 
     const42 = { kind: "lambda", params: [], body: { kind: "number", value: 42 } }
     intIdentity = {

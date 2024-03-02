@@ -12,13 +12,25 @@ import {
 import { Any, Never, Type, functionParamTypes, functionResultType, hasTag } from "./type";
 import { Tree, newTree, removeTree } from "../editor/trees/trees";
 import { isSubtype, typeJoin } from "./subtyping";
+import { InitialTypeContext } from "../editor/typecheck";
 
 export type TypeContext = Record<string, Type>;
 
-function bindInContext(context: TypeContext, binding: NameBinding): TypeContext {
+export function bindInContext(context: TypeContext, binding: NameBinding): TypeContext {
   return bindInContextWithType(context, binding, binding.type ?? Any);
 }
-function bindInContextWithType(
+
+export function bindAllInContext(context: TypeContext, bindings: NameBinding[]): TypeContext {
+  bindings.forEach((binding) => {
+    if (!isHole(binding)) {
+      context = bindInContext(context, binding);
+    }
+  });
+
+  return context;
+}
+
+export function bindInContextWithType(
   context: TypeContext,
   binding: NameBinding,
   newType: Type
@@ -27,6 +39,19 @@ function bindInContextWithType(
     ...context,
     [binding.id]: newType,
   };
+}
+
+export function bindAllInContextWithTypes(
+  context: TypeContext,
+  bindingsTypes: [NameBinding, Type][]
+): TypeContext {
+  bindingsTypes.forEach(([binding, type]) => {
+    if (!isHole(binding)) {
+      context = bindInContextWithType(context, binding, type);
+    }
+  });
+
+  return context;
 }
 
 class InferenceCache {
@@ -70,7 +95,10 @@ export class TypecheckerErrors {
 }
 
 export class Typechecker {
+  rootContext: TypeContext = InitialTypeContext;
+
   errors = new TypecheckerErrors();
+  autoReset = false;
 
   #inferenceCache = new InferenceCache();
 
@@ -81,18 +109,24 @@ export class Typechecker {
    * This is equivalent to just making a new typechecker, but resetting the state in
    * `inferType()` and co. allows clients to just call them repeatedly on the same instance.
    */
-  #reset() {
+  reset() {
     // Clear public error state.
     // It is a new day.
     this.errors.clear();
 
-    // Clear cached inferences.
+    this.#inferenceCache.clear();
+  }
+
+  /**
+   * Clears cached inferences.
+   */
+  clearCache() {
     this.#inferenceCache.clear();
   }
 
   inferType(tree: Tree, context?: TypeContext): Type;
   inferType(expr: Expr, context?: TypeContext): Type;
-  inferType(tree: Tree | Expr, context: TypeContext = {}): Type {
+  inferType(tree: Tree | Expr, context: TypeContext = this.rootContext): Type {
     // If given an `Expr`, stuff it into its own tree before running inference,
     // as inference requires an index path into a tree (to deal with subexpressions).
     let isTempTree = false;
@@ -102,7 +136,7 @@ export class Typechecker {
     }
 
     try {
-      this.#reset();
+      if (this.autoReset) this.reset();
 
       return this.#inferType(tree.root, context, rootIndexPath(tree));
     } finally {
@@ -112,8 +146,8 @@ export class Typechecker {
     }
   }
 
-  inferSubexprType(indexPath: TreeIndexPath, context: TypeContext = {}): Type {
-    this.#reset();
+  inferSubexprType(indexPath: TreeIndexPath, context: TypeContext = this.rootContext): Type {
+    if (this.autoReset) this.reset();
 
     // First, infer the type of the entire tree.
     this.#inferType(indexPath.tree.root, context, rootIndexPath(indexPath.tree));

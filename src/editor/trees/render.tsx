@@ -1,6 +1,6 @@
 import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, isHole } from "./tree";
 import BlockHint from "../blocks/BlockHint";
-import { Tree } from "./trees";
+import { Tree, globalDefines, globalDefinesInDependencyOrder } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
 import {
@@ -21,7 +21,13 @@ import { Datum } from "../../datum/datum";
 import { memo } from "react";
 import { Environment, extendEnv } from "../library/environments";
 import { Type, isTypeVar } from "../../typechecker/type";
-import { Typechecker } from "../../typechecker/typecheck";
+import {
+  Typechecker,
+  bindAllInContext,
+  bindAllInContextWithTypes,
+  bindInContextWithType,
+} from "../../typechecker/typecheck";
+import { InitialTypeContext } from "../typecheck";
 
 const BlockMemo = memo(Block);
 
@@ -61,6 +67,21 @@ export class Renderer {
     }
 
     if (isCopySource) this.isCopySource = isCopySource;
+
+    // Add global defines to root type context.
+    const [orderedDefines, cyclicDefines] = globalDefinesInDependencyOrder();
+
+    for (const tree of orderedDefines) {
+      this.typechecker.rootContext = bindInContextWithType(
+        this.typechecker.rootContext,
+        tree.root.name as NameBinding,
+        this.typechecker.inferType(tree)
+      );
+    }
+    this.typechecker.rootContext = bindAllInContext(
+      this.typechecker.rootContext,
+      cyclicDefines.flat(1).map((tree) => tree.root.name as NameBinding)
+    );
 
     switch (node.kind) {
       case "bool":

@@ -1,11 +1,10 @@
 import "./app.css";
 import "tippy.js/dist/tippy.css";
 import { SyntheticEvent, useState } from "react";
-import { Point, newTree, trees } from "./trees/trees";
+import { Point, globalDefines, newTree, trees } from "./trees/trees";
 import Editor from "./Editor";
 import AppMenuBar from "./ui/menus/AppMenuBar";
 import HelpDialog from "./ui/HelpDialog";
-import { Parser } from "../expr/parse";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
 import { deleteExpr, moveExprInTree, orphanExpr } from "./trees/mutate";
@@ -173,21 +172,19 @@ function App() {
     const evaluator = new Evaluator(defines);
 
     defines.addAll(
-      trees()
-        .filter((tree) => tree.root.kind === "define" && tree.root.name.kind === "name-binding")
-        .map((tree) => {
-          const define = tree.root as Define;
-          const name = define.name as NameBinding;
-          return [
-            name.id,
-            (): Cell<Value> => {
-              const evaluator = new Evaluator();
-              evaluator.defines = defines;
-              evaluator.eval(define);
-              return defines.get(name.id)!;
-            },
-          ];
-        })
+      globalDefines().map((tree) => {
+        const define = tree.root as Define;
+        const name = define.name as NameBinding;
+        return [
+          name.id,
+          (): Cell<Value> => {
+            const evaluator = new Evaluator();
+            evaluator.defines = defines;
+            evaluator.eval(define);
+            return defines.get(name.id)!;
+          },
+        ];
+      })
     );
 
     const result = evaluator.eval(subject);

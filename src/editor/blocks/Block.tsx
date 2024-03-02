@@ -23,7 +23,6 @@ import {
 } from "../editor-contexts";
 import { Binding } from "../library/environments";
 import { Value } from "../../evaluator/value";
-import { InitialTypeContext } from "../typecheck";
 import { Point, newTree } from "../trees/trees";
 import { moveExprInTree } from "../trees/mutate";
 import { Typechecker } from "../../typechecker/typecheck";
@@ -57,7 +56,7 @@ export type BlockData =
   | HorizontalApply
   | HorizontalList
   | Identifier
-  | NameBinding
+  | NameBindingData
   | NameHole
   | TypeData
   | Symbol
@@ -99,7 +98,7 @@ type Identifier = {
   id: string;
   binding?: Binding<Value>;
 };
-type NameBinding = {
+type NameBindingData = {
   type: "name-binding";
   id: string;
   binding?: Binding<Value>;
@@ -215,7 +214,8 @@ export default function Block({
 
   useEffect(() => {
     try {
-      setType(typechecker.inferSubexprType(indexPath, InitialTypeContext));
+      typechecker.clearCache();
+      setType(typechecker.inferSubexprType(indexPath));
     } catch (error) {
       setType(describeInferenceError(error) ?? `${error}`);
     }
