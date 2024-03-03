@@ -353,11 +353,14 @@ export default function Block({
   );
 
   const contextMenuID = (() => {
-    const evaluable = expr && unboundReferences(indexPath).length === 0 ? "-evaluable" : "";
+    // TODO: Fix this unbound reference detection
+    //       (it doesn't have access to the correct environment at the moment)
+    // const evaluable = expr && unboundReferences(indexPath).length === 0 ? "-evaluable" : "";
+    const evaluable = "-evaluable";
 
     switch (data.type) {
       case "ident":
-        return "block-menu-var";
+        return "block-menu-var" + evaluable;
       case "name-binding":
         return data.binding?.attributes?.typeAnnotation
           ? "block-menu-namebinding-annotated"
