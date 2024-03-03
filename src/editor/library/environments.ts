@@ -1,9 +1,11 @@
 import { keyBy, multiply, reduce, sumBy } from "lodash";
-import { ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
+import { Datum, ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
 import { FnValue, ListValue, Value, getVariadic, listValueAsVector } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
 import { TreeIndexPath, extendIndexPath } from "../trees/tree";
 import { NameBinding, VarSlot } from "../../expr/expr";
+import { Parser } from "../../expr/parse";
+import { flattenDatum } from "../../datum/flattened";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -269,8 +271,26 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "expression" }, { name: "environment" }],
-        body: (args): Value => {
-          throw "TODO";
+        body: (args, evaluator): Value => {
+          const [expression, env] = args as [Value, Value];
+          if (expression.kind === "fn") {
+            throw "expression passed to 'eval' must not be a function value";
+          }
+
+          let expressionDatum: Datum;
+          if (expression.kind === "list") {
+            const vector = listValueAsVector(expression);
+            if (vector === undefined) {
+              throw "expression passed to 'eval' is an improper list";
+            }
+            expressionDatum = { kind: "list", heads: vector as Datum[] };
+          } else {
+            expressionDatum = expression;
+          }
+
+          // TODO: Use env (what should be the runtime representation?)
+
+          return evaluator.eval(new Parser().parsePrimary(flattenDatum(expressionDatum)));
         },
       },
     },
