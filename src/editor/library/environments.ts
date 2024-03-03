@@ -114,7 +114,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       minArgCount: 2,
       maxArgCount: 2,
       argTypes: [
-        { tag: "Function", of: [{ tag: "Any" }, { var: "Out" }] },
+        { tag: "Function*", of: [{ tag: "Any" }, { var: "Out" }] },
         { tag: "List", of: [{ tag: "Any" }] },
       ],
       retType: { var: "Out" },

@@ -84,9 +84,6 @@ function App() {
   function nameContextMenuSubject(event: SyntheticEvent) {
     if (!blockContextMenuSubject) return;
 
-    const nameHole = nodeAtIndexPath(blockContextMenuSubject);
-    if (!isHole(nameHole)) return;
-
     const newName = prompt("Enter variable name:");
     if (!newName) return;
 
@@ -286,8 +283,17 @@ function App() {
         {commonContextMenu}
       </ContextMenu>
 
+      <ContextMenu id="block-menu-typenamebinding" hideOnLeave={false}>
+        {commonContextMenu}
+      </ContextMenu>
+
       <ContextMenu id="block-menu-namehole" hideOnLeave={false}>
         <ContextMenuItem onClick={nameContextMenuSubject}>Name Variable</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-typenamehole" hideOnLeave={false}>
+        <ContextMenuItem onClick={nameContextMenuSubject}>Name Type Variable</ContextMenuItem>
         {commonContextMenu}
       </ContextMenu>
 

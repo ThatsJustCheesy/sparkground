@@ -1,6 +1,6 @@
 import { isEqual, mapValues } from "lodash";
-import { Type, isTypeVar } from "../type";
-import { TypeSubstitution, typeVarOccurs } from "../type-substitution";
+import { Type, isForallType, isTypeVar, isTypeVarBoundBy, isTypeVarSlot } from "../type";
+import { TypeSubstitution } from "../type-substitution";
 import { Constraint, TopConstraint, constraintMeet, isConstraintSatisfiable } from "./constraint";
 import { TypeParamVariance, typeParamVariance } from "../subtyping";
 
@@ -105,8 +105,16 @@ function signAdjustVariance(variance: TypeVarVariance, sign: TypeParamVariance):
 }
 
 function varianceForTypeVar(type: Type, typeVarName: string): TypeVarVariance {
-  if (isTypeVar(type)) {
+  if (isTypeVarSlot(type)) {
+    return "constant";
+  } else if (isTypeVar(type)) {
     return type.var === typeVarName ? "covariant" : "constant";
+  } else if (isForallType(type)) {
+    if (isTypeVarBoundBy(typeVarName, type)) {
+      // Shadowed
+      return "constant";
+    }
+    return varianceForTypeVar(type.body, typeVarName);
   } else {
     const signs = typeParamVariance(type);
     const typeArgVariances = (type.of ?? [])

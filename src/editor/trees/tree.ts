@@ -1,14 +1,24 @@
 import { Tree } from "./trees";
 import { isEqual } from "lodash";
-import { Expr, Hole, NameBinding, Var, VarSlot } from "../../expr/expr";
+import { Expr, Hole, TypeExpr, Var, VarSlot } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { serializeExpr } from "./serialize";
 import { Parser as DatumParser } from "../../datum/parse";
-import { Any, Type, hasTag, isTypeVar } from "../../typechecker/type";
+import {
+  Any,
+  Type,
+  TypeVarSlot,
+  hasTag,
+  isForallType,
+  isTypeNameHole,
+  isTypeVar,
+  isTypeVarSlot,
+} from "../../typechecker/type";
 import { Parser as TypeParser } from "../../typechecker/parse";
 import { Parser as ExprParser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
 import { Environment, extendEnv } from "../library/environments";
+import { serializeType } from "../../typechecker/serialize";
 
 export function isAtomic(node: Expr) {
   return (["number", "bool", "string", "symbol", "var"] satisfies Expr["kind"][]).includes(
@@ -26,11 +36,15 @@ export function children(node: Expr): (Expr | undefined)[] {
     case "type": {
       const type = node.type;
 
-      if (!type) return [];
-      if (isTypeVar(type)) return [];
-      if (!type.of) return [];
+      const wrapTypeAsExpr = (type: Type): TypeExpr => ({ kind: "type", type });
 
-      return type.of.map((type) => ({ kind: "type", type }));
+      if (!type || isTypeVar(type) || isTypeVarSlot(type)) {
+        return [];
+      } else if (isForallType(type)) {
+        return [...type.forall.map(wrapTypeAsExpr), wrapTypeAsExpr(type.body)];
+      } else {
+        return type.of ? type.of.map(wrapTypeAsExpr) : [];
+      }
     }
 
     // Expr
@@ -73,10 +87,16 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
     // Type
     case "type": {
       const type = node.type;
-      if (isTypeVar(type)) break;
+      if (isTypeVar(type) || isTypeVarSlot(type)) break;
 
-      type.of ??= [];
-      type.of[index] = asType(newChild);
+      if (isForallType(type)) {
+        if (index < type.forall.length) type.forall[index] = asTypeVarSlot(newChild);
+        else type.body = asType(newChild);
+      } else {
+        // Concrete type
+        type.of ??= [];
+        type.of[index] = asType(newChild);
+      }
       break;
     }
 
@@ -155,6 +175,17 @@ function asType(node: Expr): Type {
   }
 }
 
+function asTypeVarSlot(node: Expr): TypeVarSlot {
+  const type = asType(node);
+
+  if (isTypeVarSlot(type)) return type;
+
+  // Once again: Serialize the expression, then parse it back
+  return new TypeParser().parseTypeVarSlot(
+    flattenDatum(DatumParser.parseToDatum(serializeType(type)))
+  );
+}
+
 function asVarSlot(node: Expr): VarSlot {
   if (isHole(node) || node.kind === "name-binding") return node;
 
@@ -167,7 +198,10 @@ export function isHole(node: Expr | undefined): node is Hole {
   return node?.kind === "symbol" && node.value === "·";
 }
 export function isHoleForEditor(node: Expr | undefined): boolean {
-  return isHole(node) || (node?.kind === "type" && hasTag(node.type, "Any"));
+  return (
+    isHole(node) ||
+    (node?.kind === "type" && (isTypeNameHole(node.type) || hasTag(node.type, "Any")))
+  );
 }
 
 export type TreeIndexPath = {

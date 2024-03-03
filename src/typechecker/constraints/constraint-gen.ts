@@ -1,13 +1,23 @@
 import { isEqual } from "lodash";
-import { Any, Never, Type, isTypeVar } from "../type";
+import { Any, Never, Type, isForallType, isTypeVar, isTypeVarSlot } from "../type";
 import { ConstraintSet, constraintSetMeet, constraintSetsMeet } from "./constraint-set";
 import { typeParamVariance } from "../subtyping";
 
 export function generateConstraints(
+  // V
+  varNamesInScope: string[],
+  // X
   constrainVarNames: string[],
+  // S
   subtype: Type,
+  // T
   supertype: Type
 ): ConstraintSet | undefined {
+  if (isTypeVarSlot(subtype) || isTypeVarSlot(supertype)) {
+    // TODO: Improve error if necessary
+    throw "invalid constraint generation";
+  }
+
   // TODO: Eliminate down/up
 
   if (isTypeVar(subtype)) {
@@ -35,6 +45,25 @@ export function generateConstraints(
         },
       };
     }
+  } else if (isForallType(subtype) || isForallType(supertype)) {
+    if (
+      !(isForallType(subtype) && isForallType(supertype)) ||
+      !isEqual(subtype.forall, supertype.forall)
+    ) {
+      // TODO: Improve error, if this is even necessary
+      throw "invalid constraint generation";
+    }
+
+    // FIXME: Somehow rename type vars if they appear in varNames or constrainVarNames
+    return generateConstraints(
+      [
+        ...varNamesInScope,
+        ...subtype.forall.flatMap((slot) => (isTypeVar(slot) ? [slot.var] : [])),
+      ],
+      constrainVarNames,
+      subtype.body,
+      supertype.body
+    );
   } else if (subtype.tag === "Never" || supertype.tag === "Any") {
     // CG-Bot, CG-Top
     return {};
@@ -48,12 +77,16 @@ export function generateConstraints(
 
         switch (sign) {
           case "covariant":
-            return generateConstraints(constrainVarNames, subtypeArg, supertypeArg);
+            // prettier-ignore
+            return generateConstraints(varNamesInScope, constrainVarNames, subtypeArg, supertypeArg);
           case "contravariant":
-            return generateConstraints(constrainVarNames, supertypeArg, subtypeArg);
+            // prettier-ignore
+            return generateConstraints(varNamesInScope, constrainVarNames, supertypeArg, subtypeArg);
           case "invariant": {
-            const positiveSet = generateConstraints(constrainVarNames, subtypeArg, supertypeArg);
-            const negativeSet = generateConstraints(constrainVarNames, supertypeArg, subtypeArg);
+            // prettier-ignore
+            const positiveSet = generateConstraints(varNamesInScope, constrainVarNames, subtypeArg, supertypeArg);
+            // prettier-ignore
+            const negativeSet = generateConstraints(varNamesInScope, constrainVarNames, supertypeArg, subtypeArg);
 
             if (positiveSet === undefined || negativeSet === undefined) {
               return undefined;
@@ -67,12 +100,12 @@ export function generateConstraints(
 
     if (constraintSets.some((set) => set === undefined)) {
       // TODO: Improve error, if this is even necessary
-      throw "invalid constraing generation";
+      throw "invalid constraint generation";
     }
 
     return constraintSetsMeet(constraintSets as ConstraintSet[]);
   } else {
     // TODO: Improve error, if this is even necessary
-    throw "invalid constraing generation";
+    throw "invalid constraint generation";
   }
 }

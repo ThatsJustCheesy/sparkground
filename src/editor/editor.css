@@ -217,6 +217,7 @@
 
 .block-ident,
 .block-name-binding,
+.block-type-name-binding,
 .block-type,
 .block-symbol,
 .block-bool,
@@ -239,10 +240,18 @@
   background: #bcff02;
 }
 
-.block-type {
-  background: #cdceff;
+.block-type,
+.block-type-name-binding {
   border-radius: 0.45em;
   font-size: 0.85em;
+}
+
+.block-type {
+  background: #cdceff;
+}
+
+.block-type-name-binding {
+  background: #f8b0ff;
 }
 
 .block-symbol {
@@ -258,7 +267,8 @@
 }
 
 .block-hole,
-.block-name-hole {
+.block-name-hole,
+.block-type-name-hole {
   display: flex;
 
   width: 100%;
@@ -271,6 +281,12 @@
 .block-name-hole {
   background: #bcff02;
 }
+.block-type-name-hole {
+  background: #f8b0ff;
+  border-radius: 0.45em;
+  font-size: 0.85em;
+}
+
 .block-hole-symbol {
   width: 100%;
   padding: 0.2em;
@@ -289,6 +305,25 @@
   width: 100%;
 }
 .block-name-hole-symbol {
+  position: relative;
+
+  width: 100%;
+  padding: 0.3em;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+.block-type-name-hole-symbol::before {
+  content: "…";
+  font-family: sans-serif;
+  font-weight: bold;
+
+  position: absolute;
+  top: -0.45em;
+  left: 0.01em;
+
+  width: 100%;
+}
+.block-type-name-hole-symbol {
   position: relative;
 
   width: 100%;

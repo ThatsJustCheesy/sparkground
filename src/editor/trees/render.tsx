@@ -20,7 +20,15 @@ import {
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
 import { Environment, extendEnv } from "../library/environments";
-import { Type, isTypeVar } from "../../typechecker/type";
+import {
+  Type,
+  TypeVarSlot,
+  isForallType,
+  isTypeNameBinding,
+  isTypeNameHole,
+  isTypeVar,
+  typeParams,
+} from "../../typechecker/type";
 import { Typechecker } from "../../typechecker/typecheck";
 
 const BlockMemo = memo(Block);
@@ -228,15 +236,36 @@ export class Renderer {
         type: "type",
         id: type.var,
       });
-    }
-
-    return this.#block(
-      {
+    } else if (isTypeNameBinding(type)) {
+      return this.#block({
         type: "type",
-        id: type.tag === "Any" ? "?" : type.tag,
-      },
-      (type.of ?? []).map((typeArg, index) => this.#renderTypeArg(typeArg, index))
-    );
+        id: type.id,
+      });
+    } else if (isTypeNameHole(type)) {
+      return this.#block({
+        type: "type-name-hole",
+      });
+    } else if (isForallType(type)) {
+      // TODO: Render something different?
+      return this.#block(
+        {
+          type: "type",
+          id: "All",
+        },
+        [
+          ...type.forall.map((typeVar, index) => this.#renderTypeVarSlot(typeVar, index)),
+          this.#renderTypeArg(type.body, type.forall.length),
+        ]
+      );
+    } else {
+      return this.#block(
+        {
+          type: "type",
+          id: type.tag === "Any" ? "?" : type.tag,
+        },
+        typeParams(type).map((typeArg, index) => this.#renderTypeArg(typeArg, index))
+      );
+    }
   }
 
   #renderTypeArg(typeArg: Type, index: number) {
@@ -259,6 +288,25 @@ export class Renderer {
       id: expr.id,
       binding: this.environment[expr.id],
     });
+  }
+
+  #renderTypeVarSlot(typeVarSlot: TypeVarSlot, index: number): JSX.Element {
+    const parentIndexPath = this.indexPath;
+    const parentIsCopySource = this.isCopySource;
+
+    this.indexPath = extendIndexPath(this.indexPath, index);
+    this.isCopySource = true;
+
+    const rendered = isTypeNameHole(typeVarSlot)
+      ? this.#block({ type: "type-name-hole" })
+      : this.#block({
+          type: "type-name-binding",
+          id: typeVarSlot.id,
+        });
+
+    this.indexPath = parentIndexPath;
+    this.isCopySource = parentIsCopySource;
+    return rendered;
   }
 
   #renderNameBinding(nb: NameBinding) {

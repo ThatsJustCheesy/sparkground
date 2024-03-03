@@ -10,13 +10,25 @@ import {
   functionResultType,
   Any,
   Never,
+  isForallType,
+  isConcreteType,
+  ForallType,
+  isTypeVarSlot,
 } from "./type";
 
 export function typeMeet(t1: Type, t2: Type): Type {
   if (isSubtype(t1, t2)) return t1;
   if (isSubtype(t2, t1)) return t2;
 
-  if (isTypeVar(t1) || isTypeVar(t2)) return Never;
+  if (isTypeVar(t1) || isTypeVar(t2) || isTypeVarSlot(t1) || isTypeVarSlot(t2)) return Never;
+
+  if (isForallType(t1) || isForallType(t2)) {
+    return isForallType(t1) && isForallType(t2) && isEqual(t1.forall, t2.forall)
+      ? { forall: t1.forall, body: typeMeet(t1.body, t2.body) }
+      : Never;
+  }
+
+  // Concrete type
   if (t1.tag !== t2.tag) return Never;
 
   const t1Params = t1.of ?? [];
@@ -50,7 +62,14 @@ export function typeJoin(t1: Type, t2: Type): Type {
   if (isSubtype(t1, t2)) return t2;
   if (isSubtype(t2, t1)) return t1;
 
-  if (isTypeVar(t1) || isTypeVar(t2)) return Any;
+  if (isTypeVar(t1) || isTypeVar(t2) || isTypeVarSlot(t1) || isTypeVarSlot(t2)) return Any;
+
+  if (isForallType(t1) || isForallType(t2)) {
+    return isForallType(t1) && isForallType(t2) && isEqual(t1.forall, t2.forall)
+      ? { forall: t1.forall, body: typeMeet(t1.body, t2.body) }
+      : Any;
+  }
+
   if (t1.tag !== t2.tag) return Any;
 
   const t1Params = t1.of ?? [];
@@ -83,9 +102,15 @@ export function typeJoin(t1: Type, t2: Type): Type {
 export function isSubtype(t1: Type, t2: Type) {
   return (
     (isTypeVar(t1) && isTypeVar(t2) && t1.var === t2.var) ||
-    (!isTypeVar(t1) && !isTypeVar(t2) && isConcreteSubtype(t1, t2))
+    (isForallType(t1) && isForallType(t2) && isForallSubtype(t1, t2)) ||
+    (isConcreteType(t1) && isConcreteType(t2) && isConcreteSubtype(t1, t2))
   );
 }
+
+function isForallSubtype(t1: ForallType, t2: ForallType): boolean {
+  return isEqual(t1.forall, t2.forall) && isSubtype(t1.body, t2.body);
+}
+
 function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
   if (isPrimitiveSubtype(t1.tag, t2.tag)) return true;
 

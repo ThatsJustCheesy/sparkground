@@ -10,6 +10,7 @@ import {
 } from "./tree";
 import { Point, Tree, newTree, removeTree } from "./trees";
 import { Expr } from "../../expr/expr";
+import { TypeVar, isTypeNameBinding } from "../../typechecker/type";
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
@@ -117,6 +118,18 @@ function cloneExpr(expr: Expr): Expr {
   switch (clone.kind) {
     case "name-binding":
       clone = { ...clone, kind: "var" };
+      break;
+    case "type": {
+      const { type } = clone;
+      if (isTypeNameBinding(type)) {
+        clone = {
+          ...clone,
+          type: {
+            var: type.id,
+          } satisfies TypeVar,
+        };
+      }
+    }
   }
   return clone;
 }

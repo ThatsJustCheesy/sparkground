@@ -1,13 +1,9 @@
 /**
  * Static type (of an expression).
  *
- * Instances of `Type` do not contain "unknown" (unsolved) type variables.
- * However, they may be polymorphic; e.g.,, the identity function has type `Function[a, a]`,
- * where `a` is an unconstrained polymorphic type variable (`TypeVar`).
- *
- * To find the best available `Type` for an expression, use `Typechecker`.
+ * To find the best available static type for an expression, use `Typechecker`.
  */
-export type Type = ConcreteType | TypeVar;
+export type Type = ConcreteType | ForallType | TypeVar | TypeVarSlot;
 
 /**
  * Static type (of an expression).
@@ -32,8 +28,13 @@ export type VariadicFunctionType = {
   maxArgCount?: number;
 };
 
-export function typeParams(type: Type) {
-  if (isTypeVar(type)) return [];
+export function isConcreteType(type: Type): type is ConcreteType {
+  return "tag" in type;
+}
+
+export function typeParams(type: Type): Type[] {
+  if (isTypeVar(type) || isTypeVarSlot(type)) return [];
+  if (isForallType(type)) return typeParams(type.body);
   return type.of ?? [];
 }
 
@@ -52,7 +53,39 @@ export function hasTag<Tag extends string>(type: Type, tag: Tag): type is Simple
 export function hasTag(type: Type, tag: "Function*"): type is VariadicFunctionType;
 
 export function hasTag<Tag extends string>(type: Type, tag: Tag): boolean {
-  return !isTypeVar(type) && type.tag === tag;
+  return isConcreteType(type) && type.tag === tag;
+}
+
+export type TypeVarSlot = TypeNameHole | TypeNameBinding;
+export function isTypeVarSlot(type: Type): type is TypeVarSlot {
+  return isTypeNameHole(type) || isTypeNameBinding(type);
+}
+
+export type ForallType = {
+  /** Type variable names. */
+  forall: TypeVarSlot[];
+  body: Type;
+};
+export function isForallType(type: Type): type is ForallType {
+  return "forall" in type;
+}
+export function isTypeVarBoundBy(typeVarName: string, forallType: ForallType) {
+  return forallType.forall.some((slot) => isTypeVar(slot) && slot.var === typeVarName);
+}
+
+export type TypeNameHole = {
+  kind: "type-name-hole";
+};
+export function isTypeNameHole(type: Type): type is TypeNameHole {
+  return "kind" in type && type.kind === "type-name-hole";
+}
+
+export type TypeNameBinding = {
+  kind: "type-name-binding";
+  id: string;
+};
+export function isTypeNameBinding(type: Type): type is TypeNameBinding {
+  return "kind" in type && type.kind === "type-name-binding";
 }
 
 /**
@@ -66,31 +99,9 @@ export function hasTag<Tag extends string>(type: Type, tag: Tag): boolean {
 export type TypeVar = {
   /** Type variable name. */
   var: string;
-
-  // TODO: These constraints are not implemented
-  /** Subtype contraint: `a <: b` */
-  below?: Type;
-  /** Supertype contraint: `b <: a` or `a :> b` */
-  above?: Type;
 };
-export function isTypeVar(type: Type | InferrableType): type is TypeVar {
-  // FIXME: Prone to break if anyone uses this as a type parameter name!
-  //        Use a special name to ensure no collisions.
+export function isTypeVar(type: Type): type is TypeVar {
   return "var" in type;
-}
-
-export function assertNoTypeVar(type: Type, message?: string): asserts type is ConcreteType;
-export function assertNoTypeVar(
-  type: InferrableType,
-  message?: string
-): asserts type is ConcreteInferrableType;
-export function assertNoTypeVar(type: InferrableType, message?: string) {
-  if (!hasNoTypeVar(type)) throw `assertion failed: ${message ?? "type has a type var"}`;
-}
-export function hasNoTypeVar(type: Type): type is ConcreteType;
-export function hasNoTypeVar(type: InferrableType): type is ConcreteInferrableType;
-export function hasNoTypeVar(type: InferrableType) {
-  return isUnknown(type) || (!isTypeVar(type) && (type.of?.every(hasNoTypeVar) ?? true));
 }
 
 export type BuiltinType =
@@ -109,46 +120,18 @@ export type BuiltinType =
 export const Any = { tag: "Any" };
 export const Never = { tag: "Never" };
 
-// For type inference algorithm only.
-export type InferrableType = ConcreteInferrableType | TypeVar;
-export type ConcreteInferrableType =
-  | {
-      tag: string;
-      of?: InferrableType[];
-    }
-  | Unknown;
-
-// Ditto.
-export type Unknown = { unknown: string };
-export function isUnknown(type: InferrableType): type is Unknown {
-  // FIXME: Prone to break if anyone uses this as a type parameter name!
-  //        Use a special name to ensure no collisions.
-  return "unknown" in type;
-}
-
-// Ditto.
-export function assertNoUnknown(type: InferrableType, message?: string): asserts type is Type {
-  if (!hasNoUnknown(type)) throw `assertion failed: ${message ?? "type has unknown"}`;
-}
-export function hasNoUnknown(type: InferrableType): type is Type {
-  return isTypeVar(type) || (!isUnknown(type) && (type.of?.every(hasNoUnknown) ?? true));
-}
-
-/**
- * fmap for `Type`, `InferrableType`, etc.
- */
-export function typeStructureMap<T extends Type | InferrableType, R extends T>(
-  t: T,
-  fn: (t_: T) => R
-): R;
-
-export function typeStructureMap(
-  t: InferrableType,
-  fn: (t_: InferrableType) => InferrableType
-): InferrableType {
-  if (isUnknown(t) || isTypeVar(t)) return t;
-  return {
-    tag: t.tag,
-    of: t.of?.map(fn),
-  } as InferrableType;
+export function typeStructureMap(t: Type, fn: (t_: Type) => Type): Type {
+  if (isTypeVar(t) || isTypeVarSlot(t)) {
+    return t;
+  } else if (isForallType(t)) {
+    return {
+      forall: t.forall,
+      body: typeStructureMap(t.body, fn),
+    };
+  } else {
+    return {
+      tag: t.tag,
+      of: typeParams(t).map(fn),
+    };
+  }
 }

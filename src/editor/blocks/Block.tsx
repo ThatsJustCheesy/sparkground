@@ -2,13 +2,7 @@ import { PropsWithChildren, ReactNode, useContext, useEffect, useRef, useState }
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
-import {
-  TreeIndexPath,
-  nodeAtIndexPath,
-  extendIndexPath,
-  isHole,
-  unboundReferences,
-} from "../trees/tree";
+import { TreeIndexPath, nodeAtIndexPath, extendIndexPath, unboundReferences } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
@@ -60,6 +54,8 @@ export type BlockData =
   | NameBinding
   | NameHole
   | TypeData
+  | TypeNameBinding
+  | TypeNameHole
   | Symbol
   | Number
   | Bool
@@ -104,12 +100,19 @@ type NameBinding = {
   id: string;
   binding?: Binding<Value>;
 };
+type TypeNameBinding = {
+  type: "type-name-binding";
+  id: string;
+};
 type NameHole = {
   type: "name-hole";
 };
 type TypeData = {
   type: "type";
   id: string;
+};
+type TypeNameHole = {
+  type: "type-name-hole";
 };
 type Symbol = {
   type: "symbol";
@@ -149,7 +152,9 @@ export default function Block({
   useContext(RenderCounterContext);
 
   const isAnyType = data.type === "type" && data.id === "?";
-  const nameable = data.type === "name-hole" && !indexPath.tree.id.startsWith("library");
+  const nameable =
+    (data.type === "name-hole" || data.type === "type-name-hole") &&
+    !indexPath.tree.id.startsWith("library");
   const preventDrag = nameable || isAnyType;
 
   // Drop area, if applicable
@@ -173,6 +178,7 @@ export default function Block({
     forDragOverlay ||
     data.type === "hole" ||
     data.type === "name-hole" ||
+    data.type === "type-name-hole" ||
     isAnyType
   );
   // Also need to call useDraggable hook on *every* render
@@ -291,7 +297,9 @@ export default function Block({
 
   const tooltipContentParts = [
     data.type === "name-binding" && <small>Right-click to rename this variable</small>,
-    nameable && <small>Click to name this variable</small>,
+    nameable && (
+      <small>Click to name this {data.type === "type-name-hole" ? "type " : ""}variable</small>
+    ),
     isAnyType && <small>Unknown type; you can drop a more specific type here</small>,
 
     // Uncomment to see each block's index path in its tooltip:
@@ -313,7 +321,7 @@ export default function Block({
         <b>Type Error:</b> <i>{describeInferenceError(typecheckingError)}</i>{" "}
       </span>
     ),
-    data.type !== "type" && (
+    data.type !== "type" && data.type !== "type-name-binding" && data.type !== "type-name-hole" && (
       <>
         <b>Type:</b>{" "}
         {typeof type === "string" ? (
@@ -356,6 +364,10 @@ export default function Block({
           : "block-menu-namebinding";
       case "name-hole":
         return "block-menu-namehole";
+      case "type-name-binding":
+        return "block-menu-typenamebinding";
+      case "type-name-hole":
+        return "block-menu-typenamehole";
       case "h":
       case "v":
         return (data.calledIsVar ? "block-menu-call" : "block-menu") + evaluable;
@@ -425,9 +437,6 @@ export default function Block({
                 ? (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-
-                    const nameHole = expr;
-                    if (!isHole(nameHole)) return;
 
                     const newName = prompt("Enter variable name:");
                     if (!newName) return;
@@ -587,6 +596,7 @@ export default function Block({
       }
 
       case "name-binding":
+      case "type-name-binding":
       case "type": {
         const { id } = data;
 
@@ -617,6 +627,10 @@ export default function Block({
 
       case "name-hole": {
         return <div className="block-name-hole-symbol" />;
+      }
+
+      case "type-name-hole": {
+        return <div className="block-type-name-hole-symbol" />;
       }
     }
   }

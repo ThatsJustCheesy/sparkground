@@ -224,6 +224,11 @@ export const LibraryCategories: LibraryCategory[] = [
               of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }, { tag: "Any" }],
             },
           },
+          {
+            kind: "type",
+            type: { forall: [{ kind: "type-name-hole" }], body: { tag: "Any" } },
+          },
+          { kind: "type", type: { tag: "Never" } },
         ],
       },
       {
