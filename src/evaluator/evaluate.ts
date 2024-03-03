@@ -1,26 +1,45 @@
-import { Cell, InitialEnvironment } from "../editor/library/environments";
+import { keyBy } from "lodash";
+import {
+  Binding,
+  Cell,
+  Environment,
+  InitialEnvironment,
+  makeEnv,
+  mergeEnvs,
+} from "../editor/library/environments";
 import { isHole } from "../editor/trees/tree";
 import { Expr, NameBinding } from "../expr/expr";
 import { Defines } from "./defines";
 import { checkCallAgainstTypeSignature } from "./dynamic-type";
-import { Stack } from "./environment";
 import { FnValue, Value, valueAsBool } from "./value";
 
 /** Call-by-value evaluator */
 export class Evaluator {
-  env!: Stack<Value>;
+  baseEnv: Environment;
+  env: Environment;
+  defines: Defines;
 
-  constructor(public defines: Defines = new Defines()) {}
-
-  eval(expr: Expr, env: Stack<Value> = new Stack()): Value {
-    this.env = env;
-
-    env.bind(...Object.values(InitialEnvironment));
-
-    return this.#eval(expr);
+  constructor({ baseEnv, defines }: { baseEnv?: Environment; defines?: Defines } = {}) {
+    this.baseEnv = baseEnv ?? InitialEnvironment;
+    this.defines = defines ?? new Defines();
   }
 
-  #eval(expr: Expr): Value {
+  eval(expr: Expr, env: Environment = {}): Value {
+    return this.#eval(expr, { env });
+  }
+
+  #eval(expr: Expr, { env, extendEnv }: { env?: Environment; extendEnv?: Environment } = {}) {
+    const prevEnv = this.env;
+    if (env) this.env = mergeEnvs(this.baseEnv, env);
+    if (extendEnv) this.env = mergeEnvs(this.env, extendEnv);
+
+    const result = this.#eval_(expr);
+
+    this.env = prevEnv;
+    return result;
+  }
+
+  #eval_(expr: Expr): Value {
     switch (expr.kind) {
       case "number":
       case "bool":
@@ -59,54 +78,35 @@ export class Evaluator {
         return { kind: "list", heads: [] };
 
       case "let": {
-        const valueBindings: [string, Cell<Value>][] = expr.bindings.map(([name, value]) => [
-          (name as NameBinding).id,
-          { value: this.#eval(value) },
-        ]);
+        const valueBindings = expr.bindings.map(
+          ([name, value]): Binding<Value> => ({
+            name: (name as NameBinding).id,
+            cell: { value: this.#eval(value) },
+          })
+        );
 
-        this.env.push();
-        valueBindings.forEach(([name, cell]) => {
-          this.env.bind({
-            name,
-            cell,
-          });
-        });
-
-        const result: Value = this.#eval(expr.body);
-
-        this.env.pop();
-
-        return result;
+        return this.#eval(expr.body, { extendEnv: makeEnv(valueBindings) });
       }
 
       case "letrec": {
-        const valueBindings: [string, Cell<Value>][] = expr.bindings.map(([name]) => [
-          (name as NameBinding).id,
-          {},
-        ]);
-
-        this.env.push();
-        valueBindings.forEach(([name, cell]) => {
-          this.env.bind({
-            name,
-            cell,
-          });
-        });
+        const valueBindings = keyBy(
+          expr.bindings.map(
+            ([name]): Binding<Value> => ({
+              name: (name as NameBinding).id,
+              cell: {},
+            })
+          ),
+          ({ name }) => name
+        );
 
         expr.bindings.forEach(([name, value]) => {
-          const id = (name as NameBinding).id;
-          this.env.get(id)!.cell.value = this.#eval(value);
+          valueBindings[(name as NameBinding).id]!.cell.value = this.#eval(value);
         });
 
-        const result: Value = this.#eval(expr.body);
-
-        this.env.pop();
-
-        return result;
+        return this.#eval(expr.body, { extendEnv: makeEnv(Object.values(valueBindings)) });
       }
 
       case "lambda":
-        // TODO: Real closures
         return {
           kind: "fn",
           signature: expr.params.map((param) => ({
@@ -114,6 +114,7 @@ export class Evaluator {
             // TODO: type and variadic?
           })),
           body: expr.body,
+          env: this.env,
         };
 
       case "sequence": {
@@ -139,13 +140,16 @@ export class Evaluator {
   call(fn: FnValue, args: Value[]): Value {
     checkCallAgainstTypeSignature(args, fn.signature);
 
-    this.env.push();
+    let callEnv = fn.env ?? {};
     for (let i = 0; i < args.length && i < fn.signature.length; ++i) {
       const { name } = fn.signature[i]!;
       const value = args[i]!;
-      this.env.bind({
-        name,
-        cell: { value },
+
+      callEnv = mergeEnvs(callEnv, {
+        [name]: {
+          name,
+          cell: { value },
+        },
       });
     }
 
@@ -154,15 +158,13 @@ export class Evaluator {
       // Builtin
       result = fn.body(args, this);
     } else {
-      result = this.#eval(fn.body);
+      result = this.#eval(fn.body, { env: callEnv });
     }
-
-    this.env.pop();
 
     return result;
   }
 
   #get(name: string): Cell<Value> | undefined {
-    return this.env.get(name)?.cell ?? this.defines.get(name);
+    return this.env[name]?.cell ?? this.defines.get(name);
   }
 }

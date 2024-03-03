@@ -1,16 +1,15 @@
 import { Parser } from "../expr/parse"
 import { Parser as DatumParser } from "../datum/parse"
 import { Lambda } from "../expr/expr"
-import { Stack } from "./environment"
 import { Evaluator } from "./evaluate"
 import { FnValue, Value } from "./value"
 import { datumEqual } from "../datum/equality"
+import { Environment } from "../editor/library/environments"
 
 describe("evaluate", () => {
   let evaluator: Evaluator
   beforeEach(() => {
     evaluator = new Evaluator()
-    evaluator.env = new Stack()
   })
 
   it("evals literal values", () => {
@@ -21,7 +20,7 @@ describe("evaluate", () => {
 
   it("evals variables", () => {
     expect(() => evaluator.eval({ kind: "var", id: "x" })).toThrow()
-    expect(evaluator.eval({ kind: "var", id: "x" }, new Stack<Value>({ x: { kind: "number", value: 42 } }))).toEqual<Value>({
+    expect(evaluator.eval({ kind: "var", id: "x" }, { x: { name: "x", cell: { value: { kind: "number", value: 42 } } } })).toEqual<Value>({
       kind: "number",
       value: 42,
     })
@@ -41,13 +40,17 @@ describe("evaluate", () => {
 
   it("evals procedures", () => {
     const const42: Lambda = { kind: "lambda", params: [], body: { kind: "number", value: 42 } }
-    expect(evaluator.eval(const42)).toEqual<Value>({ kind: "fn", signature: [], body: { kind: "number", value: 42 } })
+    expect(evaluator.eval(const42)).toEqual<Value>(
+      expect.objectContaining({ kind: "fn", signature: [], body: { kind: "number", value: 42 } })
+    )
     expect(evaluator.eval({ kind: "call", called: const42, args: [] })).toEqual<Value>({ kind: "number", value: 42 })
   })
 
   it("evals unary functions", () => {
     const id: Lambda = { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } }
-    expect(evaluator.eval(id)).toEqual<Value>({ kind: "fn", signature: [{ name: "x" }], body: { kind: "var", id: "x" } })
+    expect(evaluator.eval(id)).toEqual<Value>(
+      expect.objectContaining({ kind: "fn", signature: [{ name: "x" }], body: { kind: "var", id: "x" } })
+    )
     expect(evaluator.eval({ kind: "call", called: id, args: [{ kind: "number", value: 42 }] })).toEqual<Value>({
       kind: "number",
       value: 42,
@@ -63,11 +66,13 @@ describe("evaluate", () => {
       ],
       body: { kind: "var", id: "y" },
     }
-    expect(evaluator.eval(second)).toEqual<Value>({
-      kind: "fn",
-      signature: [{ name: "x" }, { name: "y" }],
-      body: { kind: "var", id: "y" },
-    })
+    expect(evaluator.eval(second)).toEqual<Value>(
+      expect.objectContaining({
+        kind: "fn",
+        signature: [{ name: "x" }, { name: "y" }],
+        body: { kind: "var", id: "y" },
+      })
+    )
     expect(
       evaluator.eval({
         kind: "call",
@@ -78,6 +83,28 @@ describe("evaluate", () => {
         ],
       })
     ).toEqual<Value>({ kind: "string", value: "" })
+  })
+
+  it.only("treats lambdas as closures with lexical scoping", () => {
+    const returnX: Lambda = { kind: "lambda", params: [], body: { kind: "var", id: "x" } }
+    const env: Environment = { x: { name: "x", cell: { value: { kind: "number", value: 42 } } } }
+
+    const closure = evaluator.eval(returnX, env)
+    expect(closure).toEqual<Value>({
+      kind: "fn",
+      signature: [],
+      body: { kind: "var", id: "x" },
+      env: expect.objectContaining({
+        x: { name: "x", cell: { value: { kind: "number", value: 42 } } },
+      } satisfies Environment),
+    })
+
+    expect(
+      evaluator.eval(
+        { kind: "call", called: { kind: "var", id: "closure" }, args: [] },
+        { closure: { name: "closure", cell: { value: closure } } }
+      )
+    ).toEqual<Value>({ kind: "number", value: 42 })
   })
 
   it("evals quote and returns value verbatim", () => {

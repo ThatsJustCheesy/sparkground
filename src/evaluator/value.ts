@@ -1,7 +1,7 @@
 import { BoolDatum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
+import { Environment } from "../editor/library/environments";
 import { Expr } from "../expr/expr";
 import { DynamicFnSignature, DynamicType } from "./dynamic-type";
-import { Builtin } from "./environment";
 import { Evaluator } from "./evaluate";
 
 export type Value = BoolDatum | NumberDatum | StringDatum | SymbolDatum | ListValue | FnValue;
@@ -15,8 +15,11 @@ export type ListValue = {
 export type FnValue = {
   kind: "fn";
   signature: DynamicFnSignature;
-  body: Builtin<Value, Value, Evaluator> | Expr;
+  body: BuiltinFn | Expr;
+  env?: Environment;
 };
+
+export type BuiltinFn = (args: Value[], evaluator: Evaluator) => Value;
 
 export function dynamicTypeOfValue(value: Value): DynamicType {
   switch (value.kind) {

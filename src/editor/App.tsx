@@ -167,7 +167,7 @@ function App() {
     const subject = nodeAtIndexPath(blockContextMenuSubject);
 
     const defines = new Defines();
-    const evaluator = new Evaluator(defines);
+    const evaluator = new Evaluator({ defines });
 
     defines.addAll(
       trees()
