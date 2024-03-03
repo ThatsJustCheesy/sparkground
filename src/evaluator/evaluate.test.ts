@@ -85,7 +85,7 @@ describe("evaluate", () => {
     ).toEqual<Value>({ kind: "string", value: "" })
   })
 
-  it.only("treats lambdas as closures with lexical scoping", () => {
+  it("treats lambdas as closures with lexical scoping", () => {
     const returnX: Lambda = { kind: "lambda", params: [], body: { kind: "var", id: "x" } }
     const env: Environment = { x: { name: "x", cell: { value: { kind: "number", value: 42 } } } }
 
