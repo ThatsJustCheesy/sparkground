@@ -333,9 +333,54 @@ export class Typechecker {
             );
 
             // Update the definition's type in the context
-            newContext = isHole(name)
-              ? context
-              : bindInContextWithType(context, name, inferredType);
+            if (!isHole(name)) {
+              newContext = bindInContextWithType(newContext, name, inferredType);
+            }
+          }
+        });
+
+        // Cache inferred types for name bindings in the new context,
+        // so that the editor can display them
+        expr.bindings.forEach(([name], index) => {
+          this.#inferType(name, newContext, extendIndexPath(indexPath, 2 * index));
+        });
+
+        return this.#inferType(
+          expr.body,
+          newContext,
+          extendIndexPath(indexPath, 2 * expr.bindings.length)
+        );
+      }
+
+      case "letrec": {
+        let newContext = context;
+        expr.bindings.forEach(([name]) => {
+          if (!isHole(name)) {
+            newContext = bindInContext(newContext, name);
+          }
+        });
+
+        expr.bindings.forEach(([name, value], index) => {
+          if (!isHole(name) && name.type) {
+            // Ensure this is a sound type annotation
+            this.#checkType(
+              value,
+              name.type,
+              newContext,
+              extendIndexPath(indexPath, 2 * index + 1)
+            );
+          } else {
+            // Infer a type for the definition
+            const inferredType = this.#inferType(
+              value,
+              newContext,
+              extendIndexPath(indexPath, 2 * index + 1)
+            );
+
+            // Update the definition's type in the context
+            if (!isHole(name)) {
+              newContext = bindInContextWithType(newContext, name, inferredType);
+            }
           }
         });
 
