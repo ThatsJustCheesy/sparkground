@@ -4,6 +4,7 @@ import { Type } from "./type";
 
 export type InferenceError =
   | UnboundVariable
+  | CircularDependency
   | NotCallable
   | InvalidAssignment
   | ArityMismatch
@@ -11,6 +12,11 @@ export type InferenceError =
 
 export type UnboundVariable = {
   tag: "UnboundVariable";
+  v: Var | NameBinding;
+};
+
+export type CircularDependency = {
+  tag: "CircularDependency";
   v: Var | NameBinding;
 };
 
@@ -47,6 +53,8 @@ export function describeInferenceError(e: InferenceError): string {
   switch (e.tag) {
     case "UnboundVariable":
       return `unbound variable: ${e.v.id}`;
+    case "CircularDependency":
+      return `circular type dependency for variable: ${e.v.id}`;
     case "NotCallable":
       return `expression type is not callable: ${serializeType(e.calledType)}`;
     case "InvalidAssignment":
@@ -65,6 +73,7 @@ export function describeInferenceError(e: InferenceError): string {
 export function errorInvolvesExpr(e: InferenceError, expr: Expr): boolean {
   switch (e.tag) {
     case "UnboundVariable":
+    case "CircularDependency":
       return expr === e.v;
     case "InvalidAssignment":
       return expr === e.expr;

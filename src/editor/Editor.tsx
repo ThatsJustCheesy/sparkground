@@ -26,7 +26,7 @@ import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./trees/
 import Library from "./library/Library";
 import { Tree, bringTreeToFront } from "./trees/trees";
 import CodeEditorModal from "./CodeEditorModal";
-import { Call, Expr } from "../expr/expr";
+import { Define, Expr, NameBinding } from "../expr/expr";
 import { Parser } from "../expr/parse";
 import {
   ActiveDragContext,
@@ -37,6 +37,7 @@ import {
 import { InitialEnvironment } from "./library/environments";
 import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors";
 import Split from "react-split";
+import { Typechecker } from "../typechecker/typecheck";
 
 export type Props = {
   trees: Tree[];
@@ -111,6 +112,13 @@ export default function Editor({
   setCodeEditorSubject,
   renderCounter,
 }: Props) {
+  const typechecker = new Typechecker();
+  trees
+    .filter((tree) => tree.root.kind === "define" && tree.root.name.kind === "name-binding")
+    .forEach((tree) => {
+      typechecker.addDefine(tree as Tree<Define>);
+    });
+
   useEffect(() => {
     const handleDocumentMouseDown = (event: MouseEvent) => {
       isAltPressed = event.altKey;
@@ -162,16 +170,13 @@ export default function Editor({
           <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
             {activeDrag &&
               new Renderer(
-                activeDrag.indexPath.tree,
                 // TODO: Do we need to use a better symbol table here?
                 InitialEnvironment,
-                activeDrag.indexPath.tree.typechecker,
+                typechecker,
                 {
                   forDragOverlay: activeDragOver ?? true,
                 }
-              ).render(activeDrag.node, {
-                indexPath: activeDrag.indexPath,
-              })}
+              ).render(activeDrag.indexPath)}
           </DragOverlay>
         </>
       )}
@@ -221,7 +226,7 @@ export default function Editor({
                       zIndex: tree.zIndex,
                     }}
                   >
-                    {new Renderer(tree, InitialEnvironment, tree.typechecker).render(tree.root, {})}
+                    {new Renderer(InitialEnvironment, typechecker).render(rootIndexPath(tree))}
                   </div>
                 ))}
               </div>

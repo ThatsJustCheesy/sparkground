@@ -17,9 +17,15 @@ import { FnValue, Value, valueAsBool } from "./value";
 export class Evaluator {
   baseEnv: Environment;
   env: Environment;
-  defines: Defines;
+  defines: Defines<Cell<Value>>;
 
-  constructor({ baseEnv, defines }: { baseEnv?: Environment; defines?: Defines } = {}) {
+  constructor({
+    baseEnv,
+    defines,
+  }: {
+    baseEnv?: Environment;
+    defines?: Defines<Cell<Value>>;
+  } = {}) {
     this.baseEnv = baseEnv ?? InitialEnvironment;
     this.defines = defines ?? new Defines();
   }
@@ -54,7 +60,10 @@ export class Evaluator {
 
       case "var": {
         const cell = this.#get(expr.id);
-        if (!cell?.value) throw "unbound variable: " + expr.id;
+        // TODO: Better error messages & metadata
+        if (!cell) throw "unbound variable: " + expr.id;
+        if (cell === "circular") throw "circular dependency: " + expr.id;
+        if (!cell.value) throw "uninitialized variable: " + expr.id;
 
         return cell.value;
       }
@@ -73,7 +82,7 @@ export class Evaluator {
       case "define":
         if (expr.name.kind !== "name-binding") throw "'define' must be given a name";
 
-        this.defines.add(expr.name.id, () => ({ value: this.#eval(expr.value) }));
+        this.defines.add(expr.name.id, () => ({ value: this.eval(expr.value) }));
 
         return { kind: "list", heads: [] };
 
@@ -100,7 +109,8 @@ export class Evaluator {
         );
 
         expr.bindings.forEach(([name, value]) => {
-          valueBindings[(name as NameBinding).id]!.cell.value = this.#eval(value);
+          const binding = valueBindings[(name as NameBinding).id]!;
+          binding.cell.value = this.#eval(value, { extendEnv: makeEnv([binding]) });
         });
 
         return this.#eval(expr.body, { extendEnv: makeEnv(Object.values(valueBindings)) });
@@ -164,7 +174,7 @@ export class Evaluator {
     return result;
   }
 
-  #get(name: string): Cell<Value> | undefined {
+  #get(name: string): Cell<Value> | undefined | "circular" {
     return this.env[name]?.cell ?? this.defines.get(name);
   }
 }

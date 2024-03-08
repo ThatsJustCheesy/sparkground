@@ -1,17 +1,15 @@
 import { Expr } from "../../expr/expr";
-import { Typechecker } from "../../typechecker/typecheck";
 
 export type Point = {
   x: number;
   y: number;
 };
 
-export type Tree = {
+export type Tree<Root extends Expr = Expr> = {
   id: string;
-  root: Expr;
+  root: Root;
   location: Point;
   zIndex: number;
-  typechecker: Typechecker;
 };
 
 let trees_: Tree[] = [];
@@ -32,7 +30,6 @@ export function newTree(root: Expr, location: Point): Tree {
     root,
     location,
     zIndex: ++nextZIndex,
-    typechecker: new Typechecker(),
   };
   trees_.push(tree);
   return tree;

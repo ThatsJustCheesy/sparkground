@@ -1,6 +1,5 @@
-import { TreeIndexPath, extendIndexPath, rootIndexPath, hole, isHole } from "./tree";
+import { TreeIndexPath, extendIndexPath, hole, isHole, nodeAtIndexPath } from "./tree";
 import BlockHint from "../blocks/BlockHint";
-import { Tree } from "./trees";
 import Block, { BlockData } from "../blocks/Block";
 import { Over } from "@dnd-kit/core";
 import {
@@ -40,7 +39,6 @@ export class Renderer {
   forDragOverlay?: boolean | Over;
 
   constructor(
-    private tree: Tree,
     private environment: Environment,
     private typechecker: Typechecker,
     options: {
@@ -51,25 +49,20 @@ export class Renderer {
   }
 
   render(
-    node: Expr,
+    indexPath: TreeIndexPath,
     {
-      indexPath,
       isCopySource,
     }: {
-      indexPath?: TreeIndexPath;
       isCopySource?: boolean;
     } = {}
   ) {
-    if (indexPath) this.indexPath = indexPath;
-    if (!this.indexPath) {
-      if (node !== this.tree.root) {
-        throw "programmer error: must provide index path to render a subexpression!";
-      }
-      this.indexPath = rootIndexPath(this.tree);
-    }
-
+    this.indexPath = indexPath;
     if (isCopySource) this.isCopySource = isCopySource;
 
+    this.typechecker.clearCache();
+    this.typechecker.inferType(indexPath.tree);
+
+    const node = nodeAtIndexPath(indexPath);
     switch (node.kind) {
       case "bool":
       case "number":
@@ -502,8 +495,8 @@ export class Renderer {
     );
   }
 
-  #keyForIndexPath({ path }: TreeIndexPath) {
-    return this.tree.id + " " + path.join(" ");
+  #keyForIndexPath({ tree, path }: TreeIndexPath) {
+    return tree.id + " " + path.join(" ");
   }
 
   #extendedEnvironment(varSlots: VarSlot[]) {

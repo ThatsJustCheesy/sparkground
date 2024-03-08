@@ -221,7 +221,7 @@ export default function Block({
 
   useEffect(() => {
     try {
-      setType(typechecker.inferSubexprType(indexPath, InitialTypeContext));
+      setType(typechecker.inferSubexprType(indexPath));
     } catch (error) {
       setType(describeInferenceError(error) ?? `${error}`);
     }

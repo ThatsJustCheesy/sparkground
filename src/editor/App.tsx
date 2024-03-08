@@ -166,7 +166,7 @@ function App() {
 
     const subject = nodeAtIndexPath(blockContextMenuSubject);
 
-    const defines = new Defines();
+    const defines = new Defines<Cell<Value>>();
     const evaluator = new Evaluator({ defines });
 
     defines.addAll(
@@ -175,15 +175,7 @@ function App() {
         .map((tree) => {
           const define = tree.root as Define;
           const name = define.name as NameBinding;
-          return [
-            name.id,
-            (): Cell<Value> => {
-              const evaluator = new Evaluator();
-              evaluator.defines = defines;
-              evaluator.eval(define);
-              return defines.get(name.id)!;
-            },
-          ];
+          return [name.id, (): Cell<Value> => ({ value: evaluator.eval(define.value) })];
         })
     );
 

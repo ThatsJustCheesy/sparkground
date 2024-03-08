@@ -1,8 +1,9 @@
 import { Datum } from "../datum/datum";
 import { TreeIndexPath, extendIndexPath, isHole, rootIndexPath } from "../editor/trees/tree";
-import { Expr, NameBinding } from "../expr/expr";
+import { Define, Expr, NameBinding } from "../expr/expr";
 import {
   ArityMismatch,
+  CircularDependency,
   InferenceError,
   InvalidAssignment,
   NotCallable,
@@ -12,6 +13,9 @@ import {
 import { Any, Never, Type, functionParamTypes, functionResultType, hasTag } from "./type";
 import { Tree, newTree, removeTree } from "../editor/trees/trees";
 import { isSubtype, typeJoin } from "./subtyping";
+import { Defines } from "../evaluator/defines";
+import { InitialTypeContext } from "../editor/typecheck";
+import { uniqueId } from "lodash";
 
 export type TypeContext = Record<string, Type>;
 
@@ -70,9 +74,24 @@ export class TypecheckerErrors {
 }
 
 export class Typechecker {
-  errors = new TypecheckerErrors();
+  baseContext: TypeContext;
 
+  errors = new TypecheckerErrors();
+  autoReset: boolean;
+
+  #defines: Defines<Type> = new Defines();
   #inferenceCache = new InferenceCache();
+
+  constructor({
+    baseContext,
+    autoReset,
+  }: {
+    baseContext?: TypeContext;
+    autoReset?: boolean;
+  } = {}) {
+    this.baseContext = baseContext ?? InitialTypeContext;
+    this.autoReset = autoReset ?? false;
+  }
 
   /**
    * Wipes the typechecker state clean.
@@ -81,18 +100,27 @@ export class Typechecker {
    * This is equivalent to just making a new typechecker, but resetting the state in
    * `inferType()` and co. allows clients to just call them repeatedly on the same instance.
    */
-  #reset() {
+  reset() {
     // Clear public error state.
     // It is a new day.
     this.errors.clear();
 
-    // Clear cached inferences.
+    this.#defines.clearComputed();
     this.#inferenceCache.clear();
+  }
+
+  clearCache() {
+    this.#defines.clearComputed();
+    this.#inferenceCache.clear();
+  }
+
+  addDefine(tree: Tree<Define>): void {
+    this.#inferType(tree.root, this.baseContext, rootIndexPath(tree));
   }
 
   inferType(tree: Tree, context?: TypeContext): Type;
   inferType(expr: Expr, context?: TypeContext): Type;
-  inferType(tree: Tree | Expr, context: TypeContext = {}): Type {
+  inferType(tree: Tree | Expr, context: TypeContext = this.baseContext): Type {
     // If given an `Expr`, stuff it into its own tree before running inference,
     // as inference requires an index path into a tree (to deal with subexpressions).
     let isTempTree = false;
@@ -102,7 +130,7 @@ export class Typechecker {
     }
 
     try {
-      this.#reset();
+      if (this.autoReset) this.reset();
 
       return this.#inferType(tree.root, context, rootIndexPath(tree));
     } finally {
@@ -112,15 +140,19 @@ export class Typechecker {
     }
   }
 
-  inferSubexprType(indexPath: TreeIndexPath, context: TypeContext = {}): Type {
-    this.#reset();
+  inferSubexprType(indexPath: TreeIndexPath, context: TypeContext = this.baseContext): Type {
+    if (this.autoReset) this.reset();
 
     // First, infer the type of the entire tree.
     this.#inferType(indexPath.tree.root, context, rootIndexPath(indexPath.tree));
 
+    // Cache inferred types for all defines, even if they are not used,
+    // so that the editor can display them.
+    this.#defines.computeAll();
+
     // We already computed the type of the entire expression, which visits every subexpression.
     // Thus, the inference cache should know the type of the subexpression pointed to by indexPath.
-    let inferredType = this.#inferenceCache.get(indexPath);
+    const inferredType = this.#inferenceCache.get(indexPath);
     if (!inferredType) {
       console.error("no type in inference cache for index path :(", indexPath);
       return Any;
@@ -164,41 +196,47 @@ export class Typechecker {
       case "name-binding": {
         // For name-binding: this is *only* to update the inference cache.
 
-        const varType = context[expr.id];
+        const varType = this.#get(expr.id, context);
         if (!varType) throw { tag: "UnboundVariable", v: expr } satisfies UnboundVariable;
+        if (varType === "circular")
+          throw { tag: "CircularDependency", v: expr } satisfies CircularDependency;
 
         // TODO: Old code was return this.#instantiate(varType, env);
         return varType;
       }
 
       case "define": {
-        let newContext: TypeContext;
-        let inferredType: Type;
+        // Cache annotated or inferred type for name binding node, so that the editor can display it.
+        const cacheBindingType = (type: Type) => {
+          this.#inferType(
+            expr.name,
+            isHole(expr.name) ? context : bindInContextWithType(context, expr.name, type),
+            extendIndexPath(indexPath, 0)
+          );
+        };
 
         if (!isHole(expr.name) && expr.name.type) {
-          newContext = bindInContext(context, expr.name);
-          inferredType = expr.name.type;
+          const type = expr.name.type;
+          this.#defines.add(expr.name.id, () => {
+            // Ensure this is a sound type annotation
+            this.#checkType(expr.value, type, context, extendIndexPath(indexPath, 1));
 
-          // Ensure this is a sound type annotation
-          this.#checkType(expr.value, inferredType, newContext, extendIndexPath(indexPath, 1));
+            cacheBindingType(type);
+            return type;
+          });
         } else {
-          // Make the definition visible to itself in the context
-          newContext = isHole(expr.name) ? context : bindInContext(context, expr.name);
+          // Make the definition visible to itself
+          const id = expr.name.kind === "name-binding" ? expr.name.id : uniqueId();
+          this.#defines.add(id, () => {
+            // Infer a type for the definition
+            const type = this.#inferType(expr.value, context, extendIndexPath(indexPath, 1));
 
-          // Infer a better type for the definition
-          inferredType = this.#inferType(expr.value, newContext, extendIndexPath(indexPath, 1));
-
-          // Update the definition's type in the context
-          newContext = isHole(expr.name)
-            ? context
-            : bindInContextWithType(context, expr.name, inferredType);
+            cacheBindingType(type);
+            return type;
+          });
         }
 
-        // Cache inferred type for the defined variable, even if it is not used,
-        // so that the editor can display it
-        this.#inferType(expr.name, newContext, extendIndexPath(indexPath, 0));
-
-        return inferredType;
+        return { tag: "Empty" };
       }
 
       case "lambda": {
@@ -469,6 +507,7 @@ export class Typechecker {
 
     if (hasTag(type, "Any")) return true;
 
+    // TODO: This switch will become useful, I swear
     switch (expr.kind) {
       case "bool":
       case "number":
@@ -478,9 +517,7 @@ export class Typechecker {
         return isSubtype(exprType, type);
 
       case "var":
-        const varType = context[expr.id];
-        if (!varType) throw { tag: "UnboundVariable", v: expr } satisfies UnboundVariable;
-        return isSubtype(varType, type);
+        return isSubtype(exprType, type);
 
       case "lambda":
         return isSubtype(exprType, type);
@@ -490,5 +527,9 @@ export class Typechecker {
     }
 
     throw "TODO";
+  }
+
+  #get(name: string, context: TypeContext): Type | undefined | "circular" {
+    return context[name] ?? this.#defines.get(name);
   }
 }
