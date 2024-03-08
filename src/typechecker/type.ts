@@ -107,7 +107,7 @@ export function isTypeVar(type: Type): type is TypeVar {
 export type BuiltinType =
   | { tag: "Any" }
   | { tag: "Never" }
-  | { tag: "Null" }
+  | { tag: "Empty" }
   | { tag: "Number" }
   | { tag: "Integer" }
   | { tag: "Boolean" }

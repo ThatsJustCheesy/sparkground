@@ -733,7 +733,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         kind: "fn",
         signature: [{ name: "head" }, { name: "tail" }],
         body: (args): ListValue => {
-          const [head, tail] = args as [Value, ListDatum];
+          const [head, tail] = args as [Value, Value];
           return {
             kind: "list",
             heads: [head],
@@ -746,7 +746,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Constructs a pair with `head` as the head and `tail` as the tail. If `tail` is a list, the resulting pair is a list.",
       minArgCount: 2,
       maxArgCount: 2,
-      argTypes: [{ tag: "Any" }, { tag: "Any" }],
+      argTypes: [{ tag: "Any" }, { tag: "List", of: [{ tag: "Any" }] }],
       retType: { tag: "List", of: [{ tag: "Any" }] },
     },
   },
@@ -857,7 +857,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "null?",
+    name: "empty?",
     cell: {
       value: {
         kind: "fn",

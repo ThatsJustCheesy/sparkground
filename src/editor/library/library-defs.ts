@@ -122,7 +122,7 @@ export const LibraryCategories: LibraryCategory[] = [
       {
         name: "Deconstruct",
         entries: [
-          { kind: "call", called: { kind: "var", id: "null?" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "empty?" }, args: [] },
           { kind: "call", called: { kind: "var", id: "pair?" }, args: [] },
           { kind: "call", called: { kind: "var", id: "first" }, args: [] },
           { kind: "call", called: { kind: "var", id: "rest" }, args: [] },
