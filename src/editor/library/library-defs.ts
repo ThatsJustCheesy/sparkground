@@ -70,16 +70,14 @@ export const LibraryCategories: LibraryCategory[] = [
       {
         name: "Reals",
         entries: [
-          { kind: "call", called: { kind: "var", id: "numerator" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "denominator" }, args: [] },
           { kind: "call", called: { kind: "var", id: "abs" }, args: [] },
           { kind: "call", called: { kind: "var", id: "floor" }, args: [] },
           { kind: "call", called: { kind: "var", id: "ceiling" }, args: [] },
           { kind: "call", called: { kind: "var", id: "truncate" }, args: [] },
           { kind: "call", called: { kind: "var", id: "round" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "rationalize" }, args: [] },
           { kind: "call", called: { kind: "var", id: "exp" }, args: [] },
           { kind: "call", called: { kind: "var", id: "log" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "^" }, args: [] },
           { kind: "call", called: { kind: "var", id: "sin" }, args: [] },
           { kind: "call", called: { kind: "var", id: "cos" }, args: [] },
           { kind: "call", called: { kind: "var", id: "tan" }, args: [] },
@@ -87,7 +85,6 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "call", called: { kind: "var", id: "acos" }, args: [] },
           { kind: "call", called: { kind: "var", id: "atan" }, args: [] },
           { kind: "call", called: { kind: "var", id: "sqrt" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "expt" }, args: [] },
         ],
       },
       {

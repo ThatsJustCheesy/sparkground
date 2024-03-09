@@ -617,6 +617,240 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
+    name: "exp",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.exp(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: 'Computes the natural exponential function (base "e") at `x`.',
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "log",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.log(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: 'Computes the natural logarithm (base "e") of `x`.',
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "^",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "base", type: "Number" },
+          { name: "exponent", type: "Number" },
+        ],
+        body: (args): Value => {
+          const [base, exponent] = args as [NumberDatum, NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.pow(base.value, exponent.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes `base` raised to the power `exponent`",
+      minArgCount: 2,
+      maxArgCount: 2,
+      argTypes: [{ tag: "Number" }, { tag: "Number" }],
+      retType: { tag: "Number" },
+      infix: true,
+    },
+  },
+  {
+    name: "sin",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "angle", type: "Number" }],
+        body: (args): Value => {
+          const [angle] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.sin(angle.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the sine of `angle` in radians.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "cos",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "angle", type: "Number" }],
+        body: (args): Value => {
+          const [angle] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.cos(angle.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the cosine of `angle` in radians.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "tan",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "angle", type: "Number" }],
+        body: (args): Value => {
+          const [angle] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.tan(angle.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the tangent of `angle` in radians.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "asin",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "ratio", type: "Number" }],
+        body: (args): Value => {
+          const [ratio] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.asin(ratio.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the arcsine of `ratio` in radians.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "acos",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "ratio", type: "Number" }],
+        body: (args): Value => {
+          const [ratio] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.acos(ratio.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the arc cosine of `ratio` in radians.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "atan",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "ratio", type: "Number" }],
+        body: (args): Value => {
+          const [ratio] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.atan(ratio.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the arctangent of `ratio` in radians.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
+    name: "sqrt",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.sqrt(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the (principal) square root of `x`.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Number" }],
+      retType: { tag: "Number" },
+    },
+  },
+  {
     name: "=",
     cell: {
       value: {
