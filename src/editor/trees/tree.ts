@@ -21,7 +21,7 @@ import { Environment, extendEnv } from "../library/environments";
 import { serializeType } from "../../typechecker/serialize";
 
 export function isAtomic(node: Expr) {
-  return (["number", "bool", "string", "symbol", "var"] satisfies Expr["kind"][]).includes(
+  return (["Number", "Boolean", "String", "Symbol", "var"] satisfies Expr["kind"][]).includes(
     node.kind as any
   );
 }
@@ -29,7 +29,7 @@ export function isAtomic(node: Expr) {
 export function children(node: Expr): (Expr | undefined)[] {
   switch (node.kind) {
     // Datum
-    case "list":
+    case "List":
       return [node.tail, ...node.heads];
 
     // Type
@@ -79,7 +79,7 @@ export function childAtIndex(node: Expr, index: number): Expr | undefined {
 export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void {
   switch (node.kind) {
     // Datum
-    case "list":
+    case "List":
       if (index === 0) node.tail = asDatum(newChild);
       else node.heads[index - 1] = asDatum(newChild);
       break;
@@ -144,11 +144,11 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
 function asDatum(node: Expr): Datum {
   switch (node.kind) {
     // Datum
-    case "bool":
-    case "number":
-    case "string":
-    case "symbol":
-    case "list":
+    case "Boolean":
+    case "Number":
+    case "String":
+    case "Symbol":
+    case "List":
       return node;
 
     // Expr
@@ -193,9 +193,9 @@ function asVarSlot(node: Expr): VarSlot {
   return new ExprParser().parseVarSlot(flattenDatum(asDatum(node)));
 }
 
-export const hole: Hole = { kind: "symbol", value: "·" };
+export const hole: Hole = { kind: "Symbol", value: "·" };
 export function isHole(node: Expr | undefined): node is Hole {
-  return node?.kind === "symbol" && node.value === "·";
+  return node?.kind === "Symbol" && node.value === "·";
 }
 export function isHoleForEditor(node: Expr | undefined): boolean {
   return (

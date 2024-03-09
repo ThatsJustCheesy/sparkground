@@ -18,7 +18,7 @@ describe("Typechecker", () => {
     checker = new Typechecker()
     checker.autoReset = true
 
-    const42 = { kind: "lambda", params: [], body: { kind: "number", value: 42 } }
+    const42 = { kind: "lambda", params: [], body: { kind: "Number", value: 42 } }
     intIdentity = {
       kind: "lambda",
       params: [{ kind: "name-binding", id: "x", type: { tag: "Integer" } }],
@@ -66,13 +66,13 @@ describe("Typechecker", () => {
   }
 
   it("infers basic atomic types", () => {
-    expect(checker.inferType({ kind: "number", value: 42 })).toEqual<BuiltinType>({ tag: "Integer" })
+    expect(checker.inferType({ kind: "Number", value: 42 })).toEqual<BuiltinType>({ tag: "Integer" })
     expectNoErrors()
 
-    expect(checker.inferType({ kind: "bool", value: true })).toEqual<BuiltinType>({ tag: "Boolean" })
+    expect(checker.inferType({ kind: "Boolean", value: true })).toEqual<BuiltinType>({ tag: "Boolean" })
     expectNoErrors()
 
-    expect(checker.inferType({ kind: "string", value: "hello" })).toEqual<BuiltinType>({ tag: "String" })
+    expect(checker.inferType({ kind: "String", value: "hello" })).toEqual<BuiltinType>({ tag: "String" })
     expectNoErrors()
   })
 
@@ -91,8 +91,8 @@ describe("Typechecker", () => {
       checker.inferType({
         kind: "sequence",
         exprs: [
-          { kind: "number", value: 0 },
-          { kind: "bool", value: false },
+          { kind: "Number", value: 0 },
+          { kind: "Boolean", value: false },
         ],
       })
     ).toEqual<BuiltinType>({ tag: "Boolean" })
@@ -135,12 +135,12 @@ describe("Typechecker", () => {
     expect(checker.inferType({ kind: "call", called: const42, args: [] })).toEqual<BuiltinType>({ tag: "Integer" })
     expectNoErrors()
 
-    expect(checker.inferType({ kind: "call", called: intIdentity, args: [{ kind: "number", value: 42 }] })).toEqual<BuiltinType>({
+    expect(checker.inferType({ kind: "call", called: intIdentity, args: [{ kind: "Number", value: 42 }] })).toEqual<BuiltinType>({
       tag: "Integer",
     })
     expectNoErrors()
 
-    expect(checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "number", value: 42 }] })).toEqual<BuiltinType>({
+    expect(checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "Number", value: 42 }] })).toEqual<BuiltinType>({
       tag: "Number",
     })
     expectNoErrors()
@@ -150,8 +150,8 @@ describe("Typechecker", () => {
         kind: "call",
         called: intStringFirst,
         args: [
-          { kind: "number", value: 42 },
-          { kind: "string", value: "foo" },
+          { kind: "Number", value: 42 },
+          { kind: "String", value: "foo" },
         ],
       })
     ).toEqual<BuiltinType>({
@@ -164,8 +164,8 @@ describe("Typechecker", () => {
         kind: "call",
         called: intStringSecond,
         args: [
-          { kind: "number", value: 42 },
-          { kind: "string", value: "foo" },
+          { kind: "Number", value: 42 },
+          { kind: "String", value: "foo" },
         ],
       })
     ).toEqual<BuiltinType>({
@@ -179,7 +179,7 @@ describe("Typechecker", () => {
         called: callIntToNumber,
         args: [
           { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } },
-          { kind: "number", value: 42 },
+          { kind: "Number", value: 42 },
         ],
       })
     ).toEqual<BuiltinType>({
@@ -191,7 +191,7 @@ describe("Typechecker", () => {
   it("infers calls to Never type as having Never type", () => {
     expect(
       checker.inferType(
-        { kind: "call", called: { kind: "var", id: "loop" }, args: [{ kind: "number", value: 42 }] },
+        { kind: "call", called: { kind: "var", id: "loop" }, args: [{ kind: "Number", value: 42 }] },
         { loop: { tag: "Never" } }
       )
     ).toEqual<BuiltinType>({
@@ -201,7 +201,7 @@ describe("Typechecker", () => {
   })
 
   it("complains about arity mismatch", () => {
-    checker.inferType({ kind: "call", called: const42, args: [{ kind: "number", value: 42 }] })
+    checker.inferType({ kind: "call", called: const42, args: [{ kind: "Number", value: 42 }] })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("ArityMismatch")
 
     checker.inferType({ kind: "call", called: numberIdentity, args: [] })
@@ -209,10 +209,10 @@ describe("Typechecker", () => {
   })
 
   it("complains about invalid assignments", () => {
-    checker.inferType({ kind: "call", called: intIdentity, args: [{ kind: "number", value: 4.2 }] })
+    checker.inferType({ kind: "call", called: intIdentity, args: [{ kind: "Number", value: 4.2 }] })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
 
-    checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "string", value: "foo" }] })
+    checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "String", value: "foo" }] })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
 
     checker.inferType({
@@ -242,17 +242,17 @@ describe("Typechecker", () => {
     })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
 
-    checker.inferType({ kind: "call", called: uncallable, args: [{ kind: "number", value: 42 }] })
+    checker.inferType({ kind: "call", called: uncallable, args: [{ kind: "Number", value: 42 }] })
     expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
   })
 
   it("infers list types", () => {
     expect(
       checker.inferType({
-        kind: "list",
+        kind: "List",
         heads: [
-          { kind: "number", value: 42 },
-          { kind: "number", value: 24 },
+          { kind: "Number", value: 42 },
+          { kind: "Number", value: 24 },
         ],
       })
     ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "Integer" }] })
@@ -260,10 +260,10 @@ describe("Typechecker", () => {
 
     expect(
       checker.inferType({
-        kind: "list",
+        kind: "List",
         heads: [
-          { kind: "number", value: 42 },
-          { kind: "number", value: 2.4 },
+          { kind: "Number", value: 42 },
+          { kind: "Number", value: 2.4 },
         ],
       })
     ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "Number" }] })
@@ -271,10 +271,10 @@ describe("Typechecker", () => {
 
     expect(
       checker.inferType({
-        kind: "list",
+        kind: "List",
         heads: [
-          { kind: "number", value: 42 },
-          { kind: "bool", value: true },
+          { kind: "Number", value: 42 },
+          { kind: "Boolean", value: true },
         ],
       })
     ).toEqual<BuiltinType>({ tag: "List", of: [Any] })
@@ -282,10 +282,10 @@ describe("Typechecker", () => {
 
     expect(
       checker.inferType({
-        kind: "list",
+        kind: "List",
         heads: [
-          { kind: "list", heads: [{ kind: "number", value: 42 }] },
-          { kind: "list", heads: [{ kind: "bool", value: true }] },
+          { kind: "List", heads: [{ kind: "Number", value: 42 }] },
+          { kind: "List", heads: [{ kind: "Boolean", value: true }] },
         ],
       })
     ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "List", of: [Any] }] })

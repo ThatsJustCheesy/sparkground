@@ -185,11 +185,11 @@ export class Typechecker {
    */
   #inferType_(expr: Expr, context: TypeContext, indexPath: TreeIndexPath): Type {
     switch (expr.kind) {
-      case "bool":
-      case "number":
-      case "string":
-      case "symbol":
-      case "list":
+      case "Boolean":
+      case "Number":
+      case "String":
+      case "Symbol":
+      case "List":
         return this.#inferTypeFromDatum(expr, context, indexPath);
 
       case "var":
@@ -458,16 +458,16 @@ export class Typechecker {
 
   #inferTypeFromDatum(datum: Datum, context: TypeContext, indexPath: TreeIndexPath): Type {
     switch (datum.kind) {
-      case "bool":
+      case "Boolean":
         return { tag: "Boolean" };
-      case "number":
+      case "Number":
         return datum.value === Math.floor(datum.value) ? { tag: "Integer" } : { tag: "Number" };
-      case "string":
+      case "String":
         return { tag: "String" };
-      case "symbol":
+      case "Symbol":
         if (datum.value === "·") return Any;
         return { tag: "Symbol" };
-      case "list": {
+      case "List": {
         let elementType: Type = Never;
 
         datum.heads.forEach((head, index) => {
@@ -509,11 +509,11 @@ export class Typechecker {
 
     // TODO: This switch will become useful, I swear
     switch (expr.kind) {
-      case "bool":
-      case "number":
-      case "string":
-      case "symbol":
-      case "list":
+      case "Boolean":
+      case "Number":
+      case "String":
+      case "Symbol":
+      case "List":
         return isSubtype(exprType, type);
 
       case "var":

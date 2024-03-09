@@ -53,15 +53,15 @@ export class Parser {
       case "#t":
       case "#f":
         this.tokens.shift();
-        return { kind: "bool", value: next === "#t" };
+        return { kind: "Boolean", value: next === "#t" };
       case ".":
         throw `misplaced '.'`;
       default:
         this.tokens.shift();
         if (typeof next === "number") {
-          return { kind: "number", value: next };
+          return { kind: "Number", value: next };
         } else if ("symbol" in next) {
-          return { kind: "symbol", value: next.symbol };
+          return { kind: "Symbol", value: next.symbol };
         } else {
           // Comment - should have been thrown away
           throw "comment token not allowed in this context";
@@ -83,7 +83,7 @@ export class Parser {
         const tail = this.parseDatum();
 
         return {
-          kind: "list",
+          kind: "List",
           heads,
           tail,
         };
@@ -94,7 +94,7 @@ export class Parser {
 
     // (head1 head2 ... headN)
     return {
-      kind: "list",
+      kind: "List",
       heads,
     };
   }

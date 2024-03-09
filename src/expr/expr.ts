@@ -19,7 +19,7 @@ export type Expr = { attributes?: DefinitionAttributes } & (
 );
 
 export type Hole = {
-  kind: "symbol";
+  kind: "Symbol";
   value: "·";
 };
 export type VarSlot = Hole | NameBinding;

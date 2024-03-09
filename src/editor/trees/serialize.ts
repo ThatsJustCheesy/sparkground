@@ -13,13 +13,13 @@ export function serializeExprWithAttributes(expr: Expr): string {
 export function serializeExpr(expr: Expr): string {
   switch (expr.kind) {
     // Datum
-    case "bool":
-    case "number":
-    case "string":
+    case "Boolean":
+    case "Number":
+    case "String":
       return serializeDatum(expr);
 
-    case "symbol":
-    case "list":
+    case "Symbol":
+    case "List":
       if (isHole(expr)) return "·";
       return `(quote ${serializeDatum(expr)})`;
 

@@ -12,7 +12,7 @@ export type FlattenedDatum =
   | QuotedDatum;
 
 export type FlattenedListDatum = {
-  kind: "list";
+  kind: "List";
   heads: FlattenedDatum[];
 };
 export type QuotedDatum = {
@@ -21,11 +21,11 @@ export type QuotedDatum = {
 };
 
 export function flattenDatum(datum: Datum): FlattenedDatum {
-  return datum.kind === "list" ? flattenListOrQuotedDatum(datum) : datum;
+  return datum.kind === "List" ? flattenListOrQuotedDatum(datum) : datum;
 }
 
 export function flattenListOrQuotedDatum(list: ListDatum): FlattenedListDatum | QuotedDatum {
-  if (list.heads[0]?.kind === "symbol" && list.heads[0]?.value === "quote") {
+  if (list.heads[0]?.kind === "Symbol" && list.heads[0]?.value === "quote") {
     if (list.heads.length !== 2) {
       throw "'quote' requires exactly one datum";
     }
@@ -44,17 +44,17 @@ export function flattenListDatum(list: ListDatum): FlattenedListDatum {
 
   if (!list.tail) {
     return {
-      kind: "list",
+      kind: "List",
       heads,
     };
   }
 
-  if (list.tail.kind !== "list") {
+  if (list.tail.kind !== "List") {
     throw "non-list expressions cannot appear after '.' in this context";
   }
 
   return {
-    kind: "list",
+    kind: "List",
     heads: [...heads, ...flattenListDatum(list.tail).heads],
   };
 }

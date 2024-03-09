@@ -4,13 +4,13 @@ import { Value, ListValue } from "../evaluator/value";
 export function datumEqual(left: Datum | Value, right: Datum | Value): boolean {
   if (left.kind !== right.kind) return false;
   switch (left.kind) {
-    case "bool":
-    case "number":
-    case "string":
-    case "symbol":
+    case "Boolean":
+    case "Number":
+    case "String":
+    case "Symbol":
       return left.value === (right as any).value;
 
-    case "list": {
+    case "List": {
       const leftFlat = partialFlattenList(left);
       const rightFlat = partialFlattenList(left);
 
@@ -31,14 +31,14 @@ export function datumEqual(left: Datum | Value, right: Datum | Value): boolean {
 
 export function partialFlattenList(list: ListDatum | ListValue): ListDatum | ListValue {
   const heads = [...list.heads];
-  while (list.tail?.kind === "list") {
+  while (list.tail?.kind === "List") {
     list = list.tail;
     heads.push(...list.heads);
   }
 
   const tail = list.tail;
   return {
-    kind: "list",
+    kind: "List",
     heads,
     tail,
   };

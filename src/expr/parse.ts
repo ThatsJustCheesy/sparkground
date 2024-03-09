@@ -55,12 +55,12 @@ export class Parser {
 
   #parsePrimary(datum: FlattenedDatum): Expr {
     switch (datum.kind) {
-      case "bool":
-      case "number":
-      case "string":
+      case "Boolean":
+      case "Number":
+      case "String":
         return datum;
 
-      case "symbol":
+      case "Symbol":
         const symbol = datum.value;
         switch (symbol) {
           case "quote":
@@ -77,9 +77,9 @@ export class Parser {
             return { kind: "var", id: symbol };
         }
 
-      case "list":
+      case "List":
         const called = datum.heads[0]!;
-        if (called.kind === "symbol") {
+        if (called.kind === "Symbol") {
           // Determine which syntactic keyword this is, if any
 
           switch (called.value) {
@@ -152,12 +152,12 @@ export class Parser {
     this.requireLength(datum, 3);
 
     const bindingList = datum.heads[1]!;
-    if (bindingList.kind !== "list") {
+    if (bindingList.kind !== "List") {
       throw "expecting binding list";
     }
 
     const bindings: [name: VarSlot, value: Expr][] = bindingList.heads.map((binding) => {
-      if (binding.kind !== "list") {
+      if (binding.kind !== "List") {
         throw "expecting binding";
       }
       this.requireLength(binding, 2);
@@ -185,7 +185,7 @@ export class Parser {
     this.requireLength(datum, 3);
 
     const bindingList = datum.heads[1]!;
-    if (bindingList.kind !== "list") {
+    if (bindingList.kind !== "List") {
       throw "expecting binding list";
     }
 
@@ -223,12 +223,12 @@ export class Parser {
     this.requireLength(datum, 2);
 
     const caseList = datum.heads[1]!;
-    if (caseList.kind !== "list") {
+    if (caseList.kind !== "List") {
       throw "expecting cond case list";
     }
 
     const cases: [condition: Expr, value: Expr][] = caseList.heads.map((case_) => {
-      if (case_.kind !== "list") {
+      if (case_.kind !== "List") {
         throw "expecting cond case";
       }
       this.requireLength(case_, 2);
@@ -246,7 +246,7 @@ export class Parser {
   }
 
   parseVar(datum: FlattenedDatum): Var {
-    if (datum.kind !== "symbol") throw "expected identifier";
+    if (datum.kind !== "Symbol") throw "expected identifier";
     return { kind: "var", id: datum.value };
   }
 
@@ -254,7 +254,7 @@ export class Parser {
     let id: string;
     let type: Type | undefined;
 
-    if (datum.kind === "list") {
+    if (datum.kind === "List") {
       if (datum.heads.length > 2) {
         throw `expecting list of length ${length}, but actual length is ${datum.heads.length}`;
       }

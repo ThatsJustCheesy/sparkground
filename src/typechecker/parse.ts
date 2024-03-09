@@ -10,12 +10,12 @@ export class Parser {
 
   parseType(datum: FlattenedDatum): Type {
     switch (datum.kind) {
-      case "symbol":
+      case "Symbol":
         return { tag: datum.value };
 
-      case "list":
+      case "List":
         const tagDatum = datum.heads[0];
-        if (tagDatum?.kind !== "symbol") {
+        if (tagDatum?.kind !== "Symbol") {
           throw "type arguments can only be applied to type constructor names";
         }
         const tag = tagDatum.value;
@@ -41,7 +41,7 @@ export class Parser {
     this.requireLength(datum, 3);
 
     const varsList = datum.heads[1]!;
-    if (varsList.kind !== "list") {
+    if (varsList.kind !== "List") {
       throw "expecting type variable list";
     }
 
@@ -55,7 +55,7 @@ export class Parser {
   }
 
   parseTypeVarSlot(datum: FlattenedDatum): TypeVarSlot {
-    if (datum.kind !== "symbol") throw "expected identifier";
+    if (datum.kind !== "Symbol") throw "expected identifier";
 
     if (datum.value === "·") return { kind: "type-name-hole" };
     return { kind: "type-name-binding", id: datum.value };

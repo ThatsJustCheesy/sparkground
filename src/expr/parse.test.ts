@@ -8,7 +8,7 @@ describe("evaluate", () => {
       params: [],
       body: {
         kind: "sequence",
-        exprs: [{ kind: "number", value: 42 }],
+        exprs: [{ kind: "Number", value: 42 }],
       },
     })
     expect(Parser.parseToExpr("(lambda (x) x)")).toStrictEqual<Expr>({
@@ -34,18 +34,18 @@ describe("evaluate", () => {
       kind: "call",
       called: { kind: "var", id: "cons" },
       args: [
-        { kind: "number", value: 3 },
+        { kind: "Number", value: 3 },
         {
           kind: "call",
           called: { kind: "var", id: "cons" },
           args: [
-            { kind: "number", value: 2 },
+            { kind: "Number", value: 2 },
             {
               kind: "call",
               called: { kind: "var", id: "cons" },
               args: [
-                { kind: "number", value: 1 },
-                { kind: "list", heads: [] },
+                { kind: "Number", value: 1 },
+                { kind: "List", heads: [] },
               ],
             },
           ],

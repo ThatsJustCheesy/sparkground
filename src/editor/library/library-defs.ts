@@ -16,7 +16,7 @@ export const LibraryCategories: LibraryCategory[] = [
       { kind: "lambda", params: [hole], body: { kind: "sequence", exprs: [hole] } },
       { kind: "let", bindings: [[hole, hole]], body: hole },
       { kind: "letrec", bindings: [[hole, hole]], body: hole },
-      { kind: "symbol", value: "symbol" },
+      { kind: "Symbol", value: "symbol" },
     ],
   },
   {
@@ -36,8 +36,8 @@ export const LibraryCategories: LibraryCategory[] = [
   {
     name: "Logic",
     entries: [
-      { kind: "bool", value: true },
-      { kind: "bool", value: false },
+      { kind: "Boolean", value: true },
+      { kind: "Boolean", value: false },
       { kind: "if", if: hole, then: hole, else: hole },
       { kind: "call", called: { kind: "var", id: "and" }, args: [] },
       { kind: "call", called: { kind: "var", id: "or" }, args: [] },
@@ -50,7 +50,7 @@ export const LibraryCategories: LibraryCategory[] = [
       {
         name: "Arithmetic",
         entries: [
-          { kind: "number", value: 0 },
+          { kind: "Number", value: 0 },
           { kind: "call", called: { kind: "var", id: "+" }, args: [] },
           { kind: "call", called: { kind: "var", id: "-" }, args: [] },
           { kind: "call", called: { kind: "var", id: "*" }, args: [] },
@@ -112,7 +112,7 @@ export const LibraryCategories: LibraryCategory[] = [
       {
         name: "Construct",
         entries: [
-          { kind: "list", heads: [] },
+          { kind: "List", heads: [] },
           { kind: "call", called: { kind: "var", id: "cons" }, args: [] },
           { kind: "call", called: { kind: "var", id: "list" }, args: [] },
           { kind: "call", called: { kind: "var", id: "append" }, args: [] },

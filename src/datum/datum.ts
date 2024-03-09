@@ -3,25 +3,25 @@
 export type Datum = BoolDatum | NumberDatum | StringDatum | SymbolDatum | ListDatum;
 
 export type BoolDatum = {
-  kind: "bool";
+  kind: "Boolean";
   value: boolean;
 };
 export type NumberDatum = {
-  kind: "number";
+  kind: "Number";
   value: number;
 };
 export type StringDatum = {
-  kind: "string";
+  kind: "String";
   value: string;
 };
 
 export type SymbolDatum = {
-  kind: "symbol";
+  kind: "Symbol";
   value: string;
 };
 
 export type ListDatum = {
-  kind: "list";
+  kind: "List";
   heads: Datum[];
   tail?: Datum;
 };

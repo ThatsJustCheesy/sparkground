@@ -4,37 +4,37 @@ import { Parser } from "./parse"
 describe("evaluate", () => {
   it("parses nested lists and other values", () => {
     expect(Parser.parseToDatum("(lambda () 42 (or . (#t #f)))")).toStrictEqual<Datum>({
-      kind: "list",
+      kind: "List",
       heads: [
         {
-          kind: "symbol",
+          kind: "Symbol",
           value: "lambda",
         },
         {
-          kind: "list",
+          kind: "List",
           heads: [],
         },
         {
-          kind: "number",
+          kind: "Number",
           value: 42,
         },
         {
-          kind: "list",
+          kind: "List",
           heads: [
             {
-              kind: "symbol",
+              kind: "Symbol",
               value: "or",
             },
           ],
           tail: {
-            kind: "list",
+            kind: "List",
             heads: [
               {
-                kind: "bool",
+                kind: "Boolean",
                 value: true,
               },
               {
-                kind: "bool",
+                kind: "Boolean",
                 value: false,
               },
             ],

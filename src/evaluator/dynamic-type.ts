@@ -1,4 +1,4 @@
-import { Value, dynamicTypeOfValue } from "./value";
+import { Value } from "./value";
 
 export type DynamicType = string;
 export const DynamicTypeAny = "Any";
@@ -20,7 +20,12 @@ export function checkCallAgainstTypeSignature(
   argValues: Value[],
   signature: DynamicFnSignature
 ): void {
-  if (!dynamicSignatureMatch(argValues.map(dynamicTypeOfValue), signature)) {
+  if (
+    !dynamicSignatureMatch(
+      argValues.map((value) => value.kind),
+      signature
+    )
+  ) {
     throw {
       tag: "DynamicSignatureMismatch",
       argValues,

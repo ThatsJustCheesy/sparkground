@@ -142,7 +142,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           const [fn] = args as [FnValue];
           const lists = getVariadic<ListValue>(1, args);
 
-          if (!lists.length) return { kind: "list", heads: [] };
+          if (!lists.length) return { kind: "List", heads: [] };
 
           const vectors = lists.map(listValueAsVector);
           if (vectors.some((vector) => vector === undefined)) {
@@ -162,7 +162,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             results.push(evaluator.call(fn, col));
           }
 
-          return { kind: "list", heads: results };
+          return { kind: "List", heads: results };
         },
       },
     },
@@ -189,7 +189,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           const [proc] = args as [FnValue];
           const lists = getVariadic<ListValue>(1, args);
 
-          if (!lists.length) return { kind: "list", heads: [] };
+          if (!lists.length) return { kind: "List", heads: [] };
 
           const vectors = lists.map(listValueAsVector);
           if (vectors.some((vector) => vector === undefined)) {
@@ -208,7 +208,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             evaluator.call(proc, col);
           }
 
-          return { kind: "list", heads: [] };
+          return { kind: "List", heads: [] };
         },
       },
     },
@@ -278,12 +278,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           }
 
           let expressionDatum: Datum;
-          if (expression.kind === "list") {
+          if (expression.kind === "List") {
             const vector = listValueAsVector(expression);
             if (vector === undefined) {
               throw "expression passed to 'eval' is an improper list";
             }
-            expressionDatum = { kind: "list", heads: vector as Datum[] };
+            expressionDatum = { kind: "List", heads: vector as Datum[] };
           } else {
             expressionDatum = expression;
           }
@@ -310,7 +310,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args as [Value];
-          return { kind: "bool", value: obj.kind === "bool" };
+          return { kind: "Boolean", value: obj.kind === "Boolean" };
         },
       },
     },
@@ -330,7 +330,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args as [Value];
-          return { kind: "bool", value: obj.kind === "symbol" };
+          return { kind: "Boolean", value: obj.kind === "Symbol" };
         },
       },
     },
@@ -350,7 +350,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args as [Value];
-          return { kind: "bool", value: obj.kind === "number" };
+          return { kind: "Boolean", value: obj.kind === "Number" };
         },
       },
     },
@@ -370,7 +370,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args as [Value];
-          return { kind: "bool", value: obj.kind === "string" };
+          return { kind: "Boolean", value: obj.kind === "String" };
         },
       },
     },
@@ -390,7 +390,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args as [Value];
-          return { kind: "bool", value: obj.kind === "list" };
+          return { kind: "Boolean", value: obj.kind === "List" };
         },
       },
     },
@@ -410,7 +410,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args as [Value];
-          return { kind: "bool", value: obj.kind === "fn" };
+          return { kind: "Boolean", value: obj.kind === "fn" };
         },
       },
     },
@@ -428,12 +428,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [
-          { name: "string", type: "String" },
+          { name: "String", type: "String" },
           { name: "radix", type: "Number" },
         ],
         body: (args): Value => {
           const [string, radix] = args as [StringDatum, NumberDatum];
-          return { kind: "number", value: Number.parseInt(string.value, radix.value) };
+          return { kind: "Number", value: Number.parseInt(string.value, radix.value) };
         },
       },
     },
@@ -451,12 +451,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [
-          { name: "number", type: "Number" },
+          { name: "Number", type: "Number" },
           { name: "radix", type: "Number" },
         ],
         body: (args): Value => {
           const [number, radix] = args as [StringDatum, NumberDatum];
-          return { kind: "string", value: new Number(number.value).toString(radix.value) };
+          return { kind: "String", value: new Number(number.value).toString(radix.value) };
         },
       },
     },
@@ -476,7 +476,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "name", type: "String" }],
         body: (args): Value => {
           const [name] = args as [StringDatum];
-          return { kind: "symbol", value: name.value };
+          return { kind: "Symbol", value: name.value };
         },
       },
     },
@@ -493,10 +493,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "symbol", type: "Symbol" }],
+        signature: [{ name: "Symbol", type: "Symbol" }],
         body: (args): Value => {
           const [name] = args as [SymbolDatum];
-          return { kind: "string", value: name.value };
+          return { kind: "String", value: name.value };
         },
       },
     },
@@ -516,7 +516,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "numbers", type: "Number", variadic: true }],
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
-          return { kind: "number", value: sumBy(numbers, ({ value }) => value) };
+          return { kind: "Number", value: sumBy(numbers, ({ value }) => value) };
         },
       },
     },
@@ -533,14 +533,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [
-          { name: "number", type: "Number" },
+          { name: "Number", type: "Number" },
           { name: "numbers", type: "Number", variadic: true },
         ],
         body: (args): Value => {
           const [number] = args as [NumberDatum];
           const numbers = getVariadic<NumberDatum>(1, args);
           return {
-            kind: "number",
+            kind: "Number",
             value: numbers.length
               ? number.value - sumBy(numbers, ({ value }) => value)
               : -number.value,
@@ -565,7 +565,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
-            kind: "number",
+            kind: "Number",
             value: reduce(
               numbers.map(({ value }) => value),
               multiply,
@@ -588,14 +588,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [
-          { name: "number", type: "Number" },
+          { name: "Number", type: "Number" },
           { name: "numbers", type: "Number", variadic: true },
         ],
         body: (args): Value => {
           const [number] = args as [NumberDatum];
           const numbers = getVariadic<NumberDatum>(1, args);
           return {
-            kind: "number",
+            kind: "Number",
             value: numbers.length
               ? number.value /
                 reduce(
@@ -625,7 +625,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
-            kind: "bool",
+            kind: "Boolean",
             value: chainCompare(numbers, (item1, item2) => item1.value === item2.value),
           };
         },
@@ -647,7 +647,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
-            kind: "bool",
+            kind: "Boolean",
             value: chainCompare(numbers, (item1, item2) => item1.value < item2.value),
           };
         },
@@ -669,7 +669,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
-            kind: "bool",
+            kind: "Boolean",
             value: chainCompare(numbers, (item1, item2) => item1.value > item2.value),
           };
         },
@@ -691,7 +691,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
-            kind: "bool",
+            kind: "Boolean",
             value: chainCompare(numbers, (item1, item2) => item1.value <= item2.value),
           };
         },
@@ -713,7 +713,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
-            kind: "bool",
+            kind: "Boolean",
             value: chainCompare(numbers, (item1, item2) => item1.value >= item2.value),
           };
         },
@@ -735,7 +735,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): ListValue => {
           const [head, tail] = args as [Value, Value];
           return {
-            kind: "list",
+            kind: "List",
             heads: [head],
             tail,
           };
@@ -759,7 +759,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): ListValue => {
           const elements = getVariadic(0, args);
           return {
-            kind: "list",
+            kind: "List",
             heads: elements,
           };
         },
@@ -841,9 +841,9 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         body: (args): Value => {
           const [pair] = args as [ListDatum];
           if (pair.heads.length > 1) {
-            return { kind: "list", heads: [...pair.heads.slice(1)], tail: pair.tail };
+            return { kind: "List", heads: [...pair.heads.slice(1)], tail: pair.tail };
           } else {
-            return pair.tail ?? { kind: "list", heads: [] };
+            return pair.tail ?? { kind: "List", heads: [] };
           }
         },
       },
@@ -864,7 +864,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "obj" }],
         body: (args): Value => {
           const [obj] = args;
-          return { kind: "bool", value: obj?.kind === "list" && obj.heads.length === 0 };
+          return { kind: "Boolean", value: obj?.kind === "List" && obj.heads.length === 0 };
         },
       },
     },
@@ -881,7 +881,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "list", type: "List" }],
+        signature: [{ name: "List", type: "List" }],
         body: (args): Value => {
           const [list] = args as [ListValue];
 
@@ -890,7 +890,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             throw "argument passed to 'length' is an improper list";
           }
 
-          return { kind: "number", value: vector.length };
+          return { kind: "Number", value: vector.length };
         },
       },
     },
@@ -913,7 +913,7 @@ export const ExtensionsEnvironment: Environment = makeEnv([
         signature: [],
         body: (args): ListValue => {
           return {
-            kind: "list",
+            kind: "List",
             heads: [],
           };
         },

@@ -47,11 +47,11 @@ export class Evaluator {
 
   #eval_(expr: Expr): Value {
     switch (expr.kind) {
-      case "number":
-      case "bool":
-      case "string":
-      case "symbol":
-      case "list":
+      case "Number":
+      case "Boolean":
+      case "String":
+      case "Symbol":
+      case "List":
         if (isHole(expr)) {
           // TODO: More helpful behaviour
           throw "evaluating hole as expression";
@@ -84,7 +84,7 @@ export class Evaluator {
 
         this.defines.add(expr.name.id, () => ({ value: this.eval(expr.value) }));
 
-        return { kind: "list", heads: [] };
+        return { kind: "List", heads: [] };
 
       case "let": {
         const valueBindings = expr.bindings.map(
@@ -128,7 +128,7 @@ export class Evaluator {
         };
 
       case "sequence": {
-        let result: Value = { kind: "list", heads: [] };
+        let result: Value = { kind: "List", heads: [] };
         expr.exprs.forEach((expr) => {
           result = this.#eval(expr);
         });

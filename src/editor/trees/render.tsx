@@ -64,11 +64,11 @@ export class Renderer {
 
     const node = nodeAtIndexPath(indexPath);
     switch (node.kind) {
-      case "bool":
-      case "number":
-      case "string":
-      case "symbol":
-      case "list":
+      case "Boolean":
+      case "Number":
+      case "String":
+      case "Symbol":
+      case "List":
         return this.#renderDatum(node);
       default:
         return this.#renderExpr(node);
@@ -77,11 +77,11 @@ export class Renderer {
 
   #renderExpr(expr: Expr): JSX.Element {
     switch (expr.kind) {
-      case "number":
-      case "bool":
-      case "string":
-      case "symbol":
-      case "list":
+      case "Number":
+      case "Boolean":
+      case "String":
+      case "Symbol":
+      case "List":
         return this.#renderDatum(expr);
 
       case "type":
@@ -182,16 +182,16 @@ export class Renderer {
 
   #renderDatum(datum: Datum | Hole): JSX.Element {
     switch (datum.kind) {
-      case "bool":
+      case "Boolean":
         return this.#block({ type: "bool", value: datum.value });
-      case "number":
+      case "Number":
         return this.#block({ type: "number", value: datum.value });
-      case "string":
+      case "String":
         throw "TODO";
-      case "symbol":
+      case "Symbol":
         if (datum.value === "·") return this.#block({ type: "hole" });
         return this.#block({ type: "symbol", id: datum.value });
-      case "list":
+      case "List":
         const heads = datum.heads;
         // Remove holes from the end
         while (isHole(heads.at(-1))) {

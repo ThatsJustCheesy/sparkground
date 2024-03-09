@@ -484,7 +484,7 @@ export default function Block({
               {renderData()}
             </div>
 
-            {data.type === "hlist" && expr && expr.kind === "list" ? (
+            {data.type === "hlist" && expr && expr.kind === "List" ? (
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* tail slot */ + expr.heads.length)}

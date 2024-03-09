@@ -1,13 +1,13 @@
 import { BoolDatum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
 import { Environment } from "../editor/library/environments";
 import { Expr } from "../expr/expr";
-import { DynamicFnSignature, DynamicType } from "./dynamic-type";
+import { DynamicFnSignature } from "./dynamic-type";
 import { Evaluator } from "./evaluate";
 
 export type Value = BoolDatum | NumberDatum | StringDatum | SymbolDatum | ListValue | FnValue;
 
 export type ListValue = {
-  kind: "list";
+  kind: "List";
   heads: Value[];
   tail?: Value;
 };
@@ -21,34 +21,17 @@ export type FnValue = {
 
 export type BuiltinFn = (args: Value[], evaluator: Evaluator) => Value;
 
-export function dynamicTypeOfValue(value: Value): DynamicType {
-  switch (value.kind) {
-    case "bool":
-      return "Boolean";
-    case "number":
-      return "Number";
-    case "string":
-      return "String";
-    case "symbol":
-      return "Symbol";
-    case "list":
-      return "List";
-    case "fn":
-      return "Function";
-  }
-}
-
 export function valueAsBool(value: Value): boolean {
   switch (value.kind) {
-    case "bool":
+    case "Boolean":
       return value.value;
-    case "number":
+    case "Number":
       return value.value !== 0;
-    case "string":
+    case "String":
       return value.value.length > 0;
-    case "symbol":
+    case "Symbol":
       return true;
-    case "list":
+    case "List":
       return value.heads.length > 0 || value.tail !== undefined;
     case "fn":
       return true;
@@ -60,14 +43,14 @@ export function vectorNormalizeListValue(list: ListValue): ListValue | undefined
   if (asVector === undefined) return undefined;
 
   return {
-    kind: "list",
+    kind: "List",
     heads: asVector,
   };
 }
 
 export function listValueAsVector(list: ListValue): Value[] | undefined {
   if (!list.tail) return list.heads;
-  if (list.tail.kind !== "list") return undefined;
+  if (list.tail.kind !== "List") return undefined;
 
   const tailAsVector = listValueAsVector(list.tail);
   if (tailAsVector === undefined) return undefined;
@@ -76,15 +59,15 @@ export function listValueAsVector(list: ListValue): Value[] | undefined {
 }
 
 export function consNormalizeListValue(list: ListValue): ListValue {
-  const last: ListValue = { kind: "list", heads: [] };
+  const last: ListValue = { kind: "List", heads: [] };
   let head: ListValue = last;
 
   let cur = list;
   while (true) {
     if (cur.heads.length) {
-      head = { kind: "list", heads: [cur.heads.shift()!], tail: head };
+      head = { kind: "List", heads: [cur.heads.shift()!], tail: head };
     } else {
-      if (cur.tail?.kind === "list") {
+      if (cur.tail?.kind === "List") {
         cur = cur.tail;
       } else {
         last.tail = cur.tail;
