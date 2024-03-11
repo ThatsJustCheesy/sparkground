@@ -8,6 +8,7 @@ import { Parser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
 import { DynamicTypeAny } from "../../evaluator/dynamic-type";
 import { datumEqual } from "../../datum/equality";
+import { GraphicValue, drawGraphic } from "../../evaluator/graphics";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -1313,6 +1314,156 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       typeAnnotation: {
         tag: "Function",
         of: [{ tag: "String" }, { tag: "Integer" }, { tag: "String" }],
+      },
+    },
+  },
+  {
+    name: "draw",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "graphic", type: "List" }],
+        body: (args): Value => {
+          const [graphic] = args as [GraphicValue];
+
+          const canvas = document.querySelector(".output-area canvas");
+          if (canvas) {
+            const ctx = (canvas as HTMLCanvasElement).getContext?.("2d");
+            if (ctx) drawGraphic(ctx, graphic);
+          }
+
+          return { kind: "List", heads: [] };
+        },
+      },
+    },
+    attributes: {
+      doc: "Draws a graphic to the screen.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "Graphic" }, { tag: "Empty" }],
+      },
+    },
+  },
+  {
+    name: "animate",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "duration", type: "Number" },
+          { name: "graphic", type: "fn" },
+        ],
+        body: (args, evaluator): Value => {
+          const [duration, graphicFn] = args as [NumberDatum, FnValue];
+
+          let t = 0;
+          const tMax = duration.value * 1000;
+
+          const intervalID = setInterval(() => {
+            t += 1000 / 24;
+            console.log(t, tMax);
+            if (t > tMax) clearInterval(intervalID);
+
+            // TODO: Dynamic typecheck!
+            const graphic = evaluator.call(graphicFn, [
+              { kind: "Number", value: t / 1000 },
+            ]) as GraphicValue;
+
+            const canvas = document.querySelector(".output-area canvas");
+            if (canvas) {
+              const ctx = (canvas as HTMLCanvasElement).getContext?.("2d");
+              if (ctx) drawGraphic(ctx, graphic);
+            }
+
+            return { kind: "List", heads: [] };
+          }, 1000 / 24);
+
+          return { kind: "List", heads: [] };
+        },
+      },
+    },
+    attributes: {
+      doc: "Animates a continuous succession of `graphics` for `duration` seconds.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "Number" },
+          { tag: "Function", of: [{ tag: "Number" }, { tag: "Graphic" }] },
+          { tag: "Empty" },
+        ],
+      },
+      headingArgCount: 1,
+    },
+  },
+  {
+    name: "ellipse",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "x", type: "Number" },
+          { name: "y", type: "Number" },
+          { name: "x-radius", type: "Number" },
+          { name: "y-radius", type: "Number" },
+        ],
+        body: (args): Value => {
+          type ND = NumberDatum;
+          const [x, y, xRadius, yRadius] = args as [ND, ND, ND, ND];
+
+          return {
+            kind: "List",
+            heads: [{ kind: "Symbol", value: "ellipse" }, x, y, xRadius, yRadius],
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Makes an ellipse graphic.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "Number" },
+          { tag: "Number" },
+          { tag: "Number" },
+          { tag: "Number" },
+          { tag: "Graphic" },
+        ],
+      },
+    },
+  },
+  {
+    name: "rectangle",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "x", type: "Number" },
+          { name: "y", type: "Number" },
+          { name: "width", type: "Number" },
+          { name: "height", type: "Number" },
+        ],
+        body: (args): Value => {
+          type ND = NumberDatum;
+          const [x, y, width, height] = args as [ND, ND, ND, ND];
+
+          return {
+            kind: "List",
+            heads: [{ kind: "Symbol", value: "rectangle" }, x, y, width, height],
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Makes a rectangle graphic.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "Number" },
+          { tag: "Number" },
+          { tag: "Number" },
+          { tag: "Number" },
+          { tag: "Graphic" },
+        ],
       },
     },
   },

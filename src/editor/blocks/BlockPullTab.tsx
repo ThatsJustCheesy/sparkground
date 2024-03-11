@@ -7,6 +7,8 @@ type Props = PropsWithChildren<{
   indexPath: TreeIndexPath;
 
   isCopySource?: boolean;
+
+  onClick?: (indexPath: TreeIndexPath) => void;
 }>;
 
 export default function BlockPullTab({ id, indexPath, isCopySource }: Props) {

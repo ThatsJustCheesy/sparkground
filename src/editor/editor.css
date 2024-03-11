@@ -27,7 +27,7 @@
   flex-flow: row;
 
   box-sizing: border-box;
-  height: calc(100% - var(--menu-bar-height));
+  height: calc(100% - var(--menu-bar-height) + 4.5px);
 
   user-select: none;
 }
@@ -40,6 +40,8 @@
 .blocks {
   position: relative;
   overflow: auto;
+
+  background: #ecf6f2;
 }
 
 .block-outer-container {

@@ -46,6 +46,7 @@ import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors
 import Split from "react-split";
 import { Typechecker } from "../typechecker/typecheck";
 import ValueEditorModal from "./ValueEditorModal";
+import { OutputArea } from "./OutputArea";
 
 export type Props = {
   trees: Tree[];
@@ -209,12 +210,14 @@ export default function Editor({
           className="canvas-split split"
           direction="vertical"
           cursor="row-resize"
-          sizes={[100]}
+          sizes={[40, 60]}
           minSize={[0]}
           snapOffset={120}
           gutterSize={12}
           gutterAlign="center"
         >
+          <OutputArea></OutputArea>
+
           {provideEditorContext(
             <>
               <div className="blocks" ref={blocksArea}>

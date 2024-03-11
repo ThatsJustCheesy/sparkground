@@ -221,4 +221,23 @@ export const LibraryCategories: LibraryCategory[] = [
       },
     ],
   },
+  {
+    name: "Graphics",
+    subcategories: [
+      {
+        name: "Placement",
+        entries: [
+          { kind: "call", called: { kind: "var", id: "draw" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "animate" }, args: [] },
+        ],
+      },
+      {
+        name: "Shapes",
+        entries: [
+          { kind: "call", called: { kind: "var", id: "rectangle" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "ellipse" }, args: [] },
+        ],
+      },
+    ],
+  },
 ];

@@ -23,6 +23,7 @@ import {
   Type,
   TypeVarSlot,
   functionMinArgCount,
+  hasTag,
   isForallType,
   isTypeNameBinding,
   isTypeNameHole,
@@ -352,6 +353,8 @@ export class Renderer {
   #renderCall(expr: Call): JSX.Element {
     let { called, args } = expr;
 
+    const resultType = this.typechecker.inferType(expr);
+
     if (called.kind === "var") {
       const calledType = this.typechecker.inferType(called);
       const minArgCount = functionMinArgCount(calledType) ?? 0;
@@ -371,14 +374,25 @@ export class Renderer {
 
     if (called.kind === "var") {
       const calledBinding = this.environment[called.id];
-      const calledAttributes = calledBinding?.attributes;
+      const calledAttributes = calledBinding?.attributes ?? {};
 
-      if (calledAttributes?.headingArgCount || calledAttributes?.bodyArgHints?.length) {
-        const { headingArgCount, bodyArgHints } = calledAttributes;
+      const { headingArgCount, bodyArgHints } = calledAttributes;
 
-        const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
-        const body = renderedArgs.slice(headingArgCount);
+      const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
+      const body = renderedArgs.slice(headingArgCount);
 
+      if (resultType && hasTag(resultType, "Empty")) {
+        return this.#block(
+          {
+            type: "hat",
+            id: called.id,
+            binding: calledBinding,
+            heading: <>{heading}</>,
+            calledIsVar: true,
+          },
+          this.#hintBodyArgs(body, bodyArgHints)
+        );
+      } else if (calledAttributes?.headingArgCount || calledAttributes?.bodyArgHints?.length) {
         return this.#block(
           {
             type: "v",
@@ -389,25 +403,25 @@ export class Renderer {
           },
           this.#hintBodyArgs(body, bodyArgHints)
         );
-      }
-
-      if (calledAttributes?.infix) {
-        const argCount = renderedArgs.length;
-        for (let i = 0; i < argCount - 1; i++) {
-          renderedArgs.splice(2 * i + 1, 0, <div className="block-h-label">{called.id}</div>);
+      } else {
+        if (calledAttributes?.infix) {
+          const argCount = renderedArgs.length;
+          for (let i = 0; i < argCount - 1; i++) {
+            renderedArgs.splice(2 * i + 1, 0, <div className="block-h-label">{called.id}</div>);
+          }
         }
-      }
 
-      return this.#block(
-        {
-          type: "h",
-          id: called.id,
-          binding: calledBinding,
-          calledIsVar: true,
-          argCount: args.length,
-        },
-        renderedArgs
-      );
+        return this.#block(
+          {
+            type: "h",
+            id: called.id,
+            binding: calledBinding,
+            calledIsVar: true,
+            argCount: args.length,
+          },
+          renderedArgs
+        );
+      }
     } else {
       const renderedCalled = this.#renderSubexpr(called, 0);
       return this.#block({ type: "happly" }, [renderedCalled, ...renderedArgs]);
