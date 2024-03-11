@@ -26,7 +26,7 @@ import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./trees/
 import Library from "./library/Library";
 import { Tree, bringTreeToFront } from "./trees/trees";
 import CodeEditorModal from "./CodeEditorModal";
-import { Define, Expr, NameBinding } from "../expr/expr";
+import { Define, Expr } from "../expr/expr";
 import { Parser } from "../expr/parse";
 import {
   ActiveDragContext,
@@ -38,6 +38,7 @@ import { InitialEnvironment } from "./library/environments";
 import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors";
 import Split from "react-split";
 import { Typechecker } from "../typechecker/typecheck";
+import { OutputArea } from "./OutputArea";
 
 export type Props = {
   trees: Tree[];
@@ -195,12 +196,14 @@ export default function Editor({
           className="canvas-split split"
           direction="vertical"
           cursor="row-resize"
-          sizes={[100]}
+          sizes={[40, 60]}
           minSize={[0]}
           snapOffset={120}
           gutterSize={12}
           gutterAlign="center"
         >
+          <OutputArea></OutputArea>
+
           {provideEditorContext(
             <>
               <div className="blocks" ref={blocksArea}>

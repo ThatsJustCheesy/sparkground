@@ -6,6 +6,7 @@ import { TreeIndexPath, extendIndexPath } from "../trees/tree";
 import { NameBinding, VarSlot } from "../../expr/expr";
 import { Parser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
+import { GraphicValue, drawGraphic } from "../../evaluator/graphics";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -1134,6 +1135,143 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       maxArgCount: 1,
       argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
       retType: { tag: "Integer" },
+    },
+  },
+  {
+    name: "draw",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "graphic", type: "List" }],
+        body: (args): Value => {
+          const [graphic] = args as [GraphicValue];
+
+          const canvas = document.querySelector(".output-area canvas");
+          if (canvas) {
+            const ctx = (canvas as HTMLCanvasElement).getContext?.("2d");
+            if (ctx) drawGraphic(ctx, graphic);
+          }
+
+          return { kind: "List", heads: [] };
+        },
+      },
+    },
+    attributes: {
+      doc: "Draws a graphic to the screen.",
+      minArgCount: 1,
+      maxArgCount: 1,
+      argTypes: [{ tag: "Graphic" }],
+      retType: { tag: "Empty" },
+    },
+  },
+  {
+    name: "animate",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "duration", type: "Number" },
+          { name: "graphic", type: "fn" },
+        ],
+        body: (args, evaluator): Value => {
+          const [duration, graphicFn] = args as [NumberDatum, FnValue];
+
+          let t = 0;
+          const tMax = duration.value * 1000;
+
+          const intervalID = setInterval(() => {
+            t += 1000 / 24;
+            console.log(t, tMax);
+            if (t > tMax) clearInterval(intervalID);
+
+            // TODO: Dynamic typecheck!
+            const graphic = evaluator.call(graphicFn, [
+              { kind: "Number", value: t / 1000 },
+            ]) as GraphicValue;
+
+            const canvas = document.querySelector(".output-area canvas");
+            if (canvas) {
+              const ctx = (canvas as HTMLCanvasElement).getContext?.("2d");
+              if (ctx) drawGraphic(ctx, graphic);
+            }
+
+            return { kind: "List", heads: [] };
+          }, 1000 / 24);
+
+          return { kind: "List", heads: [] };
+        },
+      },
+    },
+    attributes: {
+      doc: "Animates a continuous succession of `graphics` for `duration` seconds.",
+      minArgCount: 2,
+      maxArgCount: 2,
+      headingArgCount: 1,
+      argTypes: [
+        { tag: "Number" },
+        { tag: "Function", of: [{ tag: "Number" }, { tag: "Graphic" }] },
+      ],
+      retType: { tag: "Empty" },
+    },
+  },
+  {
+    name: "ellipse",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "x", type: "Number" },
+          { name: "y", type: "Number" },
+          { name: "x-radius", type: "Number" },
+          { name: "y-radius", type: "Number" },
+        ],
+        body: (args): Value => {
+          type ND = NumberDatum;
+          const [x, y, xRadius, yRadius] = args as [ND, ND, ND, ND];
+
+          return {
+            kind: "List",
+            heads: [{ kind: "Symbol", value: "ellipse" }, x, y, xRadius, yRadius],
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Makes an ellipse graphic.",
+      minArgCount: 4,
+      maxArgCount: 4,
+      argTypes: [{ tag: "Number" }, { tag: "Number" }, { tag: "Number" }, { tag: "Number" }],
+      retType: { tag: "Graphic" },
+    },
+  },
+  {
+    name: "rectangle",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "x", type: "Number" },
+          { name: "y", type: "Number" },
+          { name: "width", type: "Number" },
+          { name: "height", type: "Number" },
+        ],
+        body: (args): Value => {
+          type ND = NumberDatum;
+          const [x, y, width, height] = args as [ND, ND, ND, ND];
+
+          return {
+            kind: "List",
+            heads: [{ kind: "Symbol", value: "rectangle" }, x, y, width, height],
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Makes a rectangle graphic.",
+      minArgCount: 4,
+      maxArgCount: 4,
+      argTypes: [{ tag: "Number" }, { tag: "Number" }, { tag: "Number" }, { tag: "Number" }],
+      retType: { tag: "Graphic" },
     },
   },
 ]);

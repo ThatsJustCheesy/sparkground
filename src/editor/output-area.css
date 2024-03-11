@@ -1,0 +1,9 @@
+.output-area {
+  background: #fafafa;
+}
+
+.output-area canvas {
+  object-fit: scale-down;
+  height: 100%;
+  width: 100%;
+}
