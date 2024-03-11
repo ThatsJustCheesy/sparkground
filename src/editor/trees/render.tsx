@@ -187,7 +187,7 @@ export class Renderer {
       case "Number":
         return this.#block({ type: "number", value: datum.value });
       case "String":
-        throw "TODO";
+        return this.#block({ type: "string", value: datum.value });
       case "Symbol":
         if (datum.value === "·") return this.#block({ type: "hole" });
         return this.#block({ type: "symbol", id: datum.value });

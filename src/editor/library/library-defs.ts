@@ -148,6 +148,7 @@ export const LibraryCategories: LibraryCategory[] = [
       {
         name: "Construct",
         entries: [
+          { kind: "String", value: "" },
           { kind: "call", called: { kind: "var", id: "string" }, args: [] },
           { kind: "call", called: { kind: "var", id: "make-string" }, args: [] },
           { kind: "call", called: { kind: "var", id: "string-append" }, args: [] },

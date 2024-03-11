@@ -220,6 +220,7 @@
 .block-type-name-binding,
 .block-type,
 .block-symbol,
+.block-string,
 .block-bool,
 .block-number {
   display: flex;
@@ -256,6 +257,10 @@
 
 .block-symbol {
   background: #89f1ff;
+}
+
+.block-string {
+  background: rgb(255, 203, 239);
 }
 
 .block-bool {

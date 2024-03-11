@@ -57,6 +57,7 @@ export type BlockData =
   | TypeNameBinding
   | TypeNameHole
   | Symbol
+  | String
   | Number
   | Bool
   | Hole;
@@ -117,6 +118,10 @@ type TypeNameHole = {
 type Symbol = {
   type: "symbol";
   id: string;
+};
+type String = {
+  type: "string";
+  value: string;
 };
 type Number = {
   type: "number";
@@ -596,6 +601,12 @@ export default function Block({
         const { id } = data;
 
         return id;
+      }
+
+      case "string": {
+        const { value } = data;
+
+        return `"${value.replace(/["\\]/g, "\\$&")}"`;
       }
 
       case "name-binding":

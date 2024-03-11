@@ -60,6 +60,8 @@ export class Parser {
         this.tokens.shift();
         if (typeof next === "number") {
           return { kind: "Number", value: next };
+        } else if ("string" in next) {
+          return { kind: "String", value: next.string };
         } else if ("symbol" in next) {
           return { kind: "Symbol", value: next.symbol };
         } else {
@@ -109,12 +111,23 @@ export type Comment = {
   text: string;
 };
 
-type Token = "(" | ")" | "#t" | "#f" | "." | number | { symbol: string } | Comment;
+type Token =
+  | "("
+  | ")"
+  | "#t"
+  | "#f"
+  | "."
+  | number
+  | { string: string }
+  | { symbol: string }
+  | Comment;
+
+const constantTokens: (Token & string)[] = ["(", ")", "#t", "#f", "."];
 
 function tokenize(source: string): Token[] {
   let tokens: Token[] = [];
 
-  while ((source = source.trimStart())) {
+  primary: while ((source = source.trimStart())) {
     if (source.startsWith(";")) {
       source = source.slice(1);
 
@@ -128,29 +141,37 @@ function tokenize(source: string): Token[] {
       continue;
     }
 
-    if (source.startsWith("(")) {
+    for (const token of constantTokens) {
+      if (source.startsWith(token)) {
+        source = source.slice(token.length);
+        tokens.push(token);
+        continue primary;
+      }
+    }
+
+    if (source.startsWith('"')) {
       source = source.slice(1);
-      tokens.push("(");
-      continue;
-    }
-    if (source.startsWith(")")) {
+
+      let string = "";
+      let char = source[0];
+      let escape = false;
+
+      while (escape || char !== '"') {
+        if (!source.length) throw "unterminated string literal";
+
+        escape = !escape && char === "\\";
+        if (!escape) {
+          string += char;
+        }
+
+        source = source.slice(1);
+        char = source[0];
+      }
+
+      // Consume ending quotes
       source = source.slice(1);
-      tokens.push(")");
-      continue;
-    }
-    if (source.startsWith("#t")) {
-      source = source.slice(2);
-      tokens.push("#t");
-      continue;
-    }
-    if (source.startsWith("#f")) {
-      source = source.slice(2);
-      tokens.push("#f");
-      continue;
-    }
-    if (source.startsWith(".")) {
-      source = source.slice(1);
-      tokens.push(".");
+
+      tokens.push({ string });
       continue;
     }
 
