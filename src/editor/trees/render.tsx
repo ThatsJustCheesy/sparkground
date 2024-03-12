@@ -38,14 +38,18 @@ export class Renderer {
 
   forDragOverlay?: boolean | Over;
 
+  onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
+
   constructor(
     private environment: Environment,
     private typechecker: Typechecker,
     options: {
       forDragOverlay?: boolean | Over;
+      onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
     } = {}
   ) {
     this.forDragOverlay = options.forDragOverlay;
+    this.onEditValue = options.onEditValue;
   }
 
   render(
@@ -130,6 +134,7 @@ export class Renderer {
             : undefined
         }
         forDragOverlay={this.forDragOverlay}
+        onEditValue={this.onEditValue}
       >
         {body}
       </BlockMemo>

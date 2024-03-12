@@ -109,6 +109,21 @@ export function deleteExpr({ tree, path }: TreeIndexPath) {
   }
 }
 
+export function replaceExpr(indexPath: TreeIndexPath, newNode: Expr) {
+  if (!indexPath.path.length) {
+    indexPath.tree.root = newNode;
+  } else {
+    setChildAtIndex(
+      nodeAtIndexPath({
+        tree: indexPath.tree,
+        path: indexPath.path.slice(0, -1),
+      }),
+      indexPath.path.at(-1)!,
+      newNode
+    );
+  }
+}
+
 function nodeForIndexPathInTree(tree: Tree, path: number[]): Expr {
   return nodeAtIndexPath({ tree, path });
 }

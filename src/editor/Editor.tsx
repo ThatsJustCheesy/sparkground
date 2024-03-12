@@ -6,7 +6,8 @@ import {
   nodeAtIndexPath,
   isAncestor,
   rootIndexPath,
-  setChildAtIndex,
+  referencesToBinding,
+  parentIndexPath,
 } from "./trees/tree";
 import {
   Active,
@@ -22,11 +23,17 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { moveExprInTree, copyExprInTree, orphanExpr, deleteExpr } from "./trees/mutate";
+import {
+  moveExprInTree,
+  copyExprInTree,
+  orphanExpr,
+  deleteExpr,
+  replaceExpr,
+} from "./trees/mutate";
 import Library from "./library/Library";
 import { Tree, bringTreeToFront } from "./trees/trees";
 import CodeEditorModal from "./CodeEditorModal";
-import { Define, Expr, NameBinding } from "../expr/expr";
+import { Define, Expr, Var } from "../expr/expr";
 import { Parser } from "../expr/parse";
 import {
   ActiveDragContext,
@@ -38,6 +45,7 @@ import { InitialEnvironment } from "./library/environments";
 import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors";
 import Split from "react-split";
 import { Typechecker } from "../typechecker/typecheck";
+import ValueEditorModal from "./ValueEditorModal";
 
 export type Props = {
   trees: Tree[];
@@ -119,6 +127,8 @@ export default function Editor({
       typechecker.addDefine(tree as Tree<Define>);
     });
 
+  const [valueEditorSubject, setValueEditorSubject] = useState<TreeIndexPath>();
+
   useEffect(() => {
     const handleDocumentMouseDown = (event: MouseEvent) => {
       isAltPressed = event.altKey;
@@ -157,7 +167,10 @@ export default function Editor({
   return (
     <DndContext
       autoScroll={false}
-      sensors={useSensors(useSensor(CustomPointerSensor), useSensor(CustomKeyboardSensor))}
+      sensors={useSensors(
+        useSensor(CustomPointerSensor, { activationConstraint: { distance: 4 } }),
+        useSensor(CustomKeyboardSensor)
+      )}
       collisionDetection={collisionDetection}
       onDragStart={onBlockDragStart}
       onDragOver={onBlockDragOver}
@@ -166,6 +179,7 @@ export default function Editor({
       {provideEditorContext(
         <>
           <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
+          <ValueEditorModal indexPath={valueEditorSubject} onClose={onValueEditorClose} />
 
           <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
             {activeDrag &&
@@ -226,7 +240,9 @@ export default function Editor({
                       zIndex: tree.zIndex,
                     }}
                   >
-                    {new Renderer(InitialEnvironment, typechecker).render(rootIndexPath(tree))}
+                    {new Renderer(InitialEnvironment, typechecker, {
+                      onEditValue,
+                    }).render(rootIndexPath(tree))}
                   </div>
                 ))}
               </div>
@@ -239,6 +255,33 @@ export default function Editor({
     </DndContext>
   );
 
+  async function onEditValue(indexPath: TreeIndexPath) {
+    const node = nodeAtIndexPath(indexPath);
+    switch (node.kind) {
+      case "name-binding":
+        const references: Var[] = referencesToBinding(node.id, parentIndexPath(indexPath));
+
+        const newName = prompt("Enter variable name:");
+        if (!newName) return;
+
+        node.id = newName;
+        references.forEach((ref) => {
+          ref.id = newName;
+        });
+        break;
+      case "Boolean":
+        node.value = !node.value;
+        break;
+      case "Number":
+      case "String":
+        setValueEditorSubject(indexPath);
+        break;
+      default:
+        setCodeEditorSubject(indexPath);
+        break;
+    }
+  }
+
   function onCodeEditorClose(newSource?: string) {
     // Close editor
     setCodeEditorSubject(undefined);
@@ -246,19 +289,16 @@ export default function Editor({
     if (!newSource || !codeEditorSubject) return;
 
     const newExpr = Parser.parseToExpr(newSource);
+    replaceExpr(codeEditorSubject, newExpr);
+  }
 
-    if (!codeEditorSubject.path.length) {
-      codeEditorSubject.tree.root = newExpr;
-    } else {
-      setChildAtIndex(
-        nodeAtIndexPath({
-          tree: codeEditorSubject.tree,
-          path: codeEditorSubject.path.slice(0, -1),
-        }),
-        codeEditorSubject.path.at(-1)!,
-        newExpr
-      );
-    }
+  function onValueEditorClose(newNode?: Expr) {
+    // Close editor
+    setValueEditorSubject(undefined);
+
+    if (!newNode || !valueEditorSubject) return;
+
+    replaceExpr(valueEditorSubject, newNode);
   }
 
   function indexPathFromDragged(item: Active | Over | null): TreeIndexPath | undefined {

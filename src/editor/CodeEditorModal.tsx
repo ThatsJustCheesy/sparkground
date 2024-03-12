@@ -52,7 +52,7 @@ export default function CodeEditorModal({ indexPath, onClose }: Props) {
           Cancel
         </Button>
         <Button variant="primary" onClick={() => onClose(newSource)}>
-          Save
+          Update
         </Button>
       </Modal.Footer>
     </Modal>

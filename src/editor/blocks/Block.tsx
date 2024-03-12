@@ -2,7 +2,7 @@ import { PropsWithChildren, ReactNode, useContext, useEffect, useRef, useState }
 import { Over, UniqueIdentifier, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ContextMenuTrigger } from "rctx-contextmenu";
 import { callEach } from "../../util";
-import { TreeIndexPath, nodeAtIndexPath, extendIndexPath, unboundReferences } from "../trees/tree";
+import { TreeIndexPath, nodeAtIndexPath, extendIndexPath } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
@@ -17,19 +17,9 @@ import {
 } from "../editor-contexts";
 import { Binding } from "../library/environments";
 import { Value } from "../../evaluator/value";
-import { InitialTypeContext } from "../typecheck";
 import { Point, newTree } from "../trees/trees";
 import { moveExprInTree } from "../trees/mutate";
 import { Typechecker } from "../../typechecker/typecheck";
-
-// TODO: Move this somewhere else or make it obsolete
-let isShiftDown = false;
-addEventListener("keydown", (event) => {
-  if (event.shiftKey) isShiftDown = true;
-});
-addEventListener("keyup", (event) => {
-  if (!event.shiftKey) isShiftDown = false;
-});
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
@@ -42,6 +32,8 @@ type Props = PropsWithChildren<{
   identifierTag?: string;
 
   forDragOverlay?: boolean | Over;
+
+  onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
 }>;
 
 export type BlockData =
@@ -147,6 +139,8 @@ export default function Block({
 
   forDragOverlay,
 
+  onEditValue,
+
   children,
 }: Props) {
   const activeDrag = useContext(ActiveDragContext);
@@ -243,11 +237,7 @@ export default function Block({
   }, [tooltipVisible, activeDrag]);
 
   const contextHelp =
-    typeof contextHelpSubject === "number" ? (
-      <div>{"right-click to change value"}</div>
-    ) : typeof contextHelpSubject === "boolean" ? (
-      <div className="fst-italic">{contextHelpSubject.toString()}</div>
-    ) : typeof contextHelpSubject === "object" ? (
+    typeof contextHelpSubject === "object" ? (
       <>
         <div className="fst-mono d-flex align-items-end">
           {contextHelpSubject.cell.value?.kind === "fn" ? (
@@ -301,11 +291,15 @@ export default function Block({
   }
 
   const tooltipContentParts = [
-    data.type === "name-binding" && <small>Right-click to rename this variable</small>,
+    data.type === "name-binding" && <small>Double-click to rename this variable</small>,
     nameable && (
       <small>Click to name this {data.type === "type-name-hole" ? "type " : ""}variable</small>
     ),
     isAnyType && <small>Unknown type; you can drop a more specific type here</small>,
+    onEditValue && data.type === "bool" && <small>Double-click to toggle value</small>,
+    onEditValue && (data.type === "number" || data.type === "string") && (
+      <small>Double-click to edit value</small>
+    ),
 
     // Uncomment to see each block's index path in its tooltip:
     // <>
@@ -462,6 +456,13 @@ export default function Block({
                   }
                 : undefined
             }
+            onDoubleClick={async (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+
+              await onEditValue?.(indexPath);
+              rerender?.();
+            }}
           >
             <div
               ref={(div) => (divRef.current = div)}
