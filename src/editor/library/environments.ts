@@ -1,4 +1,4 @@
-import { keyBy, multiply, reduce, sumBy } from "lodash";
+import { keyBy, multiply, reduce, repeat, sumBy } from "lodash";
 import { Datum, ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
 import { FnValue, ListValue, Value, getVariadic, listValueAsVector } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
@@ -951,7 +951,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "append",
+    name: "concatenate",
     cell: {
       value: {
         kind: "fn",
@@ -961,7 +961,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           const vecs = lists.map(listValueAsVector).filter((x) => x);
           if (vecs.length !== lists.length) {
-            throw "argument to 'append' is an improper list";
+            throw "argument to 'concatenate' is an improper list";
           }
 
           return { kind: "List", heads: (vecs as Value[][]).flat(1) };
@@ -1095,6 +1095,128 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       typeAnnotation: {
         tag: "Function",
         of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
+      },
+    },
+  },
+  {
+    name: "string-concatenate",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "strings", type: "String", variadic: true }],
+        body: (args): Value => {
+          const strings = getVariadic<StringDatum>(0, args);
+          return {
+            kind: "String",
+            value: strings.map(({ value }) => value).reduce((acc, s) => acc + s),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Concatenates the given `strings` together, in order.",
+      typeAnnotation: {
+        tag: "Function*",
+        of: [{ tag: "String" }, { tag: "String" }],
+      },
+    },
+  },
+  {
+    name: "string-repeat",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string", type: "String" },
+          { name: "count", type: "Number" },
+        ],
+        body: (args): Value => {
+          const [string, count] = args as [StringDatum, NumberDatum];
+          return { kind: "String", value: repeat(string.value, count.value) };
+        },
+      },
+    },
+    attributes: {
+      doc: "Creates a new string consisting of `count` copies of `string`.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "Integer" }, { tag: "String" }],
+      },
+    },
+  },
+  {
+    name: "string-length",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "string", type: "String" }],
+        body: (args): Value => {
+          const [string] = args as [StringDatum];
+          return { kind: "Number", value: string.value.length };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the number of characters in `string`.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "Integer" }],
+      },
+    },
+  },
+  {
+    name: "string-slice",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string", type: "String" },
+          { name: "start", type: "Number", optional: true },
+          { name: "end", type: "Number", optional: true },
+        ],
+        body: (args): Value => {
+          const [string, start, end] = args as [
+            StringDatum,
+            NumberDatum | undefined,
+            NumberDatum | undefined
+          ];
+          const startIdx = start ? start.value : undefined;
+          const endIdx = end ? end.value : undefined;
+          return { kind: "String", value: string.value.slice(startIdx, endIdx) };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the characters in `string` from `start` (inclusive) to `end` (exclusive). If not given, `start` is 0, and `end` is the length of `string`.",
+      typeAnnotation: {
+        tag: "Function*",
+        of: [{ tag: "String" }, { tag: "Integer" }, { tag: "Integer" }, { tag: "String" }],
+        minArgCount: 1,
+        maxArgCount: 3,
+      },
+    },
+  },
+  {
+    name: "string-character-at",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string", type: "String" },
+          { name: "index", type: "Number" },
+        ],
+        body: (args): Value => {
+          const [string, index] = args as [StringDatum, NumberDatum];
+          const char = string.value.at(index.value);
+          return { kind: "String", value: char ?? "" };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the character in `string` at `index`. If there is no such character, returns the empty string.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "Integer" }, { tag: "String" }],
       },
     },
   },

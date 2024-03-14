@@ -27,8 +27,6 @@ export const LibraryCategories: LibraryCategory[] = [
       { kind: "call", called: { kind: "var", id: "for-each" }, args: [] },
       { kind: "call", called: { kind: "var", id: "force" }, args: [] },
       { kind: "call", called: { kind: "var", id: "call-with-current-continuation" }, args: [] },
-      // { kind: "call", called: { kind: "var", id: "values" }, args: [] },
-      // { kind: "call", called: { kind: "var", id: "call-with-values" }, args: [] },
       { kind: "call", called: { kind: "var", id: "eval" }, args: [] },
     ],
   },
@@ -111,7 +109,7 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "List", heads: [] },
           { kind: "call", called: { kind: "var", id: "cons" }, args: [] },
           { kind: "call", called: { kind: "var", id: "list" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "append" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "concatenate" }, args: [] },
           { kind: "call", called: { kind: "var", id: "reverse" }, args: [] },
         ],
       },
@@ -132,41 +130,20 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "call", called: { kind: "var", id: "assoc" }, args: [] },
         ],
       },
-      // {
-      //   name: "Mutuate",
-      //   entries: [
-      //     { kind: "call", called: { kind: "var", id: "set-car!" }, args: [] },
-      //     { kind: "call", called: { kind: "var", id: "set-cdr!" }, args: [] },
-      //   ],
-      // },
     ],
   },
   {
     name: "Strings",
     subcategories: [
       {
-        name: "Construct",
+        name: "Manipulate",
         entries: [
           { kind: "String", value: "" },
-          { kind: "call", called: { kind: "var", id: "string" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "make-string" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "string-append" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "string-copy" }, args: [] },
-        ],
-      },
-      {
-        name: "Deconstruct",
-        entries: [
+          { kind: "call", called: { kind: "var", id: "string-concatenate" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "string-repeat" }, args: [] },
           { kind: "call", called: { kind: "var", id: "string-length" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "substring" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "string-ref" }, args: [] },
-        ],
-      },
-      {
-        name: "Mutate",
-        entries: [
-          { kind: "call", called: { kind: "var", id: "string-set!" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "string-fill!" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "string-slice" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "string-character-at" }, args: [] },
         ],
       },
       {

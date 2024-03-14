@@ -7,6 +7,7 @@ export type DynamicFnSignature = DynamicParamSignature[];
 export type DynamicParamSignature = {
   name: string;
   variadic?: boolean;
+  optional?: boolean;
   type?: DynamicType;
 };
 
@@ -55,12 +56,12 @@ function dynamicSignatureMatch(actualTypes: DynamicType[], signature: DynamicFnS
         continue;
       } else {
         // Failed to match non-variadic parameter
-        return false;
+        return !!nextParam.optional;
       }
     }
   }
 
-  return params.every((param) => param.variadic);
+  return params.length === 0 || params[0]!.optional || params.every((param) => param.variadic);
 }
 
 function dynamicTypeAssignable(destination: DynamicType, source: DynamicType) {

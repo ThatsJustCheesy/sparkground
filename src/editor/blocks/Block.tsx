@@ -261,7 +261,7 @@ export default function Block({
               ({binding.name}
               <div className="ms-2 fst-italic">
                 {(binding.cell.value as FnValue).signature
-                  .map((param) => param.name + (param.variadic ? "..." : ""))
+                  .map((param) => param.name + (param.variadic ? "..." : param.optional ? "?" : ""))
                   .join(" ")}
               </div>
               )
