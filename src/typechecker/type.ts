@@ -49,6 +49,30 @@ export function functionResultType(
   return typeParams(fnType).at(-1) ?? Any;
 }
 
+export function functionMinArgCount(type: Type): number {
+  if (hasTag(type, "Function")) {
+    return (type.of?.length ?? 1) - /* return type */ 1;
+  } else if (hasTag(type, "Function*")) {
+    return (
+      type.minArgCount ??
+      type.of.length - /* one for vararg (zero or more), one for return type */ 2
+    );
+  } else {
+    return 0;
+  }
+}
+
+export function functionMaxArgCount(type: Type): number {
+  console.log("max arg count", type);
+  if (hasTag(type, "Function")) {
+    return (type.of?.length ?? 1) - 1;
+  } else if (hasTag(type, "Function*")) {
+    return type.maxArgCount ?? Infinity;
+  } else {
+    return Infinity;
+  }
+}
+
 export function hasTag<Tag extends string>(type: Type, tag: Tag): type is SimpleConcreteType<Tag>;
 export function hasTag(type: Type, tag: "Function*"): type is VariadicFunctionType;
 

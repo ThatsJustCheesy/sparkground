@@ -24,8 +24,6 @@ export type BindingAttributes = {
 
   argTypes?: Type[];
   retType?: Type;
-  minArgCount?: number;
-  maxArgCount?: number;
 
   headingArgCount?: number;
   bodyArgHints?: string[];
@@ -33,17 +31,19 @@ export type BindingAttributes = {
   infix?: boolean;
 };
 
-export type Environment = Record<string, Binding<Value>>;
+export type Environment<Domain = Value> = Record<string, Binding<Domain>>;
 
-export function makeEnv(bindings: Binding<Value>[]): Environment {
+export function makeEnv<Domain = Value>(bindings: Binding<Domain>[]): Environment<Domain> {
   return keyBy(bindings, (binding) => binding.name);
 }
-export function mergeEnvs(...environments: Environment[]): Environment {
+export function mergeEnvs<Domain = Value>(
+  ...environments: Environment<Domain>[]
+): Environment<Domain> {
   return Object.assign({}, ...environments);
 }
 
-export function extendEnv(
-  environment: Environment,
+export function extendEnv<Domain = Value>(
+  environment: Environment<Domain>,
   parentIndexPath: TreeIndexPath,
   varSlots: VarSlot[]
 ) {
@@ -53,7 +53,7 @@ export function extendEnv(
       varSlots
         .filter((slot) => slot.kind === "name-binding")
         .map(
-          (slot, index): Binding<Value> => ({
+          (slot, index): Binding<Domain> => ({
             name: (slot as NameBinding).id,
             cell: {},
             attributes: {
@@ -113,13 +113,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Calls `function` with the elements of `args` as arguments.",
-      minArgCount: 2,
-      maxArgCount: 2,
-      argTypes: [
-        { tag: "Function*", of: [{ tag: "Any" }, { var: "Out" }] },
-        { tag: "List", of: [{ tag: "Any" }] },
-      ],
-      retType: { var: "Out" },
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "Function*", of: [{ tag: "Any" }, { var: "Out" }] },
+          { tag: "List", of: [{ tag: "Any" }] },
+          { var: "Out" },
+        ],
+      },
     },
   },
   {
@@ -168,12 +169,15 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Applies `function` elementwise to the elements of `lists` and returns a list of the results, in order.",
-      minArgCount: 1,
-      argTypes: [
-        { tag: "Function", of: [{ var: "Element" }, { var: "NewElement" }] },
-        { tag: "List", of: [{ var: "Element" }] },
-      ],
-      retType: { tag: "List", of: [{ var: "NewElement" }] },
+      typeAnnotation: {
+        tag: "Function*",
+        of: [
+          { tag: "Function", of: [{ var: "Element" }, { var: "NewElement" }] },
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "List", of: [{ var: "NewElement" }] },
+        ],
+        minArgCount: 1,
+      },
     },
   },
   {
@@ -214,12 +218,15 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Runs `proc` on the elements of `lists`, in order from the first element to the last. Any values that `proc` returns are discarded.",
-      minArgCount: 1,
-      argTypes: [
-        { tag: "Function", of: [{ var: "Element" }, { tag: "Any" }] },
-        { tag: "List", of: [{ var: "Element" }] },
-      ],
-      retType: { tag: "Any" },
+      typeAnnotation: {
+        tag: "Function*",
+        of: [
+          { tag: "Function", of: [{ var: "Element" }, { tag: "Any" }] },
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "Any" },
+        ],
+        minArgCount: 1,
+      },
     },
   },
   {
@@ -235,10 +242,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Continues the delayed computation represented by `promise`.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Promise", of: [{ var: "Value" }] }],
-      retType: { var: "Value" },
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "Promise", of: [{ var: "Value" }] }, { var: "Value" }],
+      },
     },
   },
   {
@@ -254,15 +261,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: 'Packages the current continuation as an "escape function", and transfers control to `next` with the escape function as its sole argument. Calling the escape function transfers control to the point immediately after `call-with-current-continuation`. This function returns the value passed to the escape function (each time it is called), as well as the value returned by `next` (if it ever returns).',
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [
-        {
-          tag: "Function",
-          of: [{ tag: "Function", of: [{ var: "Result" }, { tag: "Never" }] }, { var: "Result" }],
-        },
-      ],
-      retType: { var: "Result" },
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          {
+            tag: "Function",
+            of: [{ tag: "Function", of: [{ var: "Result" }, { tag: "Never" }] }, { var: "Result" }],
+          },
+          { var: "Result" },
+        ],
+      },
     },
   },
   {
@@ -296,10 +304,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Evaluates `expression`, using the bindings in `environment` for name resolution.",
-      minArgCount: 2,
-      maxArgCount: 2,
-      argTypes: [{ tag: "Any" }, { tag: "Any" }],
-      retType: { tag: "Any" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }] },
     },
   },
   {
@@ -316,10 +321,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Determines whether `obj` is a boolean (true or false) value.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Any" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
@@ -336,10 +338,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Determines whether `obj` is a symbol value.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Any" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
@@ -356,10 +355,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Determines whether `obj` is a number value.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Any" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
@@ -376,10 +372,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Determines whether `obj` is a string value.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Any" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
@@ -396,10 +389,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Determines whether `obj` is a list value.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Any" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
@@ -416,10 +406,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Determines whether `obj` is a procedure (function) value.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Any" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
@@ -427,22 +414,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [
-          { name: "String", type: "String" },
-          { name: "radix", type: "Number" },
-        ],
+        signature: [{ name: "string", type: "String" }],
         body: (args): Value => {
-          const [string, radix] = args as [StringDatum, NumberDatum];
-          return { kind: "Number", value: Number.parseInt(string.value, radix.value) };
+          const [string] = args as [StringDatum];
+          return { kind: "Number", value: Number.parseInt(string.value) };
         },
       },
     },
     attributes: {
-      doc: "Parses a number value from `string`. The number is assumed to be written with `radix` as the base. If no `radix` is given, the default is ten; i.e., the number is taken as written in base ten.",
-      minArgCount: 1,
-      maxArgCount: 2,
-      argTypes: [{ tag: "String" }, { tag: "Integer" }],
-      retType: { tag: "Number" },
+      doc: "Parses a number value from `string`, in base ten",
+      typeAnnotation: { tag: "Function", of: [{ tag: "String" }, { tag: "Number" }] },
     },
   },
   {
@@ -450,22 +431,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [
-          { name: "Number", type: "Number" },
-          { name: "radix", type: "Number" },
-        ],
+        signature: [{ name: "number", type: "Number" }],
         body: (args): Value => {
-          const [number, radix] = args as [StringDatum, NumberDatum];
-          return { kind: "String", value: new Number(number.value).toString(radix.value) };
+          const [number] = args as [StringDatum];
+          return { kind: "String", value: new Number(number.value).toString() };
         },
       },
     },
     attributes: {
-      doc: "Writes `number` as a string, using `radix` as the base. If no `radix` is given, the default is ten; i.e., the number will be written in base ten.",
-      minArgCount: 1,
-      maxArgCount: 2,
-      argTypes: [{ tag: "Number" }, { tag: "Integer" }],
-      retType: { tag: "String" },
+      doc: "Writes `number` as a string, in base ten.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "String" }] },
     },
   },
   {
@@ -482,10 +457,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns the unique symbol with the given `name`.",
-      minArgCount: 1,
-      maxArgCount: 2,
-      argTypes: [{ tag: "String" }],
-      retType: { tag: "Symbol" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "String" }, { tag: "Symbol" }] },
     },
   },
   {
@@ -493,7 +465,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "Symbol", type: "Symbol" }],
+        signature: [{ name: "symbol", type: "Symbol" }],
         body: (args): Value => {
           const [name] = args as [SymbolDatum];
           return { kind: "String", value: name.value };
@@ -502,10 +474,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns the name of `symbol` as a string.",
-      minArgCount: 1,
-      maxArgCount: 2,
-      argTypes: [{ tag: "Symbol" }],
-      retType: { tag: "String" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Symbol" }, { tag: "String" }] },
     },
   },
   {
@@ -522,8 +491,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Adds `numbers`. If given no numbers, the result is 0.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Number" }] },
       infix: true,
     },
   },
@@ -533,7 +501,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [
-          { name: "Number", type: "Number" },
+          { name: "number", type: "Number" },
           { name: "numbers", type: "Number", variadic: true },
         ],
         body: (args): Value => {
@@ -550,9 +518,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "If given at least two arguments, subtracts the sum of all subsequent `numbers` from the first one. If given only one argument, subtracts `number` from 0 (acting as unary minus).",
-      minArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: {
+        tag: "Function*",
+        of: [{ tag: "Number" }, { tag: "Number" }],
+        minArgCount: 1,
+      },
       infix: true,
     },
   },
@@ -577,8 +547,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Multiplies `numbers`. If given no numbers, the result is 1.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Number" }] },
       infix: true,
     },
   },
@@ -588,7 +557,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [
-          { name: "Number", type: "Number" },
+          { name: "number", type: "Number" },
           { name: "numbers", type: "Number", variadic: true },
         ],
         body: (args): Value => {
@@ -610,9 +579,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "If given at least two arguments, divides the first `number` by the product of all subsequent ones. If given only one argument, divides 1 by `number` (acting as reciprocal).",
-      minArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: {
+        tag: "Function*",
+        of: [{ tag: "Number" }, { tag: "Number" }],
+        minArgCount: 1,
+      },
       infix: true,
     },
   },
@@ -632,11 +603,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: 'Computes the natural exponential function (base "e") at `x`.',
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      doc: "Computes the natural exponential function (base e, Euler's number) at `x`.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -655,11 +623,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: 'Computes the natural logarithm (base "e") of `x`.',
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      doc: "Computes the natural logarithm (base e, Euler's number) of `x`.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -681,11 +646,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Computes `base` raised to the power `exponent`",
-      minArgCount: 2,
-      maxArgCount: 2,
-      argTypes: [{ tag: "Number" }, { tag: "Number" }],
-      retType: { tag: "Number" },
+      doc: "Computes `base` raised to the power `exponent`.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "Number" }, { tag: "Number" }, { tag: "Number" }],
+      },
       infix: true,
     },
   },
@@ -706,10 +671,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the sine of `angle` in radians.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -729,10 +691,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the cosine of `angle` in radians.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -752,10 +711,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the tangent of `angle` in radians.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -775,10 +731,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the arcsine of `ratio` in radians.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -798,10 +751,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the arc cosine of `ratio` in radians.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -821,10 +771,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the arctangent of `ratio` in radians.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -844,10 +791,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Computes the (principal) square root of `x`.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Number" },
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
     },
   },
   {
@@ -867,8 +811,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns whether `numbers` are all equal to each other.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
   },
@@ -889,8 +832,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns whether `numbers` are in strictly decreasing order.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
   },
@@ -911,8 +853,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns whether `numbers` are in strictly increasing order.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
   },
@@ -933,8 +874,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns whether `numbers` are in (non-strictly) decreasing order.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
   },
@@ -955,8 +895,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns whether `numbers` are in (non-strictly) increasing order.",
-      argTypes: [{ tag: "Number" }],
-      retType: { tag: "Boolean" },
+      typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
   },
@@ -978,10 +917,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Constructs a pair with `head` as the head and `tail` as the tail. If `tail` is a list, the resulting pair is a list.",
-      minArgCount: 2,
-      maxArgCount: 2,
-      argTypes: [{ tag: "Any" }, { tag: "List", of: [{ tag: "Any" }] }],
-      retType: { tag: "List", of: [{ tag: "Any" }] },
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "Any" },
+          { tag: "List", of: [{ tag: "Any" }] },
+          { tag: "List", of: [{ tag: "Any" }] },
+        ],
+      },
     },
   },
   {
@@ -1001,8 +944,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Constructs a list from the given `elements`.",
-      argTypes: [{ var: "Element" }],
-      retType: { tag: "List", of: [{ var: "Element" }] },
+      typeAnnotation: {
+        tag: "Function*",
+        of: [{ var: "Element" }, { tag: "List", of: [{ var: "Element" }] }],
+      },
     },
   },
   {
@@ -1013,17 +958,25 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "lists", type: "List", variadic: true }],
         body: (args): ListValue => {
           const lists = getVariadic<ListValue>(0, args);
-          throw "TODO";
+
+          const vecs = lists.map(listValueAsVector).filter((x) => x);
+          if (vecs.length !== lists.length) {
+            throw "argument to 'append' is an improper list";
+          }
+
+          return { kind: "List", heads: (vecs as Value[][]).flat(1) };
         },
       },
     },
     attributes: {
       doc: "Constructs a list consisting of the given `lists` concatenated together.",
-      argTypes: [
-        { tag: "List", of: [{ var: "Element" }] },
-        { tag: "List", of: [{ var: "Element" }] },
-      ],
-      retType: { tag: "List", of: [{ var: "Element" }] },
+      typeAnnotation: {
+        tag: "Function*",
+        of: [
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "List", of: [{ var: "Element" }] },
+        ],
+      },
     },
   },
   {
@@ -1039,10 +992,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Constructs a new list consisting of the elements of `list` in reverse order.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
-      retType: { tag: "List", of: [{ var: "Element" }] },
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "List", of: [{ var: "Element" }] },
+        ],
+      },
     },
   },
   {
@@ -1060,10 +1016,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns the first element of `pair`. (If `pair` is a list, this is the head.)",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
-      retType: { var: "Element" },
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }],
+      },
     },
   },
   {
@@ -1084,10 +1040,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns the second element of `pair`. (If `pair` is a list, this is the tail.)",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
-      retType: { tag: "List", of: [{ var: "Element" }] },
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "List", of: [{ var: "Element" }] },
+        ],
+      },
     },
   },
   {
@@ -1104,10 +1063,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns whether `obj` is the empty list.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
-      retType: { tag: "List", of: [{ var: "Element" }] },
+      typeAnnotation: {
+        tag: "Function",
+        of: [
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "List", of: [{ var: "Element" }] },
+        ],
+      },
     },
   },
   {
@@ -1115,7 +1077,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "List", type: "List" }],
+        signature: [{ name: "list", type: "List" }],
         body: (args): Value => {
           const [list] = args as [ListValue];
 
@@ -1130,10 +1092,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
     attributes: {
       doc: "Returns the number of elements in `list`.",
-      minArgCount: 1,
-      maxArgCount: 1,
-      argTypes: [{ tag: "List", of: [{ var: "Element" }] }],
-      retType: { tag: "Integer" },
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
+      },
     },
   },
 ]);

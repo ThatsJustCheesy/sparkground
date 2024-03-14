@@ -6,7 +6,7 @@ import { TreeIndexPath, nodeAtIndexPath, extendIndexPath } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
-import { Type } from "../../typechecker/type";
+import { Type, functionMaxArgCount, functionParamTypes, hasTag } from "../../typechecker/type";
 import { serializeType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
 import {
@@ -16,7 +16,7 @@ import {
   RerenderContext,
 } from "../editor-contexts";
 import { Binding } from "../library/environments";
-import { Value } from "../../evaluator/value";
+import { FnValue, Value } from "../../evaluator/value";
 import { Point, newTree } from "../trees/trees";
 import { moveExprInTree } from "../trees/mutate";
 import { Typechecker } from "../../typechecker/typecheck";
@@ -57,21 +57,21 @@ export type BlockData =
 type Hat = {
   type: "hat";
   id: string;
-  binding?: Binding<Value>;
+  binding?: Binding<unknown>;
   calledIsVar?: boolean;
   heading?: JSX.Element;
 };
 type Vertical = {
   type: "v";
   id: string;
-  binding?: Binding<Value>;
+  binding?: Binding<unknown>;
   calledIsVar?: boolean;
   heading?: JSX.Element;
 };
 type Horizontal = {
   type: "h";
   id: string;
-  binding?: Binding<Value>;
+  binding?: Binding<unknown>;
   calledIsVar?: boolean;
   definesSymbol?: boolean;
   argCount?: number;
@@ -86,12 +86,12 @@ type HorizontalList = {
 type Identifier = {
   type: "ident";
   id: string;
-  binding?: Binding<Value>;
+  binding?: Binding<unknown>;
 };
 type NameBinding = {
   type: "name-binding";
   id: string;
-  binding?: Binding<Value>;
+  binding?: Binding<unknown>;
 };
 type TypeNameBinding = {
   type: "type-name-binding";
@@ -171,7 +171,15 @@ export default function Block({
         setNodeRef: () => {},
       };
 
-  const contextHelpSubject = contextHelpSubjectFromData();
+  let binding: Binding<unknown> | undefined;
+  switch (data.type) {
+    case "hat":
+    case "v":
+    case "h":
+    case "ident":
+    case "name-binding":
+      binding = data.binding;
+  }
 
   // Draggable, if applicable
   const draggable = !(
@@ -187,7 +195,7 @@ export default function Block({
     data: {
       indexPath,
       copyOnDrop: isCopySource,
-      contextHelpSubject: contextHelpSubject,
+      contextHelpSubject: binding,
     },
   });
   let {
@@ -218,10 +226,16 @@ export default function Block({
 
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [type, setType] = useState<Type | string>("");
+  const [calledType, setCalledType] = useState<Type>();
 
   useEffect(() => {
     try {
       setType(typechecker.inferSubexprType(indexPath));
+      setCalledType(
+        expr?.kind === "call"
+          ? typechecker.inferSubexprType(extendIndexPath(indexPath, 0))
+          : undefined
+      );
     } catch (error) {
       setType(describeInferenceError(error) ?? `${error}`);
     }
@@ -237,54 +251,58 @@ export default function Block({
     rerender?.();
   }, [tooltipVisible, activeDrag]);
 
-  const contextHelp =
-    typeof contextHelpSubject === "object" ? (
-      <>
-        <div className="fst-mono d-flex align-items-end">
-          {contextHelpSubject.cell.value?.kind === "fn" ? (
+  const contextHelp = binding ? (
+    <>
+      <div className="fst-mono d-flex align-items-end">
+        {
+          // TODO: Stop relying on Value bindings here; use a richer `doc` attribute instead
+          (binding.cell.value as Value)?.kind === "fn" ? (
             <>
-              ({contextHelpSubject.name}
+              ({binding.name}
               <div className="ms-2 fst-italic">
-                {contextHelpSubject.cell.value.signature.map((param) => param.name).join(" ")}
+                {(binding.cell.value as FnValue).signature
+                  .map((param) => param.name + (param.variadic ? "..." : ""))
+                  .join(" ")}
               </div>
               )
             </>
           ) : (
-            contextHelpSubject.name
-          )}
-        </div>
-        <div className="mt-1">
-          {" "}
-          {(() => {
-            let doc = contextHelpSubject.attributes?.doc;
-            if (!doc) return "";
+            binding.name
+          )
+        }
+      </div>
+      <div className="mt-1">
+        {" "}
+        {(() => {
+          let doc = binding.attributes?.doc;
+          if (!doc) return "";
 
-            let match: RegExpExecArray | null;
-            let rendered = <></>;
-            while ((match = /^(?:[^`]+|`([^`]+)`)/.exec(doc))) {
-              doc = doc.slice(match[0].length);
-              if (match[1]) {
-                rendered = (
-                  <>
-                    {rendered}
-                    <span className="fst-mono fst-italic">{match[1]}</span>
-                  </>
-                );
-              } else {
-                rendered = (
-                  <>
-                    {rendered}
-                    {match[0]}
-                  </>
-                );
-              }
+          let match: RegExpExecArray | null;
+          let rendered = <></>;
+          while ((match = /^(?:[^`]+|`([^`]+)`)/.exec(doc))) {
+            doc = doc.slice(match[0].length);
+            if (match[1]) {
+              rendered = (
+                <>
+                  {rendered}
+                  <span className="fst-mono fst-italic">{match[1]}</span>
+                </>
+              );
+            } else {
+              rendered = (
+                <>
+                  {rendered}
+                  {match[0]}
+                </>
+              );
             }
+          }
 
-            return rendered;
-          })()}
-        </div>
-      </>
-    ) : undefined;
+          return rendered;
+        })()}
+      </div>
+    </>
+  ) : undefined;
 
   let typecheckingError = typechecker.errors.for(indexPath);
   if (!typecheckingError && expr?.kind === "call") {
@@ -383,6 +401,14 @@ export default function Block({
 
   const validDraggedOver =
     isOver && (data.type !== "type" || (activeDrag?.node.kind === "type" && data.type === "type"));
+
+  const isVariadicCall =
+    data.type === "h" &&
+    expr &&
+    expr.kind === "call" &&
+    (typeof type !== "string" && calledType
+      ? expr.args.length < functionMaxArgCount(calledType)
+      : true);
 
   return (
     <>
@@ -505,10 +531,7 @@ export default function Block({
                 indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
                 isCopySource={isCopySource}
               />
-            ) : data.type === "h" &&
-              expr &&
-              expr.kind === "call" &&
-              expr.args.length < (data.binding?.attributes?.maxArgCount ?? Infinity) ? (
+            ) : isVariadicCall ? (
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
@@ -522,21 +545,6 @@ export default function Block({
       </ContextMenuTrigger>
     </>
   );
-
-  function contextHelpSubjectFromData() {
-    switch (data.type) {
-      case "hat":
-      case "v":
-      case "h":
-      case "ident":
-      case "name-binding":
-        return data.binding;
-      case "number":
-        return data.value;
-      case "bool":
-        return data.value;
-    }
-  }
 
   function renderData() {
     switch (data.type) {

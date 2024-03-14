@@ -22,6 +22,7 @@ import { Environment, extendEnv } from "../library/environments";
 import {
   Type,
   TypeVarSlot,
+  functionMinArgCount,
   isForallType,
   isTypeNameBinding,
   isTypeNameHole,
@@ -41,7 +42,7 @@ export class Renderer {
   onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
 
   constructor(
-    private environment: Environment,
+    private environment: Environment<unknown>,
     private typechecker: Typechecker,
     options: {
       forDragOverlay?: boolean | Over;
@@ -144,7 +145,7 @@ export class Renderer {
   #renderVarSlot(
     varSlot: VarSlot,
     index: number,
-    { environment, phantom }: { environment?: Environment; phantom?: boolean } = {}
+    { environment, phantom }: { environment?: Environment<unknown>; phantom?: boolean } = {}
   ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
@@ -167,7 +168,10 @@ export class Renderer {
   #renderSubexpr(
     subexpr: Expr,
     index: number,
-    { isCopySource, environment }: { isCopySource?: boolean; environment?: Environment } = {}
+    {
+      isCopySource,
+      environment,
+    }: { isCopySource?: boolean; environment?: Environment<unknown> } = {}
   ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
@@ -348,10 +352,8 @@ export class Renderer {
     let { called, args } = expr;
 
     if (called.kind === "var") {
-      const calledBinding = this.environment[called.id];
-      const calledAttributes = calledBinding?.attributes;
-
-      const minArgCount = calledAttributes?.minArgCount ?? 0;
+      const calledType = this.typechecker.inferType(called);
+      const minArgCount = functionMinArgCount(calledType) ?? 0;
 
       // Add holes where arguments are required
       while (args.length < minArgCount) {
@@ -468,9 +470,6 @@ export class Renderer {
 
   #renderLambda(expr: Lambda): JSX.Element {
     const newEnvironment = this.#extendedEnvironment(expr.params);
-
-    // Remove holes
-    expr.params = expr.params.filter((param) => !isHole(param));
 
     const heading = (
       <>
