@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/sparkground/static/css/main.5b848dc3.css",
-    "main.js": "/sparkground/static/js/main.84a52114.js",
+    "main.css": "/sparkground/static/css/main.f61a425d.css",
+    "main.js": "/sparkground/static/js/main.8f32849f.js",
     "index.html": "/sparkground/index.html",
-    "main.5b848dc3.css.map": "/sparkground/static/css/main.5b848dc3.css.map",
-    "main.84a52114.js.map": "/sparkground/static/js/main.84a52114.js.map"
+    "main.f61a425d.css.map": "/sparkground/static/css/main.f61a425d.css.map",
+    "main.8f32849f.js.map": "/sparkground/static/js/main.8f32849f.js.map"
   },
   "entrypoints": [
-    "static/css/main.5b848dc3.css",
-    "static/js/main.84a52114.js"
+    "static/css/main.f61a425d.css",
+    "static/js/main.8f32849f.js"
   ]
 }
