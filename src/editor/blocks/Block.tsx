@@ -99,6 +99,7 @@ type TypeNameBinding = {
 };
 type NameHole = {
   type: "name-hole";
+  phantom?: boolean;
 };
 type TypeData = {
   type: "type";
@@ -475,7 +476,9 @@ export default function Block({
                 forDragOverlay ? "block-dragging" : validDraggedOver ? "block-dragged-over" : ""
               } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
                 !!typecheckingError ? "block-error" : ""
-              } ${identifierTag ? `block-identifier-${identifierTag}` : ""}`}
+              } ${identifierTag ? `block-identifier-${identifierTag}` : ""} ${
+                data.type === "name-hole" && data.phantom ? "block-name-hole-phantom" : ""
+              }`}
               onMouseOver={(event) => {
                 if ((event.target as Element).closest(".block") === divRef.current) {
                   setTooltipVisible(true);

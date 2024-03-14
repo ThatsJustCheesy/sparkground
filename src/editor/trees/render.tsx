@@ -144,7 +144,7 @@ export class Renderer {
   #renderVarSlot(
     varSlot: VarSlot,
     index: number,
-    { environment }: { environment?: Environment } = {}
+    { environment, phantom }: { environment?: Environment; phantom?: boolean } = {}
   ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
@@ -155,7 +155,7 @@ export class Renderer {
     this.environment = environment ?? this.environment;
 
     const rendered = isHole(varSlot)
-      ? this.#block({ type: "name-hole" })
+      ? this.#block({ type: "name-hole", phantom })
       : this.#renderNameBinding(varSlot);
 
     this.indexPath = parentIndexPath;
@@ -469,6 +469,9 @@ export class Renderer {
   #renderLambda(expr: Lambda): JSX.Element {
     const newEnvironment = this.#extendedEnvironment(expr.params);
 
+    // Remove holes
+    expr.params = expr.params.filter((param) => !isHole(param));
+
     const heading = (
       <>
         {expr.params.map((param, index) =>
@@ -476,9 +479,18 @@ export class Renderer {
             environment: newEnvironment,
           })
         )}
+        {
+          // Phantom "+" button (name hole) at the end
+          !this.isCopySource &&
+            !this.forDragOverlay &&
+            this.#renderVarSlot(hole, expr.params.length, {
+              environment: newEnvironment,
+              phantom: true,
+            })
+        }
       </>
     );
-    const body = this.#renderSubexpr(expr.body, expr.params.length, {
+    const body = this.#renderSubexpr(expr.body, expr.params.length + 1, {
       environment: newEnvironment,
     });
 

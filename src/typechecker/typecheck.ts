@@ -1,5 +1,5 @@
 import { Datum } from "../datum/datum";
-import { TreeIndexPath, extendIndexPath, isHole, rootIndexPath } from "../editor/trees/tree";
+import { TreeIndexPath, extendIndexPath, hole, isHole, rootIndexPath } from "../editor/trees/tree";
 import { Define, Expr, NameBinding } from "../expr/expr";
 import {
   ArityMismatch,
@@ -253,11 +253,14 @@ export class Typechecker {
           this.#inferType(param, newContext, extendIndexPath(indexPath, index));
         });
 
+        // Cache type for phantom "+" button (name hole) at the end of the parameter list
+        this.#inferType(hole, newContext, extendIndexPath(indexPath, expr.params.length));
+
         // Infer type of lambda body
         const bodyType = this.#inferType(
           expr.body,
           newContext,
-          extendIndexPath(indexPath, expr.params.length)
+          extendIndexPath(indexPath, expr.params.length + 1)
         );
 
         return {

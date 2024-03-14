@@ -58,7 +58,7 @@ export function children(node: Expr): (Expr | undefined)[] {
     case "letrec":
       return [...node.bindings.flat(1), node.body];
     case "lambda":
-      return [...node.params, node.body];
+      return [...node.params, hole, node.body];
     case "sequence":
       return node.exprs;
     case "if":
@@ -121,8 +121,8 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       if (index === 2 * node.bindings.length) node.body = newChild;
       break;
     case "lambda":
-      if (index < node.params.length) node.params[index] = asVarSlot(newChild);
-      if (index === node.params.length) node.body = newChild;
+      if (index <= node.params.length) node.params[index] = asVarSlot(newChild);
+      if (index === node.params.length + 1) node.body = newChild;
       break;
     case "sequence":
       node.exprs[index] = newChild;

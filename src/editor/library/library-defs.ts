@@ -13,7 +13,6 @@ export const LibraryCategories: LibraryCategory[] = [
     entries: [
       { kind: "define", name: hole, value: hole },
       { kind: "lambda", params: [], body: { kind: "sequence", exprs: [hole] } },
-      { kind: "lambda", params: [hole], body: { kind: "sequence", exprs: [hole] } },
       { kind: "let", bindings: [[hole, hole]], body: hole },
       { kind: "letrec", bindings: [[hole, hole]], body: hole },
       { kind: "Symbol", value: "symbol" },
