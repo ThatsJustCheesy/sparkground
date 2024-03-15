@@ -6,6 +6,8 @@ import { TreeIndexPath, extendIndexPath } from "../trees/tree";
 import { NameBinding, VarSlot } from "../../expr/expr";
 import { Parser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
+import { DynamicTypeAny } from "../../evaluator/dynamic-type";
+import { datumEqual } from "../../datum/equality";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -904,7 +906,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "head" }, { name: "tail" }],
+        signature: [{ name: "first" }, { name: "rest", type: "List" }],
         body: (args): ListValue => {
           const [head, tail] = args as [Value, Value];
           return {
@@ -916,13 +918,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Constructs a pair with `head` as the head and `tail` as the tail. If `tail` is a list, the resulting pair is a list.",
+      doc: "Constructs a new list with `first` as the first element and `rest` as the remaining elements.",
       typeAnnotation: {
         tag: "Function",
         of: [
-          { tag: "Any" },
-          { tag: "List", of: [{ tag: "Any" }] },
-          { tag: "List", of: [{ tag: "Any" }] },
+          { var: "Element" },
+          { tag: "List", of: [{ var: "Element" }] },
+          { tag: "List", of: [{ var: "Element" }] },
         ],
       },
     },
@@ -984,9 +986,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "lists", type: "List" }],
+        signature: [{ name: "list", type: "List" }],
         body: (args): ListValue => {
-          throw "TODO";
+          const [list] = args as [ListValue];
+
+          const vec = listValueAsVector(list);
+          if (!vec) {
+            throw "argument to 'reverse' is an improper list";
+          }
+
+          return { kind: "List", heads: [...vec].reverse() };
         },
       },
     },
@@ -1006,16 +1015,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "pair", type: "List" }],
+        signature: [{ name: "list", type: "List" }],
         body: (args): Value => {
-          const [pair] = args as [ListDatum];
+          const [list] = args as [ListDatum];
           // TODO: Length check
-          return pair.heads[0]!;
+          return list.heads[0]!;
         },
       },
     },
     attributes: {
-      doc: "Returns the first element of `pair`. (If `pair` is a list, this is the head.)",
+      doc: "Returns the first element of `list`.",
       typeAnnotation: {
         tag: "Function",
         of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }],
@@ -1027,19 +1036,19 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     cell: {
       value: {
         kind: "fn",
-        signature: [{ name: "pair", type: "List" }],
+        signature: [{ name: "list", type: "List" }],
         body: (args): Value => {
-          const [pair] = args as [ListDatum];
-          if (pair.heads.length > 1) {
-            return { kind: "List", heads: [...pair.heads.slice(1)], tail: pair.tail };
+          const [list] = args as [ListDatum];
+          if (list.heads.length > 1) {
+            return { kind: "List", heads: [...list.heads.slice(1)], tail: list.tail };
           } else {
-            return pair.tail ?? { kind: "List", heads: [] };
+            return list.tail ?? { kind: "List", heads: [] };
           }
         },
       },
     },
     attributes: {
-      doc: "Returns the second element of `pair`. (If `pair` is a list, this is the tail.)",
+      doc: "Returns a copy of `list` with the first element removed.",
       typeAnnotation: {
         tag: "Function",
         of: [
@@ -1062,7 +1071,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Returns whether `obj` is the empty list.",
+      doc: "Determines whether `obj` is the empty list.",
       typeAnnotation: {
         tag: "Function",
         of: [
@@ -1095,6 +1104,93 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       typeAnnotation: {
         tag: "Function",
         of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
+      },
+    },
+  },
+  {
+    name: "length",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "list", type: "List" }],
+        body: (args): Value => {
+          const [list] = args as [ListValue];
+
+          const vector = listValueAsVector(list);
+          if (vector === undefined) {
+            throw "argument passed to 'length' is an improper list";
+          }
+
+          return { kind: "Number", value: vector.length };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the number of elements in `list`.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
+      },
+    },
+  },
+  {
+    name: "index-of",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "list", type: "List" },
+          { name: "item", type: DynamicTypeAny },
+        ],
+        body: (args): Value => {
+          const [list, item] = args as [ListValue, Value];
+
+          const vector = listValueAsVector(list);
+          if (vector === undefined) {
+            throw "argument passed to 'index-of' is an improper list";
+          }
+
+          return {
+            kind: "Number",
+            value: vector.findIndex((listItem) => datumEqual(listItem, item)),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the first index of `item` in `list`, or -1 if there is no such index.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }, { tag: "Integer" }],
+      },
+    },
+  },
+  {
+    name: "contains?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "list", type: "List" },
+          { name: "item", type: DynamicTypeAny },
+        ],
+        body: (args): Value => {
+          const [list, item] = args as [ListValue, Value];
+
+          const vector = listValueAsVector(list);
+          if (vector === undefined) {
+            throw "argument passed to 'contains?' is an improper list";
+          }
+
+          return { kind: "Boolean", value: vector.some((listItem) => datumEqual(listItem, item)) };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `item` is in `list`.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }, { tag: "Boolean" }],
       },
     },
   },
