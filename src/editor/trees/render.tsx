@@ -235,12 +235,13 @@ export class Renderer {
   #renderType(type: Type): JSX.Element {
     if (isTypeVar(type)) {
       return this.#block({
-        type: "type",
+        type: "type-var",
         id: type.var,
       });
     } else if (isTypeNameBinding(type)) {
+      // Rendered standalone, this is a *drag overlay* for a type name binding
       return this.#block({
-        type: "type",
+        type: "type-var",
         id: type.id,
       });
     } else if (isTypeNameHole(type)) {

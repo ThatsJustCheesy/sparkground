@@ -219,6 +219,7 @@
 .block-name-binding,
 .block-type-name-binding,
 .block-type,
+.block-type-var,
 .block-symbol,
 .block-string,
 .block-bool,
@@ -242,6 +243,7 @@
 }
 
 .block-type,
+.block-type-var,
 .block-type-name-binding {
   border-radius: 0.45em;
   font-size: 0.85em;
@@ -249,6 +251,10 @@
 
 .block-type {
   background: #cdceff;
+}
+
+.block-type-var {
+  background: #ffde58;
 }
 
 .block-type-name-binding {

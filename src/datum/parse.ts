@@ -122,8 +122,6 @@ type Token =
   | { symbol: string }
   | Comment;
 
-const constantTokens: (Token & string)[] = ["(", ")", "#t", "#f", "."];
-
 function tokenize(source: string): Token[] {
   let tokens: Token[] = [];
 
@@ -141,12 +139,20 @@ function tokenize(source: string): Token[] {
       continue;
     }
 
-    for (const token of constantTokens) {
+    for (const token of ["(", ")", "."] satisfies Token[]) {
       if (source.startsWith(token)) {
         source = source.slice(token.length);
         tokens.push(token);
         continue primary;
       }
+    }
+
+    const boolMatch = source.match(/^(#[tf])(?![a-zA-Z!$%&*\/:<=>?^_~#0-9+\-\.@])/);
+    if (boolMatch) {
+      const token = boolMatch[1] as Token & string;
+      source = source.slice(token.length);
+      tokens.push(token);
+      continue primary;
     }
 
     if (source.startsWith('"')) {
@@ -185,7 +191,7 @@ function tokenize(source: string): Token[] {
     }
 
     match = source.match(
-      /^·|[a-zA-Z!$%&*\/:<=>?^_~][a-zA-Z!$%&*\/:<=>?^_~0-9+\-\.@]*|\+|\-|\.\.\./
+      /^·|[a-zA-Z!$%&*\/:<=>?^_~#][a-zA-Z!$%&*\/:<=>?^_~#0-9+\-\.@]*|\+|\-|\.\.\./
     );
     if (match) {
       const [symbol] = match;

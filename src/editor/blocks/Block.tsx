@@ -6,8 +6,8 @@ import { TreeIndexPath, nodeAtIndexPath, extendIndexPath } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
-import { Type, functionMaxArgCount, functionParamTypes, hasTag } from "../../typechecker/type";
-import { serializeType } from "../../typechecker/serialize";
+import { Type, functionMaxArgCount } from "../../typechecker/type";
+import { prettyPrintType } from "../../typechecker/serialize";
 import { describeInferenceError } from "../../typechecker/errors";
 import {
   ActiveDragContext,
@@ -46,6 +46,7 @@ export type BlockData =
   | NameBinding
   | NameHole
   | TypeData
+  | TypeVarData
   | TypeNameBinding
   | TypeNameHole
   | Symbol
@@ -103,6 +104,10 @@ type NameHole = {
 };
 type TypeData = {
   type: "type";
+  id: string;
+};
+type TypeVarData = {
+  type: "type-var";
   id: string;
 };
 type TypeNameHole = {
@@ -339,18 +344,23 @@ export default function Block({
         <b>Type Error:</b> <i>{describeInferenceError(typecheckingError)}</i>{" "}
       </span>
     ),
-    data.type !== "type" && data.type !== "type-name-binding" && data.type !== "type-name-hole" && (
-      <>
-        <b>Type:</b>{" "}
-        {typeof type === "string" ? (
-          <span className="text-warning">
-            Error: <i>{type}</i>{" "}
-          </span>
-        ) : (
-          serializeType(type)
-        )}
-      </>
-    ),
+    data.type !== "type" &&
+      data.type !== "type-var" &&
+      data.type !== "type-name-binding" &&
+      data.type !== "type-name-hole" && (
+        <>
+          <b>Type:</b>
+          <div className="mt-1 ms-2">
+            {typeof type === "string" ? (
+              <span className="text-warning">
+                Error: <i>{type}</i>{" "}
+              </span>
+            ) : (
+              <span className="fst-mono">{prettyPrintType(calledType ? calledType : type)}</span>
+            )}
+          </div>
+        </>
+      ),
 
     contextHelp && (
       <>
@@ -399,8 +409,8 @@ export default function Block({
     return "block-menu" + evaluable;
   })();
 
-  const validDraggedOver =
-    isOver && (data.type !== "type" || (activeDrag?.node.kind === "type" && data.type === "type"));
+  const isTypeBlock = (data: BlockData) => data.type === "type" || data.type === "type-var";
+  const validDraggedOver = isOver && (!isTypeBlock(data) || activeDrag?.node.kind === "type");
 
   const isVariadicCall =
     data.type === "h" &&
@@ -623,7 +633,8 @@ export default function Block({
 
       case "name-binding":
       case "type-name-binding":
-      case "type": {
+      case "type":
+      case "type-var": {
         const { id } = data;
 
         return (

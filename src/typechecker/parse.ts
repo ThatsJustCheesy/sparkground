@@ -1,7 +1,6 @@
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
-import { hole } from "../editor/trees/tree";
-import { ForallType, Type, TypeVar, TypeVarSlot, isTypeVar } from "./type";
+import { ForallType, Type, TypeVarSlot } from "./type";
 
 export class Parser {
   static parseToType(source: string): Type {
@@ -11,7 +10,10 @@ export class Parser {
   parseType(datum: FlattenedDatum): Type {
     switch (datum.kind) {
       case "Symbol":
-        return { tag: datum.value };
+        return datum.value.startsWith("#") ? { var: datum.value.slice(1) } : { tag: datum.value };
+
+      case "Boolean":
+        return { var: datum.value ? "t" : "f" };
 
       case "List":
         const tagDatum = datum.heads[0];
@@ -55,10 +57,15 @@ export class Parser {
   }
 
   parseTypeVarSlot(datum: FlattenedDatum): TypeVarSlot {
+    if (datum.kind === "Boolean") return { kind: "type-name-binding", id: datum.value ? "t" : "f" };
+
     if (datum.kind !== "Symbol") throw "expected identifier";
 
     if (datum.value === "·") return { kind: "type-name-hole" };
-    return { kind: "type-name-binding", id: datum.value };
+    return {
+      kind: "type-name-binding",
+      id: datum.value.startsWith("#") ? datum.value.slice(1) : datum.value,
+    };
   }
 
   private requireLength(list: FlattenedListDatum, length: number) {

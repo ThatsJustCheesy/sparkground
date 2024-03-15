@@ -63,7 +63,6 @@ export function functionMinArgCount(type: Type): number {
 }
 
 export function functionMaxArgCount(type: Type): number {
-  console.log("max arg count", type);
   if (hasTag(type, "Function")) {
     return (type.of?.length ?? 1) - 1;
   } else if (hasTag(type, "Function*")) {
