@@ -31,7 +31,7 @@ import {
   replaceExpr,
 } from "./trees/mutate";
 import Library from "./library/Library";
-import { Tree, bringTreeToFront } from "./trees/trees";
+import { PageID, Tree, bringTreeToFront, globalMeta } from "./trees/trees";
 import CodeEditorModal from "./CodeEditorModal";
 import { Define, Expr, Var } from "../expr/expr";
 import { Parser } from "../expr/parse";
@@ -47,9 +47,16 @@ import Split from "react-split";
 import { Typechecker } from "../typechecker/typecheck";
 import ValueEditorModal from "./ValueEditorModal";
 import { OutputArea } from "./OutputArea";
+import Nav from "react-bootstrap/Nav";
+import Tab from "react-bootstrap/Tab";
+import { groupBy, keyBy } from "lodash";
+import { ProjectMeta } from "../project-meta";
+import Tippy from "@tippyjs/react";
+import { ContextMenuTrigger } from "rctx-contextmenu";
 
 export type Props = {
   trees: Tree[];
+  meta: ProjectMeta;
 
   onBlockContextMenu: (indexPath: TreeIndexPath) => void;
 
@@ -115,6 +122,7 @@ let isAltPressed = false;
 
 export default function Editor({
   trees,
+  meta,
   onBlockContextMenu,
   rerender,
   codeEditorSubject,
@@ -163,6 +171,32 @@ export default function Editor({
         </ActiveDragContext.Provider>
       </OnContextMenuContext.Provider>
     );
+  }
+
+  const [activePageID, setActivePageID] = useState<PageID>();
+
+  useEffect(() => {
+    globalMeta.currentPageID = activePageID;
+  }, [activePageID]);
+
+  const pagesByID = keyBy(meta.pages ?? [], ({ id }) => id);
+  const treesByPageID = groupBy(trees, ({ page }) => page);
+
+  const pageIDs = [
+    ...new Set([...Object.keys(pagesByID), ...Object.keys(treesByPageID)].map(Number)).values(),
+  ].sort();
+
+  if (
+    activePageID === undefined ||
+    (activePageID !== undefined && !pageIDs.includes(activePageID))
+  ) {
+    const candidate =
+      globalMeta.currentPageID !== undefined && pageIDs.includes(globalMeta.currentPageID)
+        ? globalMeta.currentPageID
+        : pageIDs.at(-1);
+    if (candidate !== undefined || activePageID !== undefined) {
+      setActivePageID(candidate);
+    }
   }
 
   return (
@@ -218,39 +252,128 @@ export default function Editor({
         >
           <OutputArea></OutputArea>
 
-          {provideEditorContext(
-            <>
-              <div className="blocks" ref={blocksArea}>
-                <div
-                  style={{
-                    width:
-                      Math.max(...trees.map((tree) => tree.location.x)) +
-                      document.documentElement.clientWidth / 2,
-                    height:
-                      Math.max(...trees.map((tree) => tree.location.y)) +
-                      document.documentElement.clientHeight / 2,
+          <div className="blocks">
+            <Tab.Container activeKey={activePageID}>
+              <Tab.Content className="blocks-page-tabcontent">
+                <ContextMenuTrigger id="editor-background-menu">
+                  {pageIDs.map((pageID) => (
+                    <Tab.Pane
+                      key={pageID}
+                      eventKey={pageID}
+                      className="blocks-page"
+                      ref={blocksArea}
+                      transition={false}
+                      unmountOnExit
+                    >
+                      {provideEditorContext(
+                        <>
+                          <div
+                            style={{
+                              width:
+                                Math.max(...trees.map((tree) => tree.location.x)) +
+                                document.documentElement.clientWidth / 2,
+                              height:
+                                Math.max(...trees.map((tree) => tree.location.y)) +
+                                document.documentElement.clientHeight / 2,
+                            }}
+                          />
+                          {treesByPageID[pageID]?.map((tree) => (
+                            <div
+                              key={tree.id}
+                              className="block-pos-container"
+                              style={{
+                                position: "absolute",
+                                width: "fit-content",
+                                top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
+                                left: `calc(max(40px, ${tree.location.x}px))`,
+                                zIndex: tree.zIndex,
+                              }}
+                            >
+                              {new Renderer(InitialEnvironment, typechecker, {
+                                onEditValue,
+                              }).render(rootIndexPath(tree))}
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </Tab.Pane>
+                  ))}
+                </ContextMenuTrigger>
+              </Tab.Content>
+
+              <Nav
+                activeKey={activePageID}
+                onSelect={(key) => key && setActivePageID(Number(key))}
+                variant="underline"
+                className="blocks-page-tabs mt-1 mx-4 mb-2"
+              >
+                {pageIDs.map((pageID) => {
+                  const exprCount = treesByPageID[pageID]?.length ?? 0;
+                  const defineCount =
+                    treesByPageID[pageID]?.filter((tree) => tree.root.kind === "define")?.length ??
+                    0;
+
+                  return (
+                    <Tippy
+                      content={
+                        <small className="d-flex flex-column mb-1" style={{ gap: "0.5em" }}>
+                          <div>
+                            {exprCount} {exprCount === 1 ? "expression" : "expressions"} (
+                            {defineCount} {defineCount === 1 ? "definition" : "definitions"})
+                          </div>
+                          <div>Double-click to rename this component</div>
+                        </small>
+                      }
+                      className="text-bg-dark"
+                      arrow={false}
+                      offset={[0, 0]}
+                      placement="top-start"
+                      zIndex={99999 + 2}
+                    >
+                      <Nav.Item key={pageID}>
+                        <Nav.Link
+                          eventKey={pageID}
+                          onDoubleClick={() => {
+                            const newName = prompt("Enter component name:");
+                            if (newName === null) return;
+
+                            const page = pagesByID[pageID];
+                            if (page) page.name = newName;
+                            else {
+                              meta.pages ??= [];
+                              meta.pages.push({ id: pageID, name: newName });
+                            }
+
+                            rerender();
+                          }}
+                        >
+                          {pagesByID[pageID]?.name ?? `Component ${pageID}`}
+                        </Nav.Link>
+                      </Nav.Item>
+                    </Tippy>
+                  );
+                })}
+
+                <Nav.Link
+                  className="px-2"
+                  onClick={() => {
+                    const name = prompt("Enter component name:");
+                    if (name === null) return;
+
+                    meta.pages ??= [];
+                    meta.pages.push({
+                      id: Math.max(...meta.pages.map(({ id }) => id)) + 1,
+                      name,
+                    });
+
+                    rerender();
                   }}
-                />
-                {trees.map((tree) => (
-                  <div
-                    key={tree.id}
-                    className="block-pos-container"
-                    style={{
-                      position: "absolute",
-                      width: "fit-content",
-                      top: `calc(max(20px, ${tree.location.y}px - var(--menu-bar-height)))`,
-                      left: `calc(max(40px, ${tree.location.x}px))`,
-                      zIndex: tree.zIndex,
-                    }}
-                  >
-                    {new Renderer(InitialEnvironment, typechecker, {
-                      onEditValue,
-                    }).render(rootIndexPath(tree))}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+                >
+                  +
+                </Nav.Link>
+              </Nav>
+            </Tab.Container>
+          </div>
         </Split>
 
         <Library />

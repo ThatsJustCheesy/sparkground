@@ -1,7 +1,7 @@
 import "./library.css";
 import { Renderer } from "../trees/render";
 import { LibraryCategories, LibraryCategory } from "./library-defs";
-import { Tree } from "../trees/trees";
+import { LibraryPageID, Tree } from "../trees/trees";
 import Nav from "react-bootstrap/Nav";
 import Tab from "react-bootstrap/Tab";
 import { InitialEnvironment } from "./environments";
@@ -33,6 +33,7 @@ function LibraryCategoryTabs({ categories }: { categories?: LibraryCategory[] })
                 id: `library-${categoryIndex}-${index}`,
                 root: expr,
                 location: { x: 0, y: 0 },
+                page: LibraryPageID,
                 zIndex: 1,
               };
 

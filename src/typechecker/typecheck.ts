@@ -11,7 +11,7 @@ import {
   VariadicArityMismatch,
 } from "./errors";
 import { Any, Never, Type, functionParamTypes, functionResultType, hasTag } from "./type";
-import { Tree, newTree, removeTree } from "../editor/trees/trees";
+import { InvisiblePageID, Tree, newTree, removeTree } from "../editor/trees/trees";
 import { isSubtype, typeJoin } from "./subtyping";
 import { Defines } from "../evaluator/defines";
 import { InitialTypeContext } from "../editor/typecheck";
@@ -126,7 +126,7 @@ export class Typechecker {
     let isTempTree = false;
     if (!("root" in tree)) {
       isTempTree = true;
-      tree = newTree(tree, { x: -1000, y: -1000 });
+      tree = newTree(tree, { x: -1000, y: -1000 }, InvisiblePageID);
     }
 
     try {

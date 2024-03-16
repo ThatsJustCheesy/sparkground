@@ -486,7 +486,8 @@ export default function Block({
                         kind: "name-binding",
                         id: newName,
                       },
-                      location
+                      location,
+                      indexPath.tree.page
                     );
                     moveExprInTree({ tree: newBinding, path: [] }, indexPath, location);
                     rerender?.();

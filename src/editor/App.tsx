@@ -1,11 +1,10 @@
 import "./app.css";
 import "tippy.js/dist/tippy.css";
 import { SyntheticEvent, useState } from "react";
-import { Point, newTree, trees } from "./trees/trees";
+import { InvisiblePageID, PageID, Point, globalMeta, newTree, trees } from "./trees/trees";
 import Editor from "./Editor";
 import AppMenuBar from "./ui/menus/AppMenuBar";
 import HelpDialog from "./ui/HelpDialog";
-import { Parser } from "../expr/parse";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
 import { deleteExpr, moveExprInTree, orphanExpr } from "./trees/mutate";
@@ -13,7 +12,6 @@ import {
   TreeIndexPath,
   extendIndexPath,
   hole,
-  isHole,
   nodeAtIndexPath,
   parentIndexPath,
   referencesToBinding,
@@ -27,6 +25,8 @@ import { Defines } from "../evaluator/defines";
 import { Cell } from "./library/environments";
 import { Value } from "../evaluator/value";
 import { Any } from "../typechecker/type";
+import { Parser } from "../expr/parse";
+import { serializeExpr } from "./trees/serialize";
 
 function App() {
   const [renderCounter, setRenderCounter] = useState(0);
@@ -58,6 +58,20 @@ function App() {
       x: clickEvent.clientX + shiftX,
       y: clickEvent.clientY + shiftY,
     };
+  }
+
+  async function pasteInEditor(event: SyntheticEvent) {
+    const source = await navigator.clipboard.readText();
+
+    const exprs = Parser.parseToExprs(source);
+    if (!exprs.length) return;
+
+    console.log(exprs);
+
+    exprs.forEach((expr) => {
+      newTree(expr, { ...mouseCursorLocation(event) }, globalMeta.currentPageID ?? 0);
+    });
+    rerender();
   }
 
   function renameContextMenuSubject(event: SyntheticEvent) {
@@ -93,7 +107,8 @@ function App() {
         kind: "name-binding",
         id: newName,
       },
-      location
+      location,
+      blockContextMenuSubject.tree.page
     );
     moveExprInTree({ tree: newBinding, path: [] }, blockContextMenuSubject, location);
     rerender();
@@ -126,7 +141,11 @@ function App() {
     if (variable.kind !== "var") return;
 
     const location = mouseCursorLocation(event);
-    const call = newTree({ kind: "call", called: hole, args: [] }, location);
+    const call = newTree(
+      { kind: "call", called: hole, args: [] },
+      location,
+      blockContextMenuSubject.tree.page
+    );
     moveExprInTree(blockContextMenuSubject, { tree: call, path: [0] }, location);
     rerender();
   }
@@ -144,6 +163,20 @@ function App() {
 
   function textEditBlockContextMenuSubject(event: SyntheticEvent) {
     setCodeEditorSubject(blockContextMenuSubject);
+  }
+
+  async function cutBlockContextMenuSubject(event: SyntheticEvent) {
+    if (blockContextMenuSubject) {
+      await navigator.clipboard.writeText(serializeExpr(blockContextMenuSubject.tree.root));
+      deleteExpr(blockContextMenuSubject);
+      rerender();
+    }
+  }
+
+  async function copyBlockContextMenuSubject(event: SyntheticEvent) {
+    if (blockContextMenuSubject) {
+      await navigator.clipboard.writeText(serializeExpr(blockContextMenuSubject.tree.root));
+    }
   }
 
   function duplicateBlockContextMenuSubject(event: SyntheticEvent) {
@@ -183,7 +216,7 @@ function App() {
 
     const location = mouseCursorLocation(event);
     // FIXME: builtin function representation
-    newTree(result as Datum, location);
+    newTree(result as Datum, location, blockContextMenuSubject.tree.page);
     rerender();
   }
 
@@ -193,6 +226,9 @@ function App() {
   const commonContextMenu = (
     <>
       <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
+      <MenuItemSeparator />
+      <ContextMenuItem onClick={cutBlockContextMenuSubject}>Cut</ContextMenuItem>
+      <ContextMenuItem onClick={copyBlockContextMenuSubject}>Copy</ContextMenuItem>
       <MenuItemSeparator />
       <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
       <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
@@ -227,6 +263,7 @@ function App() {
 
       <Editor
         trees={trees()}
+        meta={globalMeta}
         onBlockContextMenu={onBlockContextMenu}
         codeEditorSubject={codeEditorSubject}
         setCodeEditorSubject={setCodeEditorSubject}
@@ -249,6 +286,10 @@ function App() {
         }}
       />
       <HelpDialog show={showHelpDialog} onHide={() => setShowHelpDialog(false)} />
+
+      <ContextMenu id="editor-background-menu" hideOnLeave={false}>
+        <ContextMenuItem onClick={pasteInEditor}>Paste</ContextMenuItem>
+      </ContextMenu>
 
       <ContextMenu id="block-menu" hideOnLeave={false}>
         {commonContextMenu}

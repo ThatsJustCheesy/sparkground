@@ -1,9 +1,10 @@
 import { SyntheticEvent } from "react";
 import { Parser } from "../../../expr/parse";
-import { deforest, Point, newTree } from "../../trees/trees";
+import { deforest, Point, newTree, PageID, globalMeta, setGlobalMeta } from "../../trees/trees";
 import MenuBar from "./MenuBar";
 import MenuBarButton from "./MenuBarButton";
 import MenuBarTitle from "./MenuBarTitle";
+import { ProjectMeta, parseProjectMeta } from "../../../project-meta";
 
 export type Props = {
   onShowLoad: (event: SyntheticEvent) => Promise<string | undefined>;
@@ -31,8 +32,11 @@ export default function AppMenuBar({ onShowLoad, onShowSave, onShowHelp, rerende
       </MenuBarButton>
       <MenuBarButton
         action={async (event) => {
-          const source = await onShowLoad(event);
+          let source = await onShowLoad(event);
           if (source === undefined) return;
+
+          let meta: ProjectMeta;
+          [meta, source] = parseProjectMeta(source);
 
           const exprs = Parser.parseToExprsWithAttributes(source);
           if (!exprs.length) return;
@@ -44,9 +48,11 @@ export default function AppMenuBar({ onShowLoad, onShowSave, onShowHelp, rerende
             if (expr.attributes?.location) {
               location = expr.attributes.location;
             }
-            newTree(expr, { ...location });
+            const pageID: PageID = expr.attributes?.page ?? 0;
+            newTree(expr, { ...location }, pageID);
             location.y += 200;
           });
+          setGlobalMeta(meta);
           rerender();
         }}
       >

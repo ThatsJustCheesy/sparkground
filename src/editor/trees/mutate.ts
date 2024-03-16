@@ -8,9 +8,13 @@ import {
   isAtomic,
   isHoleForEditor,
 } from "./tree";
-import { Point, Tree, newTree, removeTree } from "./trees";
+import { PageID, Point, Tree, globalMeta, newTree, removeTree } from "./trees";
 import { Expr } from "../../expr/expr";
 import { TypeVar, isTypeNameBinding } from "../../typechecker/type";
+
+function destinationPageID(proposal: PageID): PageID {
+  return proposal >= 0 ? proposal : globalMeta.currentPageID ?? 0;
+}
 
 export function moveExprInTree(
   { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
@@ -48,7 +52,9 @@ export function moveExprInTree(
   }
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, source);
-  if (!isHoleForEditor(destination)) newTree(destination, displaceTo);
+  if (!isHoleForEditor(destination)) {
+    newTree(destination, displaceTo, destinationPageID(destinationTree.page));
+  }
 }
 
 export function copyExprInTree(
@@ -72,7 +78,9 @@ export function copyExprInTree(
   if (destination === source || destination === destinationTree.root) return;
 
   setChildAtIndex(destinationParent, destinationIndexPath.at(-1)!, cloneExpr(source));
-  if (!isHoleForEditor(destination)) newTree(destination, displaceTo);
+  if (!isHoleForEditor(destination)) {
+    newTree(destination, displaceTo, destinationPageID(destinationTree.page));
+  }
 }
 
 export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: boolean): Tree {
@@ -82,7 +90,7 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
   const parent = nodeForIndexPathInTree(tree, path.slice(0, -1));
 
   if (copy) {
-    return newTree(cloneExpr(expr), placeAt);
+    return newTree(cloneExpr(expr), placeAt, destinationPageID(tree.page));
   }
 
   if (path.length === 0 || isAtomic(parent)) {
@@ -92,7 +100,7 @@ export function orphanExpr({ tree, path }: TreeIndexPath, placeAt: Point, copy: 
   }
 
   setChildAtIndex(parent, path.at(-1)!, hole);
-  return newTree(expr, placeAt);
+  return newTree(expr, placeAt, destinationPageID(tree.page));
 }
 
 export function deleteExpr({ tree, path }: TreeIndexPath) {
