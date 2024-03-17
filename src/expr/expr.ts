@@ -14,6 +14,8 @@ export type Expr = { attributes?: DefinitionAttributes } & (
   | Letrec
   | Lambda
   | Sequence
+  | And
+  | Or
   | If
   | Cond
 );
@@ -74,6 +76,14 @@ export type Sequence = {
   exprs: Expr[];
 };
 
+export type And = {
+  kind: "and";
+  args: Expr[];
+};
+export type Or = {
+  kind: "or";
+  args: Expr[];
+};
 export type If = {
   kind: "if";
   if: Expr;

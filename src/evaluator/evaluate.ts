@@ -136,9 +136,37 @@ export class Evaluator {
         return result;
       }
 
-      case "if":
+      case "and": {
+        if (!expr.args.length) return { kind: "Boolean", value: true };
+
+        let args = [...expr.args];
+        console.log(JSON.stringify(args));
+        let value: Value;
+        do {
+          const arg = args.shift()!;
+          value = this.#eval(arg);
+        } while (args.length && valueAsBool(value));
+
+        return value;
+      }
+
+      case "or": {
+        if (!expr.args.length) return { kind: "Boolean", value: false };
+
+        let args = [...expr.args];
+        let value: Value;
+        do {
+          const arg = args.shift()!;
+          value = this.#eval(arg);
+        } while (args.length && !valueAsBool(value));
+
+        return value;
+      }
+
+      case "if": {
         const condition = this.#eval(expr.if);
         return this.#eval(valueAsBool(condition) ? expr.then : expr.else);
+      }
 
       case "cond":
       case "name-binding":

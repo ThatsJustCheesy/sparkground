@@ -15,6 +15,8 @@ import {
   NameBinding,
   Letrec,
   VarSlot,
+  And,
+  Or,
 } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
@@ -111,6 +113,9 @@ export class Renderer {
       case "sequence":
         return this.#renderSequence(expr);
 
+      case "and":
+      case "or":
+        return this.#renderAndOr(expr);
       case "if":
         return this.#renderIf(expr);
       case "cond":
@@ -514,6 +519,19 @@ export class Renderer {
   #renderSequence(expr: Sequence): JSX.Element {
     // TODO: Real editable sequence block!
     return <>{expr.exprs.map((subexpr, index) => this.#renderSubexpr(subexpr, index))}</>;
+  }
+
+  #renderAndOr(expr: And | Or): JSX.Element {
+    const args = expr.args;
+    // Remove holes from the end
+    while (isHole(args.at(-1))) {
+      args.pop();
+    }
+
+    return this.#block(
+      { type: "h", id: expr.kind },
+      expr.args.map((arg, index) => this.#renderSubexpr(arg, index))
+    );
   }
 
   #renderIf(expr: If): JSX.Element {

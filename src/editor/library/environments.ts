@@ -1,6 +1,13 @@
 import { keyBy, multiply, reduce, repeat, sumBy } from "lodash";
 import { Datum, ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
-import { FnValue, ListValue, Value, getVariadic, listValueAsVector } from "../../evaluator/value";
+import {
+  FnValue,
+  ListValue,
+  Value,
+  getVariadic,
+  listValueAsVector,
+  valueAsBool,
+} from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
 import { TreeIndexPath, extendIndexPath } from "../trees/tree";
 import { NameBinding, VarSlot } from "../../expr/expr";
@@ -308,6 +315,23 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Evaluates `expression`, using the bindings in `environment` for name resolution.",
       typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }] },
+    },
+  },
+  {
+    name: "not",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "value" }],
+        body: (args): Value => {
+          const [value] = args as [Value];
+          return { kind: "Boolean", value: !valueAsBool(value) };
+        },
+      },
+    },
+    attributes: {
+      doc: "Logically negates `value`.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {

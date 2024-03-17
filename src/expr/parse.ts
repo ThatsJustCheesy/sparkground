@@ -12,6 +12,8 @@ import {
   Letrec,
   TypeExpr,
   VarSlot,
+  And,
+  Or,
 } from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
@@ -69,6 +71,8 @@ export class Parser {
           case "let":
           case "letrec":
           case "lambda":
+          case "and":
+          case "or":
           case "if":
           case "cond":
             throw `misplaced keyword '${symbol}'`;
@@ -93,6 +97,10 @@ export class Parser {
               return this.parseLetrec(datum);
             case "lambda":
               return this.parseLambda(datum);
+            case "and":
+              return this.parseAnd(datum);
+            case "or":
+              return this.parseOr(datum);
             case "if":
               return this.parseIf(datum);
             case "cond":
@@ -202,6 +210,24 @@ export class Parser {
   parseSequence(heads: FlattenedDatum[]): Sequence {
     const exprs = heads.map((head) => this.parsePrimary(head));
     return { kind: "sequence", exprs };
+  }
+
+  parseAnd(datum: FlattenedListDatum): And {
+    const args = datum.heads.slice(1).map((arg) => this.parsePrimary(arg));
+
+    return {
+      kind: "and",
+      args,
+    };
+  }
+
+  parseOr(datum: FlattenedListDatum): Or {
+    const args = datum.heads.slice(1).map((arg) => this.parsePrimary(arg));
+
+    return {
+      kind: "or",
+      args,
+    };
   }
 
   parseIf(datum: FlattenedListDatum): If {

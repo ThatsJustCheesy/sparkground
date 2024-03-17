@@ -419,6 +419,7 @@ export default function Block({
     (typeof type !== "string" && calledType
       ? expr.args.length < functionMaxArgCount(calledType)
       : true);
+  const isAndOr = expr?.kind === "and" || expr?.kind === "or";
 
   return (
     <>
@@ -540,6 +541,12 @@ export default function Block({
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
+                isCopySource={isCopySource}
+              />
+            ) : isAndOr ? (
+              <BlockPullTab
+                id={`${id}-pull-tab`}
+                indexPath={extendIndexPath(indexPath, expr.args.length)}
                 isCopySource={isCopySource}
               />
             ) : isVariadicCall ? (

@@ -61,6 +61,9 @@ export function children(node: Expr): (Expr | undefined)[] {
       return [...node.params, hole, node.body];
     case "sequence":
       return node.exprs;
+    case "and":
+    case "or":
+      return [...node.args];
     case "if":
       return [node.if, node.then, node.else];
     case "cond":
@@ -127,6 +130,10 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       break;
     case "sequence":
       node.exprs[index] = newChild;
+      break;
+    case "and":
+    case "or":
+      node.args[index] = newChild;
       break;
     case "if":
       if (index === 0) node.if = newChild;

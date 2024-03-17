@@ -67,6 +67,9 @@ export function serializeExpr(expr: Expr): string {
       );
     case "sequence":
       return expr.exprs.map(serializeExpr).join(" ");
+    case "and":
+    case "or":
+      return "(" + [expr.kind, ...expr.args.map(serializeExpr)].join(" ") + ")";
     case "if":
       return (
         "(if " +
