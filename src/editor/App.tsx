@@ -27,6 +27,7 @@ import { Value } from "../evaluator/value";
 import { Any } from "../typechecker/type";
 import { Parser } from "../expr/parse";
 import { serializeExpr } from "./trees/serialize";
+import { cloneDeep } from "lodash";
 
 function App() {
   const [renderCounter, setRenderCounter] = useState(0);
@@ -212,7 +213,7 @@ function App() {
         })
     );
 
-    const result = evaluator.eval(subject);
+    const result = cloneDeep(evaluator.eval(subject));
 
     const location = mouseCursorLocation(event);
     // FIXME: builtin function representation
