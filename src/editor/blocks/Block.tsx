@@ -356,11 +356,19 @@ export default function Block({
                 Error: <i>{type}</i>{" "}
               </span>
             ) : (
-              <span className="fst-mono">{prettyPrintType(calledType ? calledType : type)}</span>
+              <span className="fst-mono">{prettyPrintType(type)}</span>
             )}
           </div>
         </>
       ),
+    calledType && (
+      <>
+        <b>Function Type:</b>
+        <div className="mt-1 ms-2">
+          <span className="fst-mono">{prettyPrintType(calledType)}</span>
+        </div>
+      </>
+    ),
 
     contextHelp && (
       <>
