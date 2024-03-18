@@ -48,7 +48,7 @@ function App() {
 
   function mouseCursorLocation(event: SyntheticEvent): Point {
     const clickEvent = event.nativeEvent as MouseEvent;
-    const blocksArea = document.querySelector(".blocks");
+    const blocksArea = document.querySelector(".blocks-page");
 
     const shiftX = blocksArea ? blocksArea.scrollLeft : 0;
     const shiftY = blocksArea
@@ -66,8 +66,6 @@ function App() {
 
     const exprs = Parser.parseToExprs(source);
     if (!exprs.length) return;
-
-    console.log(exprs);
 
     exprs.forEach((expr) => {
       newTree(expr, { ...mouseCursorLocation(event) }, globalMeta.currentPageID ?? 0);
