@@ -144,8 +144,9 @@ export type BuiltinType =
   | { tag: "Function"; of: Type[] }
   | { tag: "Promise"; of: [value: Type] };
 
-export const Any = { tag: "Any" };
-export const Never = { tag: "Never" };
+export const Untyped: SimpleConcreteType<"?"> = { tag: "?" };
+export const Any: SimpleConcreteType<"Any"> = { tag: "Any" };
+export const Never: SimpleConcreteType<"Never"> = { tag: "Never" };
 
 export function typeParamMap(t: Type, fn: (t_: Type, index: number) => Type): Type {
   if (isTypeVar(t) || isTypeVarSlot(t)) {

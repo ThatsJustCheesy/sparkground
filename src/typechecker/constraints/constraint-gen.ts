@@ -1,5 +1,14 @@
 import { isEqual } from "lodash";
-import { Any, Never, Type, isForallType, isTypeVar, isTypeVarSlot, typeParamMap } from "../type";
+import {
+  Any,
+  Never,
+  Type,
+  Untyped,
+  isForallType,
+  isTypeVar,
+  isTypeVarSlot,
+  typeParamMap,
+} from "../type";
 import { ConstraintSet, constraintSetMeet, constraintSetsMeet } from "./constraint-set";
 import { isSubtype, typeParamVariance } from "../subtyping";
 
@@ -126,7 +135,8 @@ function eliminate(
         return eliminateOpposite(variables, t);
       case "invariant":
         // Impossible to eliminate; give up
-        return Any;
+        // TODO: Probably should be an error...
+        return Untyped;
     }
   });
 }

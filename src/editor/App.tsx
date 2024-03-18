@@ -24,7 +24,7 @@ import { Datum } from "../datum/datum";
 import { Defines } from "../evaluator/defines";
 import { Cell } from "./library/environments";
 import { Value } from "../evaluator/value";
-import { Any } from "../typechecker/type";
+import { Untyped } from "../typechecker/type";
 import { Parser } from "../expr/parse";
 import { serializeExpr } from "./trees/serialize";
 import { cloneDeep } from "lodash";
@@ -119,7 +119,7 @@ function App() {
     const nameBinding = nodeAtIndexPath(blockContextMenuSubject);
     if (nameBinding.kind !== "name-binding") return;
 
-    nameBinding.type = Any;
+    nameBinding.type = Untyped;
     rerender();
   }
 

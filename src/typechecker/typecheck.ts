@@ -15,6 +15,7 @@ import {
   Never,
   Type,
   TypeNameBinding,
+  Untyped,
   functionParamTypes,
   functionResultType,
   hasTag,
@@ -36,7 +37,7 @@ import { typeSubstitute } from "./type-substitution";
 export type TypeContext = Record<string, Type>;
 
 function bindInContext(context: TypeContext, binding: NameBinding): TypeContext {
-  return bindInContextWithType(context, binding, binding.type ?? Any);
+  return bindInContextWithType(context, binding, binding.type ?? Untyped);
 }
 function bindInContextWithType(
   context: TypeContext,
@@ -171,7 +172,7 @@ export class Typechecker {
     const inferredType = this.#inferenceCache.get(indexPath);
     if (!inferredType) {
       console.error("no type in inference cache for index path :(", indexPath);
-      return Any;
+      return Untyped;
     }
 
     return inferredType;
@@ -189,7 +190,7 @@ export class Typechecker {
       if (typeof error === "object" && "tag" in error) {
         this.errors.add(indexPath, error as InferenceError);
       }
-      inferred = Any;
+      inferred = Untyped;
     }
 
     this.#inferenceCache.set(indexPath, inferred);
@@ -282,7 +283,7 @@ export class Typechecker {
         return {
           tag: "Function",
           of: [
-            ...expr.params.map((param) => (isHole(param) ? undefined : param.type) ?? Any),
+            ...expr.params.map((param) => (isHole(param) ? undefined : param.type) ?? Untyped),
             bodyType,
           ],
         };
@@ -303,12 +304,12 @@ export class Typechecker {
           calledType = calledType.body;
         }
 
-        if (hasTag(calledType, "Any")) {
+        if (hasTag(calledType, Any.tag)) {
           expr.args.forEach((arg, index) => {
             this.#inferType(arg, context, extendIndexPath(indexPath, index + 1));
           });
           return Any;
-        } else if (hasTag(calledType, "Never")) {
+        } else if (hasTag(calledType, Never.tag)) {
           expr.args.forEach((arg, index) => {
             this.#inferType(arg, context, extendIndexPath(indexPath, index + 1));
           });
@@ -473,7 +474,7 @@ export class Typechecker {
       }
 
       case "sequence": {
-        let resultType: Type = Any;
+        let resultType: Type = Untyped;
 
         expr.exprs.forEach((sequencedExpr, index) => {
           resultType = this.#inferType(sequencedExpr, context, extendIndexPath(indexPath, index));
@@ -502,7 +503,7 @@ export class Typechecker {
       case "String":
         return { tag: "String" };
       case "Symbol":
-        if (datum.value === "·") return Any;
+        if (datum.value === "·") return Untyped;
         return { tag: "Symbol" };
       case "List": {
         let elementType: Type = Never;
@@ -578,7 +579,7 @@ export class Typechecker {
   #checkType_(expr: Expr, type: Type, context: TypeContext, indexPath: TreeIndexPath): boolean {
     const exprType = this.#inferType(expr, context, indexPath);
 
-    if (hasTag(type, "Any")) return true;
+    if (hasTag(type, Untyped.tag)) return true;
 
     // TODO: This switch will become useful, I swear
     switch (expr.kind) {

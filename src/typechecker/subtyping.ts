@@ -14,6 +14,7 @@ import {
   isConcreteType,
   ForallType,
   isTypeVarSlot,
+  Untyped,
 } from "./type";
 
 export function typeMeet(t1: Type, t2: Type): Type {
@@ -140,10 +141,12 @@ function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
 
 function isPrimitiveSubtype(tag1: string, tag2: string): boolean {
   return (
-    tag1 === "Any" ||
-    tag2 === "Any" ||
-    tag1 === "Never" ||
-    (tag1 === "Integer" && tag2 === "Number")
+    tag1 === Untyped.tag ||
+    tag2 === Untyped.tag ||
+    tag2 === Any.tag ||
+    tag1 === Never.tag ||
+    (tag1 === "Integer" && tag2 === "Number") ||
+    (tag1 === "Empty" && tag2 === "List")
   );
 }
 

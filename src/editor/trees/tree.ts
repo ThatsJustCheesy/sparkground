@@ -5,9 +5,9 @@ import { Datum } from "../../datum/datum";
 import { serializeExpr } from "./serialize";
 import { Parser as DatumParser } from "../../datum/parse";
 import {
-  Any,
   Type,
   TypeVarSlot,
+  Untyped,
   hasTag,
   isForallType,
   isTypeNameHole,
@@ -175,7 +175,7 @@ function asType(node: Expr): Type {
 
     // Expr
     default:
-      if (isHole(node)) return Any;
+      if (isHole(node)) return Untyped;
 
       // Serialize the expression, then parse it back
       // Bit of a hack, but it should work
@@ -208,7 +208,7 @@ export function isHole(node: Expr | undefined): node is Hole {
 export function isHoleForEditor(node: Expr | undefined): boolean {
   return (
     isHole(node) ||
-    (node?.kind === "type" && (isTypeNameHole(node.type) || hasTag(node.type, "Any")))
+    (node?.kind === "type" && (isTypeNameHole(node.type) || hasTag(node.type, Untyped.tag)))
   );
 }
 

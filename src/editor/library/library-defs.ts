@@ -1,4 +1,5 @@
 import { Expr } from "../../expr/expr";
+import { Any, Never, Untyped } from "../../typechecker/type";
 import { hole } from "../trees/tree";
 
 export type LibraryCategory = {
@@ -178,25 +179,26 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "type", type: { tag: "Number" } },
           { kind: "type", type: { tag: "Integer" } },
           { kind: "type", type: { tag: "String" } },
-          { kind: "type", type: { tag: "List", of: [{ tag: "Any" }] } },
-          { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }] } },
-          { kind: "type", type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }] } },
+          { kind: "type", type: { tag: "List", of: [Untyped] } },
+          { kind: "type", type: { tag: "Function", of: [Untyped] } },
+          { kind: "type", type: { tag: "Function", of: [Untyped, Untyped] } },
           {
             kind: "type",
-            type: { tag: "Function", of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }] },
+            type: { tag: "Function", of: [Untyped, Untyped, Untyped] },
           },
           {
             kind: "type",
             type: {
               tag: "Function",
-              of: [{ tag: "Any" }, { tag: "Any" }, { tag: "Any" }, { tag: "Any" }],
+              of: [Untyped, Untyped, Untyped, Untyped],
             },
           },
           {
             kind: "type",
-            type: { forall: [{ kind: "type-name-hole" }], body: { tag: "Any" } },
+            type: { forall: [{ kind: "type-name-hole" }], body: Untyped },
           },
-          { kind: "type", type: { tag: "Never" } },
+          { kind: "type", type: Any },
+          { kind: "type", type: Never },
         ],
       },
       {

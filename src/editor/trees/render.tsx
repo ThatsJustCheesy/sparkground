@@ -24,6 +24,7 @@ import { Environment, extendEnv } from "../library/environments";
 import {
   Type,
   TypeVarSlot,
+  Untyped,
   functionMinArgCount,
   hasTag,
   isForallType,
@@ -270,7 +271,7 @@ export class Renderer {
       return this.#block(
         {
           type: "type",
-          id: type.tag === "Any" ? "?" : type.tag,
+          id: hasTag(type, Untyped.tag) ? "?" : type.tag,
         },
         typeParams(type).map((typeArg, index) => this.#renderTypeArg(typeArg, index))
       );
