@@ -5,16 +5,26 @@ import {
   isTypeNameHole,
   isTypeVar,
   isTypeVarBoundBy,
-  typeStructureMap,
+  isTypeVarSlot,
+  typeParams,
 } from "./type";
 
 export type TypeSubstitution = Record<string, Type>;
 
 export function typeSubstitute(type: Type, sub: TypeSubstitution): Type {
-  if (isTypeVar(type)) {
+  if (isTypeVarSlot(type)) {
+    return type;
+  } else if (isTypeVar(type)) {
     return sub[type.var] ?? type;
+  } else if (isForallType(type)) {
+    return {
+      forall: type.forall,
+      body: typeSubstitute(type.body, sub),
+    };
   } else {
-    return typeStructureMap(type satisfies Type as Type, (t) => typeSubstitute(t, sub));
+    const tag = type.tag;
+    const params = typeParams(type).map((typeParam) => typeSubstitute(typeParam, sub));
+    return params.length ? { tag, of: params } : { tag };
   }
 }
 

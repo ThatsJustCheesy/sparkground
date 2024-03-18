@@ -50,7 +50,9 @@ export function functionResultType(
 }
 
 export function functionMinArgCount(type: Type): number {
-  if (hasTag(type, "Function")) {
+  if (isForallType(type)) {
+    return functionMinArgCount(type.body);
+  } else if (hasTag(type, "Function")) {
     return (type.of?.length ?? 1) - /* return type */ 1;
   } else if (hasTag(type, "Function*")) {
     return (
@@ -63,7 +65,9 @@ export function functionMinArgCount(type: Type): number {
 }
 
 export function functionMaxArgCount(type: Type): number {
-  if (hasTag(type, "Function")) {
+  if (isForallType(type)) {
+    return functionMaxArgCount(type.body);
+  } else if (hasTag(type, "Function")) {
     return (type.of?.length ?? 1) - 1;
   } else if (hasTag(type, "Function*")) {
     return type.maxArgCount ?? Infinity;
@@ -143,18 +147,17 @@ export type BuiltinType =
 export const Any = { tag: "Any" };
 export const Never = { tag: "Never" };
 
-export function typeStructureMap(t: Type, fn: (t_: Type) => Type): Type {
+export function typeParamMap(t: Type, fn: (t_: Type, index: number) => Type): Type {
   if (isTypeVar(t) || isTypeVarSlot(t)) {
     return t;
   } else if (isForallType(t)) {
     return {
       forall: t.forall,
-      body: typeStructureMap(t.body, fn),
+      body: typeParamMap(t.body, fn),
     };
   } else {
-    return {
-      tag: t.tag,
-      of: typeParams(t).map(fn),
-    };
+    const tag = t.tag;
+    const params = typeParams(t).map(fn);
+    return params.length ? { tag, of: params } : { tag };
   }
 }

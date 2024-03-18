@@ -10,12 +10,28 @@ import {
   UnboundVariable,
   VariadicArityMismatch,
 } from "./errors";
-import { Any, Never, Type, functionParamTypes, functionResultType, hasTag } from "./type";
+import {
+  Any,
+  Never,
+  Type,
+  TypeNameBinding,
+  functionParamTypes,
+  functionResultType,
+  hasTag,
+  isForallType,
+} from "./type";
 import { InvisiblePageID, Tree, newTree, removeTree } from "../editor/trees/trees";
 import { isSubtype, typeJoin } from "./subtyping";
 import { Defines } from "../evaluator/defines";
 import { InitialTypeContext } from "../editor/typecheck";
 import { uniqueId } from "lodash";
+import {
+  ConstraintSet,
+  computeMinimalSubstitution,
+  constraintSetsMeet,
+} from "./constraints/constraint-set";
+import { eliminateUp, generateConstraints } from "./constraints/constraint-gen";
+import { typeSubstitute } from "./type-substitution";
 
 export type TypeContext = Record<string, Type>;
 
@@ -273,7 +289,19 @@ export class Typechecker {
       }
 
       case "call": {
-        const calledType = this.#inferType(expr.called, context, extendIndexPath(indexPath, 0));
+        let calledType = this.#inferType(expr.called, context, extendIndexPath(indexPath, 0));
+
+        let constrainVarNames: string[] = [];
+        while (isForallType(calledType)) {
+          constrainVarNames.push(
+            ...(
+              calledType.forall.filter(
+                ({ kind }) => kind === "type-name-binding"
+              ) as TypeNameBinding[]
+            ).map(({ id }) => id)
+          );
+          calledType = calledType.body;
+        }
 
         if (hasTag(calledType, "Any")) {
           expr.args.forEach((arg, index) => {
@@ -308,16 +336,21 @@ export class Typechecker {
             return resultType;
           }
 
-          expr.args.forEach((arg, index) => {
-            this.#checkType(
-              arg,
-              variadicParamTypes[index] ?? variadicParamTypes.at(-1)!,
-              context,
-              extendIndexPath(indexPath, index + 1)
-            );
-          });
+          const argTypes = expr.args.map((arg, index) =>
+            this.#inferType(arg, context, extendIndexPath(indexPath, index + 1))
+          );
+          const paramTypes = [
+            ...variadicParamTypes,
+            ...Array(argTypes.length - variadicParamTypes.length).fill(variadicParamTypes.at(-1)!),
+          ];
 
-          return resultType;
+          return this.#inferResultType(
+            constrainVarNames,
+            expr.args,
+            argTypes,
+            paramTypes,
+            resultType
+          );
         } else if (hasTag(calledType, "Function")) {
           // Simple function
 
@@ -335,16 +368,17 @@ export class Typechecker {
             return resultType;
           }
 
-          expr.args.forEach((arg, index) => {
-            this.#checkType(
-              arg,
-              paramTypes[index]!,
-              context,
-              extendIndexPath(indexPath, index + 1)
-            );
-          });
+          const argTypes = expr.args.map((arg, index) =>
+            this.#inferType(arg, context, extendIndexPath(indexPath, index + 1))
+          );
 
-          return resultType;
+          return this.#inferResultType(
+            constrainVarNames,
+            expr.args,
+            argTypes,
+            paramTypes,
+            resultType
+          );
         } else {
           throw { tag: "NotCallable", call: expr, calledType } satisfies NotCallable;
         }
@@ -490,6 +524,42 @@ export class Typechecker {
         return { tag: "List", of: [elementType] };
       }
     }
+  }
+
+  #inferResultType(
+    constrainVarNames: string[],
+    args: Expr[],
+    argTypes: Type[],
+    paramTypes: Type[],
+    resultType: Type
+  ) {
+    const constraintSet = constraintSetsMeet(
+      this.#generateConstraints(constrainVarNames, args, argTypes, paramTypes)
+    )!;
+    const substitution = computeMinimalSubstitution(constraintSet, resultType)!;
+    const substitutedResultType = typeSubstitute(resultType, substitution);
+    return eliminateUp(constrainVarNames, substitutedResultType);
+  }
+
+  #generateConstraints(
+    constrainVarNames: string[],
+    args: Expr[],
+    argTypes: Type[],
+    paramTypes: Type[]
+  ) {
+    const constraintSets: (ConstraintSet | undefined)[] = argTypes.map((argType, index) =>
+      generateConstraints([], constrainVarNames, argType, paramTypes[index]!)
+    );
+
+    const invalidIndex = constraintSets.findIndex((set) => set === undefined);
+    if (invalidIndex !== -1) {
+      throw {
+        tag: "InvalidAssignment",
+        expr: args[invalidIndex]!,
+        type: paramTypes[invalidIndex]!,
+      } satisfies InvalidAssignment;
+    }
+    return constraintSets as ConstraintSet[];
   }
 
   /**

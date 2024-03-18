@@ -1,7 +1,7 @@
 import { isEqual } from "lodash";
-import { Any, Never, Type, isForallType, isTypeVar, isTypeVarSlot } from "../type";
+import { Any, Never, Type, isForallType, isTypeVar, isTypeVarSlot, typeParamMap } from "../type";
 import { ConstraintSet, constraintSetMeet, constraintSetsMeet } from "./constraint-set";
-import { typeParamVariance } from "../subtyping";
+import { isSubtype, typeParamVariance } from "../subtyping";
 
 export function generateConstraints(
   // V
@@ -13,26 +13,22 @@ export function generateConstraints(
   // T
   supertype: Type
 ): ConstraintSet | undefined {
-  if (isTypeVarSlot(subtype) || isTypeVarSlot(supertype)) {
-    // TODO: Improve error if necessary
-    throw "invalid constraint generation";
-  }
+  if (isTypeVarSlot(subtype) || isTypeVarSlot(supertype)) return;
 
-  // TODO: Eliminate down/up
-
-  if (isTypeVar(subtype)) {
+  if (isSubtype(subtype, supertype)) {
+    // Nothing to enforce!
+    // CG-Refl falls into here
+    return {};
+  } else if (isTypeVar(subtype)) {
     if (constrainVarNames.includes(subtype.var)) {
       // CG-Upper
       return {
         [subtype.var]: {
           constraint: "subtype",
           lowerBound: Never,
-          upperBound: supertype,
+          upperBound: eliminateDown(varNamesInScope, supertype),
         },
       };
-    } else if (isEqual(subtype, supertype)) {
-      // CG-Refl
-      return {};
     }
   } else if (isTypeVar(supertype)) {
     if (constrainVarNames.includes(supertype.var)) {
@@ -40,7 +36,7 @@ export function generateConstraints(
       return {
         [supertype.var]: {
           constraint: "subtype",
-          lowerBound: subtype,
+          lowerBound: eliminateUp(varNamesInScope, subtype),
           upperBound: Any,
         },
       };
@@ -50,8 +46,7 @@ export function generateConstraints(
       !(isForallType(subtype) && isForallType(supertype)) ||
       !isEqual(subtype.forall, supertype.forall)
     ) {
-      // TODO: Improve error, if this is even necessary
-      throw "invalid constraint generation";
+      return;
     }
 
     // FIXME: Somehow rename type vars if they appear in varNames or constrainVarNames
@@ -98,14 +93,48 @@ export function generateConstraints(
       }
     );
 
-    if (constraintSets.some((set) => set === undefined)) {
-      // TODO: Improve error, if this is even necessary
-      throw "invalid constraint generation";
-    }
+    if (constraintSets.some((set) => set === undefined)) return;
 
     return constraintSetsMeet(constraintSets as ConstraintSet[]);
-  } else {
-    // TODO: Improve error, if this is even necessary
-    throw "invalid constraint generation";
   }
+}
+
+function eliminate(
+  variables: string[],
+  type: Type,
+  promoteToType: Type,
+  eliminateSame: (variables: string[], type: Type) => Type,
+  eliminateOpposite: (variables: string[], type: Type) => Type
+): Type {
+  if (isTypeVarSlot(type)) return type;
+
+  if (isTypeVar(type)) {
+    return variables.includes(type.var) ? promoteToType : type;
+  }
+
+  if (isForallType(type)) {
+    // FIXME: Somehow rename type vars
+    return eliminateSame(variables, type.body);
+  }
+
+  const signs = typeParamVariance(type);
+  return typeParamMap(type, (t, index): Type => {
+    switch (signs[index]!) {
+      case "covariant":
+        return eliminateSame(variables, t);
+      case "contravariant":
+        return eliminateOpposite(variables, t);
+      case "invariant":
+        // Impossible to eliminate; give up
+        return Any;
+    }
+  });
+}
+
+export function eliminateUp(variables: string[], type: Type) {
+  return eliminate(variables, type, Any, eliminateUp, eliminateDown);
+}
+
+export function eliminateDown(variables: string[], type: Type) {
+  return eliminate(variables, type, Never, eliminateDown, eliminateUp);
 }

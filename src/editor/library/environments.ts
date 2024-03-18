@@ -124,12 +124,15 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Calls `function` with the elements of `args` as arguments.",
       typeAnnotation: {
-        tag: "Function",
-        of: [
-          { tag: "Function*", of: [{ tag: "Any" }, { var: "Out" }] },
-          { tag: "List", of: [{ tag: "Any" }] },
-          { var: "Out" },
-        ],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "Function*", of: [{ tag: "Any" }, { var: "Out" }] },
+            { tag: "List", of: [{ tag: "Any" }] },
+            { var: "Out" },
+          ],
+        },
       },
     },
   },
@@ -180,13 +183,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Applies `function` elementwise to the elements of `lists` and returns a list of the results, in order.",
       typeAnnotation: {
-        tag: "Function*",
-        of: [
-          { tag: "Function", of: [{ var: "Element" }, { var: "NewElement" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "List", of: [{ var: "NewElement" }] },
-        ],
-        minArgCount: 1,
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function*",
+          of: [
+            { tag: "Function", of: [{ var: "Element" }, { var: "NewElement" }] },
+            { tag: "List", of: [{ var: "Element" }] },
+            { tag: "List", of: [{ var: "NewElement" }] },
+          ],
+          minArgCount: 1,
+        },
       },
     },
   },
@@ -229,13 +235,16 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Runs `proc` on the elements of `lists`, in order from the first element to the last. Any values that `proc` returns are discarded.",
       typeAnnotation: {
-        tag: "Function*",
-        of: [
-          { tag: "Function", of: [{ var: "Element" }, { tag: "Any" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "Any" },
-        ],
-        minArgCount: 1,
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function*",
+          of: [
+            { tag: "Function", of: [{ var: "Element" }, { tag: "Any" }] },
+            { tag: "List", of: [{ var: "Element" }] },
+            { tag: "Any" },
+          ],
+          minArgCount: 1,
+        },
       },
     },
   },
@@ -253,8 +262,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Continues the delayed computation represented by `promise`.",
       typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "Promise", of: [{ var: "Value" }] }, { var: "Value" }],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [{ tag: "Promise", of: [{ var: "Value" }] }, { var: "Value" }],
+        },
       },
     },
   },
@@ -272,14 +284,20 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: 'Packages the current continuation as an "escape function", and transfers control to `next` with the escape function as its sole argument. Calling the escape function transfers control to the point immediately after `call-with-current-continuation`. This function returns the value passed to the escape function (each time it is called), as well as the value returned by `next` (if it ever returns).',
       typeAnnotation: {
-        tag: "Function",
-        of: [
-          {
-            tag: "Function",
-            of: [{ tag: "Function", of: [{ var: "Result" }, { tag: "Never" }] }, { var: "Result" }],
-          },
-          { var: "Result" },
-        ],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [
+            {
+              tag: "Function",
+              of: [
+                { tag: "Function", of: [{ var: "Result" }, { tag: "Never" }] },
+                { var: "Result" },
+              ],
+            },
+            { var: "Result" },
+          ],
+        },
       },
     },
   },
@@ -945,12 +963,18 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Constructs a new list with `first` as the first element and `rest` as the remaining elements.",
       typeAnnotation: {
-        tag: "Function",
-        of: [
-          { var: "Element" },
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-        ],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          forall: [{ kind: "type-name-binding", id: "Element" }],
+          body: {
+            tag: "Function",
+            of: [
+              { var: "Element" },
+              { tag: "List", of: [{ var: "Element" }] },
+              { tag: "List", of: [{ var: "Element" }] },
+            ],
+          },
+        },
       },
     },
   },
@@ -972,8 +996,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Constructs a list from the given `elements`.",
       typeAnnotation: {
-        tag: "Function*",
-        of: [{ var: "Element" }, { tag: "List", of: [{ var: "Element" }] }],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function*",
+          of: [{ var: "Element" }, { tag: "List", of: [{ var: "Element" }] }],
+        },
       },
     },
   },
@@ -998,11 +1025,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Constructs a list consisting of the given `lists` concatenated together.",
       typeAnnotation: {
-        tag: "Function*",
-        of: [
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-        ],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function*",
+          of: [
+            { tag: "List", of: [{ var: "Element" }] },
+            { tag: "List", of: [{ var: "Element" }] },
+          ],
+        },
       },
     },
   },
@@ -1027,11 +1057,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Constructs a new list consisting of the elements of `list` in reverse order.",
       typeAnnotation: {
-        tag: "Function",
-        of: [
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-        ],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "List", of: [{ var: "Element" }] },
+            { tag: "List", of: [{ var: "Element" }] },
+          ],
+        },
       },
     },
   },
@@ -1051,8 +1084,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Returns the first element of `list`.",
       typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }],
+        },
       },
     },
   },
@@ -1075,11 +1111,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Returns a copy of `list` with the first element removed.",
       typeAnnotation: {
-        tag: "Function",
-        of: [
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-        ],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "List", of: [{ var: "Element" }] },
+            { tag: "List", of: [{ var: "Element" }] },
+          ],
+        },
       },
     },
   },
@@ -1099,10 +1138,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Determines whether `obj` is the empty list.",
       typeAnnotation: {
         tag: "Function",
-        of: [
-          { tag: "List", of: [{ var: "Element" }] },
-          { tag: "List", of: [{ var: "Element" }] },
-        ],
+        of: [{ tag: "Any" }, { tag: "Boolean" }],
       },
     },
   },
@@ -1127,34 +1163,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Returns the number of elements in `list`.",
       typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
-      },
-    },
-  },
-  {
-    name: "length",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [{ name: "list", type: "List" }],
-        body: (args): Value => {
-          const [list] = args as [ListValue];
-
-          const vector = listValueAsVector(list);
-          if (vector === undefined) {
-            throw "argument passed to 'length' is an improper list";
-          }
-
-          return { kind: "Number", value: vector.length };
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
         },
-      },
-    },
-    attributes: {
-      doc: "Returns the number of elements in `list`.",
-      typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }],
       },
     },
   },
@@ -1185,8 +1198,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Returns the first index of `item` in `list`, or -1 if there is no such index.",
       typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }, { tag: "Integer" }],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }, { tag: "Integer" }],
+        },
       },
     },
   },
@@ -1214,8 +1230,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     attributes: {
       doc: "Determines whether `item` is in `list`.",
       typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }, { tag: "Boolean" }],
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [{ tag: "List", of: [{ var: "Element" }] }, { var: "Element" }, { tag: "Boolean" }],
+        },
       },
     },
   },
