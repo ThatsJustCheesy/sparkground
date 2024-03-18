@@ -186,10 +186,7 @@ export default function Editor({
     ...new Set([...Object.keys(pagesByID), ...Object.keys(treesByPageID)].map(Number)).values(),
   ].sort();
 
-  if (
-    activePageID === undefined ||
-    (activePageID !== undefined && !pageIDs.includes(activePageID))
-  ) {
+  useEffect(() => {
     const candidate =
       globalMeta.currentPageID !== undefined && pageIDs.includes(globalMeta.currentPageID)
         ? globalMeta.currentPageID
@@ -197,7 +194,7 @@ export default function Editor({
     if (candidate !== undefined || activePageID !== undefined) {
       setActivePageID(candidate);
     }
-  }
+  }, [meta]);
 
   return (
     <DndContext
