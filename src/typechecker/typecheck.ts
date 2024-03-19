@@ -304,11 +304,11 @@ export class Typechecker {
           calledType = calledType.body;
         }
 
-        if (hasTag(calledType, Any.tag)) {
+        if (hasTag(calledType, Untyped.tag)) {
           expr.args.forEach((arg, index) => {
             this.#inferType(arg, context, extendIndexPath(indexPath, index + 1));
           });
-          return Any;
+          return Untyped;
         } else if (hasTag(calledType, Never.tag)) {
           expr.args.forEach((arg, index) => {
             this.#inferType(arg, context, extendIndexPath(indexPath, index + 1));
