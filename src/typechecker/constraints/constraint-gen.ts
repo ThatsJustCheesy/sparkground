@@ -68,7 +68,10 @@ export function generateConstraints(
       subtype.body,
       supertype.body
     );
-  } else if (subtype.tag === "Never" || supertype.tag === "Any") {
+  } else if (subtype.tag === Untyped.tag || supertype.tag === Untyped.tag) {
+    // "Poisoned" by gradual type information; give up
+    return;
+  } else if (subtype.tag === Never.tag || supertype.tag === Any.tag) {
     // CG-Bot, CG-Top
     return {};
   } else if (subtype.tag === supertype.tag) {
