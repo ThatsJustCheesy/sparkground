@@ -38,7 +38,7 @@ export function prettyPrintType(t: Type): string {
   } else if (isTypeNameHole(t)) {
     return "·";
   } else if (isForallType(t)) {
-    return prettyPrintType(t.body);
+    return "∀" + t.forall.map(prettyPrintType).join(" ") + ". " + prettyPrintType(t.body);
   } else {
     const params = typeParams(t);
 
