@@ -26,8 +26,6 @@ export const LibraryCategories: LibraryCategory[] = [
       { kind: "call", called: { kind: "var", id: "apply" }, args: [] },
       { kind: "call", called: { kind: "var", id: "map" }, args: [] },
       { kind: "call", called: { kind: "var", id: "for-each" }, args: [] },
-      { kind: "call", called: { kind: "var", id: "force" }, args: [] },
-      { kind: "call", called: { kind: "var", id: "call-with-current-continuation" }, args: [] },
       { kind: "call", called: { kind: "var", id: "eval" }, args: [] },
     ],
   },
@@ -53,16 +51,7 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "call", called: { kind: "var", id: "-" }, args: [] },
           { kind: "call", called: { kind: "var", id: "*" }, args: [] },
           { kind: "call", called: { kind: "var", id: "/" }, args: [] },
-        ],
-      },
-      {
-        name: "Integers",
-        entries: [
-          { kind: "call", called: { kind: "var", id: "quotient" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "remainder" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "modulo" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "gcd" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "lcm" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "mod" }, args: [] },
         ],
       },
       {

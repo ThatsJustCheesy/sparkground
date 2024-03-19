@@ -249,59 +249,6 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "force",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [{ name: "promise", type: "Promise" }],
-        body: (args): Value => {
-          throw "TODO";
-        },
-      },
-    },
-    attributes: {
-      doc: "Continues the delayed computation represented by `promise`.",
-      typeAnnotation: {
-        forall: [{ kind: "type-name-binding", id: "Element" }],
-        body: {
-          tag: "Function",
-          of: [{ tag: "Promise", of: [{ var: "Value" }] }, { var: "Value" }],
-        },
-      },
-    },
-  },
-  {
-    name: "call-with-current-continuation",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [{ name: "next", type: "Function" }],
-        body: (args): Value => {
-          throw "TODO";
-        },
-      },
-    },
-    attributes: {
-      doc: 'Packages the current continuation as an "escape function", and transfers control to `next` with the escape function as its sole argument. Calling the escape function transfers control to the point immediately after `call-with-current-continuation`. This function returns the value passed to the escape function (each time it is called), as well as the value returned by `next` (if it ever returns).',
-      typeAnnotation: {
-        forall: [{ kind: "type-name-binding", id: "Element" }],
-        body: {
-          tag: "Function",
-          of: [
-            {
-              tag: "Function",
-              of: [
-                { tag: "Function", of: [{ var: "Result" }, { tag: "Never" }] },
-                { var: "Result" },
-              ],
-            },
-            { var: "Result" },
-          ],
-        },
-      },
-    },
-  },
-  {
     name: "eval",
     cell: {
       value: {
@@ -633,6 +580,133 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
+    name: "mod",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "dividend", type: "Number" },
+          { name: "divisor", type: "Number" },
+        ],
+        body: (args): Value => {
+          const [dividend, divisor] = args as [NumberDatum, NumberDatum];
+          return {
+            kind: "Number",
+            value: dividend.value % divisor.value,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the (positive or negative) remainder of the integer division `dividend / divisor`.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "Integer" }, { tag: "Integer" }, { tag: "Integer" }],
+      },
+      infix: true,
+    },
+  },
+  {
+    name: "abs",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.abs(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the absolute value of `x`, which is `x` without any negative sign.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Number" }] },
+    },
+  },
+  {
+    name: "floor",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.floor(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the floor of `x`, which is the greatest integer that is less than or equal to `x`.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Integer" }] },
+    },
+  },
+  {
+    name: "ceiling",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.ceil(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Computes the ceiling of `x`, which is the least integer that is greater than or equal to `x`.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Integer" }] },
+    },
+  },
+  {
+    name: "round",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.round(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Rounds `x` to the nearest integer, breaking ties by rounding toward positive infinity.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Integer" }] },
+    },
+  },
+  {
+    name: "truncate",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x", type: "Number" }],
+        body: (args): Value => {
+          const [x] = args as [NumberDatum];
+          return {
+            kind: "Number",
+            value: Math.trunc(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the integer part of `x`, discarding any fractional part.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Number" }, { tag: "Integer" }] },
+    },
+  },
+  {
     name: "exp",
     cell: {
       value: {
@@ -942,6 +1016,86 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Returns whether `numbers` are in (non-strictly) increasing order.",
       typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
+    },
+  },
+  {
+    name: "zero?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x" }],
+        body: (args): Value => {
+          const [x] = args as [Value];
+          return {
+            kind: "Boolean",
+            value: x.kind === "Number" && x.value === 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `x` has value 0.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
+    },
+  },
+  {
+    name: "positive?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x" }],
+        body: (args): Value => {
+          const [x] = args as [Value];
+          return {
+            kind: "Boolean",
+            value: x.kind === "Number" && x.value > 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `x` has positive numeric value.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
+    },
+  },
+  {
+    name: "negative?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x" }],
+        body: (args): Value => {
+          const [x] = args as [Value];
+          return {
+            kind: "Boolean",
+            value: x.kind === "Number" && x.value < 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `x` has negative numeric value.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
+    },
+  },
+  {
+    name: "integer?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "x" }],
+        body: (args): Value => {
+          const [x] = args as [Value];
+          return {
+            kind: "Boolean",
+            value: x.kind === "Number" && Math.floor(x.value) === Math.ceil(x.value),
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `x` is an integer; that is, a numeric value without any fractional part.",
+      typeAnnotation: { tag: "Function", of: [{ tag: "Any" }, { tag: "Boolean" }] },
     },
   },
   {
