@@ -1330,7 +1330,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       doc: "Returns the characters in `string` from `start` (inclusive) to `end` (exclusive). If not given, `start` is 0, and `end` is the length of `string`.",
       typeAnnotation: {
         tag: "Function*",
-        of: [{ tag: "String" }, { tag: "Integer" }, { tag: "Integer" }, { tag: "String" }],
+        of: [{ tag: "String" }, { tag: "Integer" }, { tag: "String" }],
         minArgCount: 1,
         maxArgCount: 3,
       },
