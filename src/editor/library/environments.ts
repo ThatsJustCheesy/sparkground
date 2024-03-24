@@ -929,7 +929,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Returns whether `numbers` are all equal to each other.",
+      doc: "Determines whether `numbers` are all equal to each other.",
       typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
@@ -950,7 +950,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Returns whether `numbers` are in strictly decreasing order.",
+      doc: "Determines whether `numbers` are in strictly increasing order.",
       typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
@@ -971,7 +971,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Returns whether `numbers` are in strictly increasing order.",
+      doc: "Determines whether `numbers` are in strictly decreasing order.",
       typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
@@ -992,7 +992,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Returns whether `numbers` are in (non-strictly) decreasing order.",
+      doc: "Determines whether `numbers` are in (non-strictly) increasing order.",
       typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
@@ -1013,7 +1013,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Returns whether `numbers` are in (non-strictly) increasing order.",
+      doc: "Determines whether `numbers` are in (non-strictly) decreasing order.",
       typeAnnotation: { tag: "Function*", of: [{ tag: "Number" }, { tag: "Boolean" }] },
       infix: true,
     },
