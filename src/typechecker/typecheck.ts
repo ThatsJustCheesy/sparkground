@@ -3,7 +3,6 @@ import { TreeIndexPath, extendIndexPath, hole, isHole, rootIndexPath } from "../
 import { Define, Expr, NameBinding } from "../expr/expr";
 import {
   ArityMismatch,
-  CircularDependency,
   InferenceError,
   InvalidAssignment,
   NotCallable,
@@ -215,8 +214,7 @@ export class Typechecker {
 
         const varType = this.#get(expr.id, context);
         if (!varType) throw { tag: "UnboundVariable", v: expr } satisfies UnboundVariable;
-        if (varType === "circular")
-          throw { tag: "CircularDependency", v: expr } satisfies CircularDependency;
+        if (varType === "circular") return Untyped;
 
         // TODO: Old code was return this.#instantiate(varType, env);
         return varType;
