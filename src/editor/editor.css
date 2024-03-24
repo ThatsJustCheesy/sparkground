@@ -207,7 +207,8 @@
 
 .block,
 .block-h-label,
-.block-v-label {
+.block-v-label,
+.block-type-label {
   width: max-content;
 }
 
@@ -262,7 +263,8 @@
 
 .block-type,
 .block-type-var,
-.block-type-name-binding {
+.block-type-name-binding,
+.block-type-label {
   border-radius: 0.45em;
   font-size: 0.85em;
 }
@@ -277,6 +279,16 @@
 
 .block-type-name-binding {
   background: #f8b0ff;
+}
+
+.block-type-label-arrow {
+  font-size: 1.2em;
+
+  position: relative;
+  top: 0.08em;
+
+  margin-left: 0.12em;
+  margin-right: 0.12em;
 }
 
 .block-symbol {

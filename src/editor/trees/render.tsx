@@ -268,12 +268,25 @@ export class Renderer {
         ]
       );
     } else {
+      const renderedArgs = typeParams(type).map((typeArg, index) =>
+        this.#renderTypeArg(typeArg, index)
+      );
+
+      if (hasTag(type, "Function")) {
+        // Infix notation
+        renderedArgs.splice(
+          renderedArgs.length - 1,
+          0,
+          <div className="block-type-label block-type-label-arrow">➜</div>
+        );
+      }
+
       return this.#block(
         {
           type: "type",
-          id: hasTag(type, Untyped.tag) ? "?" : type.tag,
+          id: type.tag,
         },
-        typeParams(type).map((typeArg, index) => this.#renderTypeArg(typeArg, index))
+        renderedArgs
       );
     }
   }

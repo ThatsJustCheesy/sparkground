@@ -647,15 +647,28 @@ export default function Block({
         return `"${value.replace(/["\\]/g, "\\$&")}"`;
       }
 
-      case "name-binding":
-      case "type-name-binding":
-      case "type":
-      case "type-var": {
+      case "name-binding": {
         const { id } = data;
 
         return (
           <>
             {id}
+
+            {children}
+          </>
+        );
+      }
+
+      case "type-name-binding":
+      case "type":
+      case "type-var": {
+        const { id } = data;
+
+        const renderAsInfix = data.type === "type" && id === "Function";
+
+        return (
+          <>
+            {!renderAsInfix && <div className="block-type-label">{id}</div>}
 
             {children}
           </>
