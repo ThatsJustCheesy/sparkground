@@ -55,7 +55,7 @@ export const LibraryCategories: LibraryCategory[] = [
         ],
       },
       {
-        name: "Reals",
+        name: "Advanced",
         entries: [
           { kind: "call", called: { kind: "var", id: "abs" }, args: [] },
           { kind: "call", called: { kind: "var", id: "floor" }, args: [] },
