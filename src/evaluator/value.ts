@@ -1,10 +1,18 @@
-import { BoolDatum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
+import { BoolDatum, Datum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
 import { Environment } from "../editor/library/environments";
 import { Expr } from "../expr/expr";
+import { SparkgroundComponent } from "./components";
 import { DynamicFnSignature } from "./dynamic-type";
 import { Evaluator } from "./evaluate";
 
-export type Value = BoolDatum | NumberDatum | StringDatum | SymbolDatum | ListValue | FnValue;
+export type Value =
+  | BoolDatum
+  | NumberDatum
+  | StringDatum
+  | SymbolDatum
+  | ListValue
+  | FnValue
+  | ComponentValue;
 
 export type ListValue = {
   kind: "List";
@@ -21,6 +29,24 @@ export type FnValue = {
 
 export type BuiltinFn = (args: Value[], evaluator: Evaluator) => Value;
 
+export type ComponentValue = {
+  kind: "component";
+  component: SparkgroundComponent;
+};
+
+export function valueIsDatum(value: Value): value is Datum {
+  switch (value.kind) {
+    case "Boolean":
+    case "Number":
+    case "String":
+    case "Symbol":
+    case "List":
+      return true;
+    default:
+      return false;
+  }
+}
+
 export function valueAsBool(value: Value): boolean {
   switch (value.kind) {
     case "Boolean":
@@ -33,7 +59,7 @@ export function valueAsBool(value: Value): boolean {
       return true;
     case "List":
       return value.heads.length > 0 || value.tail !== undefined;
-    case "fn":
+    default:
       return true;
   }
 }

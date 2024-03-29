@@ -7,6 +7,7 @@ import {
   getVariadic,
   listValueAsVector,
   valueAsBool,
+  valueIsDatum,
 } from "../../evaluator/value";
 import { Type } from "../../typechecker/type";
 import { TreeIndexPath, extendIndexPath } from "../trees/tree";
@@ -256,8 +257,8 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [{ name: "expression" }, { name: "environment" }],
         body: (args, evaluator): Value => {
           const [expression, env] = args as [Value, Value];
-          if (expression.kind === "fn") {
-            throw "expression passed to 'eval' must not be a function value";
+          if (!valueIsDatum(expression)) {
+            throw "expression passed to 'eval' must be serializable (Boolean/Number/String/Symbol/List)";
           }
 
           let expressionDatum: Datum;

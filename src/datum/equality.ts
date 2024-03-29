@@ -24,7 +24,7 @@ export function datumEqual(left: Datum | Value, right: Datum | Value): boolean {
       );
     }
 
-    case "fn":
+    default:
       return left === right;
   }
 }
