@@ -61,6 +61,21 @@ export default function HelpDialog({ show, onHide }: Props) {
               delete, import, and export projects from here.
             </p>
           </Tab>
+          <Tab eventKey="3" title="About">
+            <div className="my-3" />
+
+            <h5>About</h5>
+            <p>
+              Sparkground is a block-based digital playground for learning functional programming.
+            </p>
+
+            <h5>Implementation</h5>
+            <p>
+              This web app is built with TypeScript, React, and many supporting libraries. Source
+              code and documentation is available{" "}
+              <a href="https://github.com/ThatsJustCheesy/sparkground">on GitHub</a>.
+            </p>
+          </Tab>
         </Tabs>
       </Modal.Body>
     </Modal>
