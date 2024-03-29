@@ -17,6 +17,7 @@ import {
   VarSlot,
   And,
   Or,
+  Struct,
 } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
 import { memo } from "react";
@@ -103,6 +104,8 @@ export class Renderer {
       case "call":
         return this.#renderCall(expr);
 
+      case "struct":
+        return this.#renderStruct(expr);
       case "define":
         return this.#renderDefine(expr);
       case "let":
@@ -445,6 +448,27 @@ export class Renderer {
       const renderedCalled = this.#renderSubexpr(called, 0);
       return this.#block({ type: "happly" }, [renderedCalled, ...renderedArgs]);
     }
+  }
+
+  #renderStruct(expr: Struct): JSX.Element {
+    this.environment = this.#extendedEnvironment([expr.name]);
+
+    const heading = this.#renderVarSlot(expr.name, 0);
+    const body = (
+      <>
+        {expr.fields.map((name, index) => this.#renderVarSlot(name, index + 1))}
+        {
+          // Phantom "+" button (name hole) at the end
+          !this.isCopySource &&
+            !this.forDragOverlay &&
+            this.#renderVarSlot(hole, expr.fields.length + 1, {
+              phantom: true,
+            })
+        }
+      </>
+    );
+
+    return this.#block({ type: "hat", id: "structure", heading }, body);
   }
 
   #renderDefine(expr: Define): JSX.Element {

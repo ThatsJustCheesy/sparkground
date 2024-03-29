@@ -1,24 +1,23 @@
 import "./app.css";
 import "tippy.js/dist/tippy.css";
 import { SyntheticEvent, useState } from "react";
-import { InvisiblePageID, PageID, Point, globalMeta, newTree, trees } from "./trees/trees";
+import { Point, globalMeta, newTree, trees } from "./trees/trees";
 import Editor from "./Editor";
 import AppMenuBar from "./ui/menus/AppMenuBar";
 import HelpDialog from "./ui/HelpDialog";
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import MenuItemSeparator from "./ui/menus/MenuItemSeparator";
-import { deleteExpr, moveExprInTree, orphanExpr } from "./trees/mutate";
+import { deleteExpr, moveExprInTree, orphanExpr, replaceExpr } from "./trees/mutate";
 import {
   TreeIndexPath,
   extendIndexPath,
-  hole,
   nodeAtIndexPath,
   parentIndexPath,
   referencesToBinding,
 } from "./trees/tree";
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
-import { Define, NameBinding, Var } from "../expr/expr";
+import { Var } from "../expr/expr";
 import { Evaluator } from "../evaluator/evaluate";
 import { Datum } from "../datum/datum";
 import { Defines } from "../evaluator/defines";
@@ -195,16 +194,7 @@ function App() {
     const defines = new Defines<Cell<Value>>();
     const evaluator = new Evaluator({ defines });
 
-    defines.addAll(
-      trees()
-        .filter((tree) => tree.root.kind === "define" && tree.root.name.kind === "name-binding")
-        .map((tree) => {
-          const define = tree.root as Define;
-          const name = define.name as NameBinding;
-          return [name.id, (): Cell<Value> => ({ value: evaluator.eval(define.value) })];
-        })
-    );
-
+    evaluator.addDefines(trees().map(({ root }) => root));
     const result = cloneDeep(evaluator.eval(subject));
 
     const location = mouseCursorLocation(event);

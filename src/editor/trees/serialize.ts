@@ -40,6 +40,10 @@ export function serializeExpr(expr: Expr): string {
         (expr.args.length ? " " + expr.args.map(serializeExpr).join(" ") : "") +
         ")"
       );
+    case "struct":
+      return (
+        "(struct " + serializeExpr(expr.name) + " " + expr.fields.map(serializeExpr).join(" ") + ")"
+      );
     case "define":
       return "(define " + serializeExpr(expr.name) + " " + serializeExpr(expr.value) + ")";
     case "let":

@@ -1,6 +1,6 @@
 import { Datum } from "../datum/datum";
 import { TreeIndexPath, extendIndexPath, hole, isHole, rootIndexPath } from "../editor/trees/tree";
-import { Define, Expr, NameBinding } from "../expr/expr";
+import { Define, Expr, NameBinding, VarSlot, getIdentifier, getTypeAnnotation } from "../expr/expr";
 import {
   ArityMismatch,
   DuplicateDefinition,
@@ -12,8 +12,8 @@ import {
   VariadicArityMismatch,
 } from "./errors";
 import {
-  Any,
   Never,
+  SimpleConcreteType,
   Type,
   TypeNameBinding,
   Untyped,
@@ -135,7 +135,7 @@ export class Typechecker {
   addDefine(tree: Tree<Define>): void {
     const define = tree.root;
 
-    if (this.#defines.has(tree.root)) {
+    if (this.#defines.has(getIdentifier(tree.root.name))) {
       this.errors.add(rootIndexPath(tree), {
         tag: "DuplicateDefinition",
         define,
@@ -234,32 +234,82 @@ export class Typechecker {
         return varType;
       }
 
-      case "define": {
-        // Cache annotated or inferred type for name binding node, so that the editor can display it.
-        const cacheBindingType = (type: Type) => {
+      case "struct": {
+        // Cache annotated type for name binding node, so that the editor can display it.
+        const cacheBindingType = (name: VarSlot, indexPath: TreeIndexPath, type: Type) => {
           this.#inferType(
-            expr.name,
-            isHole(expr.name) ? context : bindInContextWithType(context, expr.name, type),
-            extendIndexPath(indexPath, 0)
+            name,
+            isHole(name) ? context : bindInContextWithType(context, name, type),
+            indexPath
           );
         };
 
-        if (!isHole(expr.name) && expr.name.type) {
-          const type = expr.name.type;
-          this.#defines.add(expr, () => {
-            // Ensure this is a sound type annotation
-            this.#checkType(expr.value, type, context, extendIndexPath(indexPath, 1));
+        this.#defines.addAll(
+          expr.fields.map((fieldName, fieldIndex) => [
+            getIdentifier(fieldName),
+            (): Type => {
+              if (isHole(expr.name)) return Untyped;
 
-            cacheBindingType(type);
-            return type;
+              // Synthesize field accessor type
+              const structName = getIdentifier(expr.name);
+              const fieldType = getTypeAnnotation(fieldName) ?? Untyped;
+              const accessorType: SimpleConcreteType<"Function"> = {
+                tag: "Function",
+                of: [{ tag: structName }, fieldType],
+              };
+
+              cacheBindingType(fieldName, extendIndexPath(indexPath, fieldIndex + 1), accessorType);
+              return accessorType;
+            },
+          ])
+        );
+
+        this.#defines.add(getIdentifier(expr.name), () => {
+          if (isHole(expr.name)) return Untyped;
+
+          // Synthesize constructor type
+          const structName = getIdentifier(expr.name);
+          const fieldTypes = expr.fields.map(
+            (fieldName) => getTypeAnnotation(fieldName) ?? Untyped
+          );
+          const constructorType: SimpleConcreteType<"Function"> = {
+            tag: "Function",
+            of: [...fieldTypes, { tag: structName }],
+          };
+
+          cacheBindingType(expr.name, extendIndexPath(indexPath, 0), constructorType);
+          return constructorType;
+        });
+
+        return { tag: "Empty" };
+      }
+
+      case "define": {
+        // Cache annotated or inferred type for name binding node, so that the editor can display it.
+        const cacheBindingType = (name: VarSlot, indexPath: TreeIndexPath, type: Type) => {
+          this.#inferType(
+            name,
+            isHole(name) ? context : bindInContextWithType(context, name, type),
+            indexPath
+          );
+        };
+
+        const typeAnnotation = getTypeAnnotation(expr.name);
+        if (typeAnnotation) {
+          this.#defines.add(getIdentifier(expr.name), () => {
+            // Ensure this is a sound type annotation
+            this.#checkType(expr.value, typeAnnotation, context, extendIndexPath(indexPath, 1));
+
+            cacheBindingType(expr.name, extendIndexPath(indexPath, 0), typeAnnotation);
+            return typeAnnotation;
           });
         } else {
           // Make the definition visible to itself
-          this.#defines.add(expr, () => {
+          this.#defines.add(getIdentifier(expr.name), () => {
             // Infer a type for the definition
             const type = this.#inferType(expr.value, context, extendIndexPath(indexPath, 1));
 
-            cacheBindingType(type);
+            cacheBindingType(expr.name, extendIndexPath(indexPath, 0), type);
             return type;
           });
         }

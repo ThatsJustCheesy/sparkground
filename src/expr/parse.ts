@@ -3,7 +3,6 @@ import {
   Expr,
   Let,
   Call,
-  NameBinding,
   Lambda,
   Sequence,
   If,
@@ -14,6 +13,7 @@ import {
   VarSlot,
   And,
   Or,
+  Struct,
 } from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
@@ -67,6 +67,7 @@ export class Parser {
         switch (symbol) {
           case "quote":
           case "type":
+          case "struct":
           case "define":
           case "let":
           case "letrec":
@@ -89,6 +90,8 @@ export class Parser {
           switch (called.value) {
             case "type":
               return this.parseTypeExpr(datum);
+            case "struct":
+              return this.parseStruct(datum);
             case "define":
               return this.parseDefine(datum);
             case "let":
@@ -141,6 +144,17 @@ export class Parser {
 
   parseType(datum: FlattenedDatum): Type {
     return new TypeParser().parseType(datum);
+  }
+
+  parseStruct(datum: FlattenedListDatum): Struct {
+    const name = this.parseVarSlot(datum.heads[1]!);
+    const fields = datum.heads.slice(2).map((head) => this.parseVarSlot(head));
+
+    return {
+      kind: "struct",
+      name,
+      fields,
+    };
   }
 
   parseDefine(datum: FlattenedListDatum): Define {

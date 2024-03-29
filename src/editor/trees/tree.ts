@@ -52,6 +52,8 @@ export function children(node: Expr): (Expr | undefined)[] {
       return node.type ? [{ kind: "type", type: node.type }] : [];
     case "call":
       return [node.called, ...node.args];
+    case "struct":
+      return [node.name, ...node.fields];
     case "define":
       return [node.name, node.value];
     case "let":
@@ -110,6 +112,11 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
     case "call":
       if (index === 0) node.called = newChild;
       else node.args[index - 1] = newChild;
+      break;
+    case "struct":
+      if (index === 0) node.name = asVarSlot(newChild);
+      else node.fields[index - 1] = asVarSlot(newChild);
+      node.fields = node.fields.filter((field) => !isHole(field));
       break;
     case "define":
       if (index === 0) node.name = asVarSlot(newChild);

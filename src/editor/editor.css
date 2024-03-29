@@ -89,26 +89,65 @@
 
   border-radius: 0.5em;
 }
+
 .block-hat > .block-hat-heading {
   padding: 0.5em;
 
   background: rgb(220, 228, 234);
   border: 1px solid black;
-  border-bottom: none;
-  border-radius: 0.5em 0.5em 0 0;
+  border-radius: 0.5em;
 }
-.block-hat > .menu-trigger > .block-outer-container > .block {
-  border-radius: 0 0 0.5em 0.5em;
-  width: 100%;
-}
+
 .block-hat-heading {
   display: flex;
   flex-flow: row nowrap;
   align-items: baseline;
 }
+
 .block-hat-heading > :not(.block-hat-label) {
   margin-left: 0.5em;
   margin-right: 0.25em;
+}
+
+.block-hat > .menu-trigger > .block-outer-container > .block {
+  width: 100%;
+}
+
+/* Has a non-phantom child, so sharpen bottom borders of heading */
+.block-hat:has(> .menu-trigger > .block-outer-container > .block:not(.block-name-hole-phantom))
+  > .block-hat-heading,
+/* Is hovered and has a child, so sharpen bottom borders of heading */
+.block-hat:hover:has(> .menu-trigger > .block-outer-container > .block) > .block-hat-heading {
+  border-bottom: none;
+  border-radius: 0.5em 0.5em 0 0;
+}
+
+/* Has a phantom last child, so sharpen borders of all children except the last and second-to-last */
+.block-hat:has(> .menu-trigger:last-child > .block-outer-container > .block.block-name-hole-phantom)
+  > .menu-trigger:not(:last-child):not(:nth-last-child(3)) /* 3 instead of 2 due to interspersed <style> elements */
+  > .block-outer-container
+  > .block,
+/* Does not have a phantom last child, so sharpen borders of all children except the last */
+.block-hat:not(
+    :has(> .menu-trigger:last-child > .block-outer-container > .block.block-name-hole-phantom)
+  )
+  > .menu-trigger:not(:last-child)
+  > .block-outer-container
+  > .block,
+/* Is hovered, so sharpen borders of all children except the last */
+.block-hat:hover > .menu-trigger:not(:last-child) > .block-outer-container > .block {
+  border-radius: 0;
+}
+
+/* Has a phantom child, so sharpen top borders of the second-to-last child */
+.block-hat:has(> .menu-trigger:last-child > .block-outer-container > .block.block-name-hole-phantom)
+  > .menu-trigger:nth-last-child(3) /* 3 instead of 2 due to interspersed <style> elements */
+  > .block-outer-container
+  > .block,
+/* Sharpen top borders of last child */
+.block-hat > .menu-trigger:last-child > .block-outer-container > .block {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .block-v {
@@ -378,15 +417,34 @@
   opacity: 0.5;
   background-color: #eee;
 }
-.block-v-heading:hover > .menu-trigger > .block-outer-container > .block-name-hole-phantom {
+
+.block-v-heading:hover > .menu-trigger > .block-outer-container > .block-name-hole-phantom,
+.block-hat:hover > .menu-trigger > .block-outer-container > .block-name-hole-phantom {
   display: flex;
 }
-.block-name-hole-phantom .block-name-hole-symbol::before {
+
+.block-v-heading:hover
+  > .menu-trigger
+  > .block-outer-container
+  > .block-name-hole-phantom
+  .block-name-hole-symbol::before {
   content: "+";
 
   position: absolute;
   top: -0.37em;
   left: 0.2em;
+}
+
+.block-hat:hover
+  > .menu-trigger
+  > .block-outer-container
+  > .block-name-hole-phantom
+  .block-name-hole-symbol::before {
+  content: "+";
+
+  text-align: center;
+  position: absolute;
+  top: -0.37em;
 }
 
 .drag-overlay > .menu-trigger > .block-outer-container > .block-dragging {

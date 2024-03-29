@@ -12,6 +12,7 @@ export const LibraryCategories: LibraryCategory[] = [
   {
     name: "Define",
     entries: [
+      { kind: "struct", name: hole, fields: [] },
       { kind: "define", name: hole, value: hole },
       { kind: "lambda", params: [], body: { kind: "sequence", exprs: [hole] } },
       { kind: "let", bindings: [[hole, hole]], body: hole },
@@ -210,6 +211,14 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "call", called: { kind: "var", id: "symbol->string" }, args: [] },
         ],
       },
+    ],
+  },
+  {
+    name: "State",
+    entries: [
+      { kind: "call", called: { kind: "var", id: "state" }, args: [] },
+      { kind: "call", called: { kind: "var", id: "state-get" }, args: [] },
+      { kind: "call", called: { kind: "var", id: "state-set" }, args: [] },
     ],
   },
   {

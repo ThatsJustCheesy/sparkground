@@ -2,6 +2,7 @@ import { isHole } from "../editor/trees/tree";
 import { Datum } from "../datum/datum";
 import { DefinitionAttributes } from "./attributes";
 import { Type } from "../typechecker/type";
+import { uniqueId } from "lodash";
 
 export type Expr = { attributes?: DefinitionAttributes } & (
   | NameBinding
@@ -9,6 +10,7 @@ export type Expr = { attributes?: DefinitionAttributes } & (
   | TypeExpr
   | Var
   | Call
+  | Struct
   | Define
   | Let
   | Letrec
@@ -26,7 +28,13 @@ export type Hole = {
 };
 export type VarSlot = Hole | NameBinding;
 export function getIdentifier(varSlot: VarSlot) {
-  return isHole(varSlot) ? "·" : varSlot.id;
+  return isHole(varSlot) ? uniqueId() : varSlot.id;
+}
+export function getPrettyName(varSlot: VarSlot) {
+  return isHole(varSlot) ? varSlot.value : varSlot.id;
+}
+export function getTypeAnnotation(varSlot: VarSlot): Type | undefined {
+  return isHole(varSlot) ? undefined : varSlot.type;
 }
 
 export type NameBinding = {
@@ -38,6 +46,12 @@ export type NameBinding = {
 export type TypeExpr = {
   kind: "type";
   type: Type;
+};
+
+export type Struct = {
+  kind: "struct";
+  name: VarSlot;
+  fields: VarSlot[];
 };
 
 export type Var = {

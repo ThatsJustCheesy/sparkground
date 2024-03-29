@@ -1,8 +1,5 @@
-import { uniqueId } from "lodash";
-import { Define } from "../expr/expr";
-
 export class Defines<Value> {
-  #defines: Record<string, [Define, (define: Define) => Value]> = {};
+  #defines: Record<string, () => Value> = {};
   #computed: Record<string, Value> = {};
   #computing: Set<string> = new Set();
 
@@ -20,23 +17,18 @@ export class Defines<Value> {
     this.#computed = {};
   }
 
-  addAll(entries: [define: Define, compute: (define: Define) => Value][]): void {
-    for (const [define, compute] of entries) {
-      this.add(define, compute);
+  addAll(entries: [identifier: string, compute: () => Value][]): void {
+    for (const [identifier, compute] of entries) {
+      this.add(identifier, compute);
     }
   }
 
-  add(define: Define, compute: (define: Define) => Value): void {
-    const { name } = define;
-    const id = name.kind === "name-binding" ? name.id : uniqueId();
-    this.#defines[id] = [define, compute];
+  add(identifier: string, compute: () => Value): void {
+    this.#defines[identifier] = compute;
   }
 
-  has(define: Define): boolean {
-    const { name } = define;
-    if (name.kind !== "name-binding") return false;
-
-    return name.id in this.#defines;
+  has(identifier: string): boolean {
+    return identifier in this.#defines;
   }
 
   get(name: string): Value | undefined | "circular" {
@@ -47,11 +39,11 @@ export class Defines<Value> {
       }
 
       if (!(name in this.#defines)) return undefined;
-      const [define, compute] = this.#defines[name]!;
+      const compute = this.#defines[name]!;
 
       this.#computing.add(name);
       try {
-        this.#computed[name] = compute(define);
+        this.#computed[name] = compute();
       } finally {
         this.#computing.delete(name);
       }

@@ -8,10 +8,10 @@ import {
   mergeEnvs,
 } from "../editor/library/environments";
 import { isHole } from "../editor/trees/tree";
-import { Expr, NameBinding } from "../expr/expr";
+import { Expr, NameBinding, getIdentifier, getPrettyName } from "../expr/expr";
 import { Defines } from "./defines";
-import { checkCallAgainstTypeSignature } from "./dynamic-type";
-import { FnValue, Value, valueAsBool } from "./value";
+import { DynamicParamSignature, checkCallAgainstTypeSignature } from "./dynamic-type";
+import { FnValue, ListValue, Value, listValueAsVector, valueAsBool } from "./value";
 
 /** Call-by-value evaluator */
 export class Evaluator {
@@ -29,6 +29,16 @@ export class Evaluator {
     this.baseEnv = baseEnv ?? InitialEnvironment;
     this.env = { ...this.baseEnv };
     this.defines = defines ?? new Defines();
+  }
+
+  addDefines(roots: Expr[]) {
+    for (const root of roots) {
+      switch (root.kind) {
+        case "struct":
+        case "define":
+          this.eval(root);
+      }
+    }
   }
 
   eval(expr: Expr, extendEnv: Environment = {}): Value {
@@ -80,12 +90,63 @@ export class Evaluator {
         return this.call(calledValue, argValues);
       }
 
-      case "define":
-        if (expr.name.kind !== "name-binding") throw "'define' must be given a name";
+      case "struct": {
+        // Constructor
+        this.defines.add(
+          getIdentifier(expr.name),
+          (): Cell<FnValue> => ({
+            value: {
+              kind: "fn",
+              signature: expr.fields.map(
+                (fieldName): DynamicParamSignature => ({ name: getPrettyName(fieldName) })
+              ),
+              body: (args: Value[]): Value => {
+                return { kind: "List", heads: args };
+              },
+            },
+          })
+        );
 
-        this.defines.add(expr.name.id, () => ({ value: this.eval(expr.value) }));
+        // Field accessors
+        this.defines.addAll(
+          expr.fields.map((fieldName, fieldIndex) => [
+            getIdentifier(fieldName),
+            (): Cell<FnValue> => ({
+              value: {
+                kind: "fn",
+                signature: [{ name: "structure", type: "List" }],
+                body: (args: Value[]): Value => {
+                  const [struct] = args as [ListValue];
+
+                  const vector = listValueAsVector(struct);
+                  if (!vector) {
+                    throw `structure passed to field accessor for ${getPrettyName(
+                      fieldName
+                    )} is an improper list`;
+                  }
+
+                  const fieldValue = vector[fieldIndex];
+                  if (!fieldValue) {
+                    throw `wrong structure type passed to field accessor for ${getPrettyName(
+                      fieldName
+                    )}`;
+                  }
+
+                  return fieldValue;
+                },
+              },
+            }),
+          ])
+        );
 
         return { kind: "List", heads: [] };
+      }
+
+      case "define": {
+        this.defines.add(getIdentifier(expr.name), () => ({ value: this.eval(expr.value) }));
+
+        return { kind: "List", heads: [] };
+      }
 
       case "let": {
         const valueBindings = expr.bindings.map(
