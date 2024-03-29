@@ -27,11 +27,12 @@ export class Evaluator {
     defines?: Defines<Cell<Value>>;
   } = {}) {
     this.baseEnv = baseEnv ?? InitialEnvironment;
+    this.env = { ...this.baseEnv };
     this.defines = defines ?? new Defines();
   }
 
-  eval(expr: Expr, env: Environment = {}): Value {
-    return this.#eval(expr, { env });
+  eval(expr: Expr, extendEnv: Environment = {}): Value {
+    return this.#eval(expr, { extendEnv });
   }
 
   #eval(expr: Expr, { env, extendEnv }: { env?: Environment; extendEnv?: Environment } = {}) {
