@@ -256,8 +256,11 @@ export default function Block({
     rerender?.();
   }, [tooltipVisible, activeDrag]);
 
-  const contextHelp = binding ? (
-    <>
+  let contextHelp: JSX.Element | undefined;
+
+  // TODO: Stop relying on Value bindings here; use a richer `doc` attribute instead
+  if (binding && ((binding.cell.value as Value)?.kind === "fn" || binding.attributes?.doc)) {
+    const contextHelpName = (
       <div className="fst-mono d-flex align-items-end">
         {
           // TODO: Stop relying on Value bindings here; use a richer `doc` attribute instead
@@ -276,8 +279,10 @@ export default function Block({
           )
         }
       </div>
+    );
+
+    const contextHelpDoc = (
       <div className="mt-1">
-        {" "}
         {(() => {
           let doc = binding.attributes?.doc;
           if (!doc) return "";
@@ -306,8 +311,14 @@ export default function Block({
           return rendered;
         })()}
       </div>
-    </>
-  ) : undefined;
+    );
+
+    contextHelp = (
+      <>
+        {contextHelpName} {contextHelpDoc}
+      </>
+    );
+  }
 
   let typecheckingError = typechecker.errors.for(indexPath);
   if (!typecheckingError && expr?.kind === "call") {
