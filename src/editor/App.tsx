@@ -139,13 +139,7 @@ function App() {
     const variable = nodeAtIndexPath(blockContextMenuSubject);
     if (variable.kind !== "var") return;
 
-    const location = mouseCursorLocation(event);
-    const call = newTree(
-      { kind: "call", called: hole, args: [] },
-      location,
-      blockContextMenuSubject.tree.page
-    );
-    moveExprInTree(blockContextMenuSubject, { tree: call, path: [0] }, location);
+    replaceExpr(blockContextMenuSubject, { kind: "call", called: variable, args: [] });
     rerender();
   }
 
