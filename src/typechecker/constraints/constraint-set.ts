@@ -1,5 +1,5 @@
-import { isEqual, mapValues } from "lodash";
-import { Type, isForallType, isTypeVar, isTypeVarBoundBy, isTypeVarSlot } from "../type";
+import { mapValues } from "lodash";
+import { Type, Untyped, isForallType, isTypeVar, isTypeVarBoundBy, isTypeVarSlot } from "../type";
 import { TypeSubstitution } from "../type-substitution";
 import { Constraint, TopConstraint, constraintMeet, isConstraintSatisfiable } from "./constraint";
 import { TypeParamVariance, typeParamVariance } from "../subtyping";
@@ -45,6 +45,8 @@ export function computeMinimalSubstitution(
 
   try {
     return mapValues(constraints, (constraint, name): Type => {
+      if (constraint.constraint === "untyped") return Untyped;
+
       // TODO: Handle equality constraints for bounded quantification
       if (constraint.constraint === "equal") throw "TODO";
 
@@ -56,9 +58,29 @@ export function computeMinimalSubstitution(
         case "contravariant":
           return constraint.upperBound;
         case "invariant":
-          if (!isEqual(constraint.lowerBound, constraint.upperBound)) {
-            throw NoMinimalSubstitution;
-          }
+          // Design choice: Return a non-best type that is reasonable in most cases.
+          // This may mean that inference produces a less specific type than may be obtained
+          // by manual annotations.
+          // However, in practice, this does not seem to be much of an issue.
+          //
+          // Typed Racket appears to make a similar design tradeoff.
+          // e.g.,
+          //
+          //   (: mklst (All (X) (X -> (MListof X))))
+          //   (define (mklst x) (mcons x null))
+          //
+          //   (: mkempty (All (X) (-> (MListof X))))
+          //   (define (mkempty) null)
+          //
+          //   (define l1 (mklst 1)) ; (:print-type l1) gives (MListof Integer)
+          //   (define l2 (mkempty)) ; (:print-type l2) gives (MListof Any)
+          //
+          // where local type inference succeeds, even though the `MListof` type constructor
+          // is invariant in its parameter.
+          //
+          // For a deeper exploration of the issue at hand, see the technical report
+          // "How good is local type inference?" by Hosoya and Pierce [https://repository.upenn.edu/handle/20.500.14332/7082],
+          // especially sections 3.2 and 4.1.
           return constraint.lowerBound;
       }
     });

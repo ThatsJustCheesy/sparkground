@@ -66,7 +66,10 @@ describe("constraint sets", () => {
     ).toEqual({ X: { tag: "Foo" }, Y: { tag: "Bar" } })
   })
 
-  it("complains when type is invariant with respect to variables and constraints are too weak", () => {
+  it("solves (suboptimally) when type is invariant with respect to variables and constraints are too weak", () => {
+    // In the original local type inference scheme, this is a failing case;
+    // see the "Design choice" comment in the constraint solver definition
+    // for rationale on why this is made to succeed in this way.
     expect(
       computeMinimalSubstitution(
         {
@@ -75,6 +78,6 @@ describe("constraint sets", () => {
         },
         { tag: "Function", of: [{ tag: "Function", of: [{ var: "X" }, { var: "Y" }] }, { var: "X" }, { var: "Y" }] }
       )
-    ).toBeUndefined()
+    ).toEqual({ X: Never, Y: { tag: "Integer" } })
   })
 })

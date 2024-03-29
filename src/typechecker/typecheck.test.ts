@@ -210,10 +210,10 @@ describe("Typechecker", () => {
 
   it("complains about invalid assignments", () => {
     checker.inferType({ kind: "call", called: intIdentity, args: [{ kind: "Number", value: 4.2 }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
+    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
 
     checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "String", value: "foo" }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
+    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
 
     checker.inferType({
       kind: "call",
@@ -240,10 +240,10 @@ describe("Typechecker", () => {
       },
       args: [callIntToNumber],
     })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
+    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
 
     checker.inferType({ kind: "call", called: uncallable, args: [{ kind: "Number", value: 42 }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignment")
+    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
   })
 
   it("infers list types", () => {

@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import { Any, Never, Type } from "../type";
 import { isSubtype, typeJoin, typeMeet } from "../subtyping";
 
-export type Constraint = EqualityConstraint | SubtypeConstraint;
+export type Constraint = EqualityConstraint | SubtypeConstraint | UntypedConstraint;
 
 export type EqualityConstraint = {
   constraint: "equal";
@@ -15,6 +15,10 @@ export type SubtypeConstraint = {
   upperBound: Type;
 };
 
+export type UntypedConstraint = {
+  constraint: "untyped";
+};
+
 /** Identity with respect to constraintMeet. */
 export const TopConstraint: SubtypeConstraint = {
   constraint: "subtype",
@@ -23,6 +27,9 @@ export const TopConstraint: SubtypeConstraint = {
 };
 
 export function constraintMeet(first: Constraint, second: Constraint): Constraint | undefined {
+  if (first.constraint === "untyped") return first;
+  if (second.constraint === "untyped") return second;
+
   if (second.constraint === "subtype") {
     [first, second] = [second, first];
   }
@@ -50,11 +57,13 @@ export function constraintsMeet(constraints: Constraint[]): Constraint | undefin
   return constraints.reduce(constraintMeet, TopConstraint);
 }
 
-export function isConstraintSatisfiable(constraint: Constraint) {
+export function isConstraintSatisfiable(constraint: Constraint): boolean {
   switch (constraint.constraint) {
     case "equal":
       return true;
     case "subtype":
       return isSubtype(constraint.lowerBound, constraint.upperBound);
+    case "untyped":
+      return true;
   }
 }

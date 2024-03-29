@@ -3,8 +3,10 @@ import { TreeIndexPath, extendIndexPath, hole, isHole, rootIndexPath } from "../
 import { Define, Expr, NameBinding } from "../expr/expr";
 import {
   ArityMismatch,
+  DuplicateDefinition,
   InferenceError,
   InvalidAssignment,
+  InvalidAssignmentToType,
   NotCallable,
   UnboundVariable,
   VariadicArityMismatch,
@@ -121,7 +123,7 @@ export class Typechecker {
     // It is a new day.
     this.errors.clear();
 
-    this.#defines.clearComputed();
+    this.#defines.clear();
     this.#inferenceCache.clear();
   }
 
@@ -131,7 +133,17 @@ export class Typechecker {
   }
 
   addDefine(tree: Tree<Define>): void {
-    this.#inferType(tree.root, this.baseContext, rootIndexPath(tree));
+    const define = tree.root;
+
+    if (this.#defines.has(tree.root)) {
+      this.errors.add(rootIndexPath(tree), {
+        tag: "DuplicateDefinition",
+        define,
+        id: (define.name as NameBinding).id,
+      } satisfies DuplicateDefinition);
+    }
+
+    this.#inferType(define, this.baseContext, rootIndexPath(tree));
   }
 
   inferType(tree: Tree, context?: TypeContext): Type;
@@ -188,6 +200,8 @@ export class Typechecker {
     } catch (error) {
       if (typeof error === "object" && "tag" in error) {
         this.errors.add(indexPath, error as InferenceError);
+      } else {
+        console.error(error);
       }
       inferred = Untyped;
     }
@@ -232,7 +246,7 @@ export class Typechecker {
 
         if (!isHole(expr.name) && expr.name.type) {
           const type = expr.name.type;
-          this.#defines.add(expr.name.id, () => {
+          this.#defines.add(expr, () => {
             // Ensure this is a sound type annotation
             this.#checkType(expr.value, type, context, extendIndexPath(indexPath, 1));
 
@@ -241,8 +255,7 @@ export class Typechecker {
           });
         } else {
           // Make the definition visible to itself
-          const id = expr.name.kind === "name-binding" ? expr.name.id : uniqueId();
-          this.#defines.add(id, () => {
+          this.#defines.add(expr, () => {
             // Infer a type for the definition
             const type = this.#inferType(expr.value, context, extendIndexPath(indexPath, 1));
 
@@ -343,13 +356,21 @@ export class Typechecker {
             ...Array(argTypes.length - variadicParamTypes.length).fill(variadicParamTypes.at(-1)!),
           ];
 
-          return this.#inferResultType(
+          const instantiatedResultType = this.#inferResultType(
             constrainVarNames,
             expr.args,
             argTypes,
             paramTypes,
             resultType
           );
+          if (instantiatedResultType === undefined) {
+            throw {
+              tag: "InvalidAssignment",
+              expr,
+            } satisfies InvalidAssignment;
+          }
+
+          return instantiatedResultType;
         } else if (hasTag(calledType, "Function")) {
           // Simple function
 
@@ -371,13 +392,21 @@ export class Typechecker {
             this.#inferType(arg, context, extendIndexPath(indexPath, index + 1))
           );
 
-          return this.#inferResultType(
+          const instantiatedResultType = this.#inferResultType(
             constrainVarNames,
             expr.args,
             argTypes,
             paramTypes,
             resultType
           );
+          if (instantiatedResultType === undefined) {
+            throw {
+              tag: "InvalidAssignment",
+              expr,
+            } satisfies InvalidAssignment;
+          }
+
+          return instantiatedResultType;
         } else {
           throw { tag: "NotCallable", call: expr, calledType } satisfies NotCallable;
         }
@@ -531,11 +560,15 @@ export class Typechecker {
     argTypes: Type[],
     paramTypes: Type[],
     resultType: Type
-  ) {
+  ): Type | undefined {
     const constraintSet = constraintSetsMeet(
       this.#generateConstraints(constrainVarNames, args, argTypes, paramTypes)
-    )!;
-    const substitution = computeMinimalSubstitution(constraintSet, resultType)!;
+    );
+    if (!constraintSet) return undefined;
+
+    const substitution = computeMinimalSubstitution(constraintSet, resultType);
+    if (!substitution) return undefined;
+
     const substitutedResultType = typeSubstitute(resultType, substitution);
     return eliminateUp(constrainVarNames, substitutedResultType);
   }
@@ -553,10 +586,10 @@ export class Typechecker {
     const invalidIndex = constraintSets.findIndex((set) => set === undefined);
     if (invalidIndex !== -1) {
       throw {
-        tag: "InvalidAssignment",
+        tag: "InvalidAssignmentToType",
         expr: args[invalidIndex]!,
         type: paramTypes[invalidIndex]!,
-      } satisfies InvalidAssignment;
+      } satisfies InvalidAssignmentToType;
     }
     return constraintSets as ConstraintSet[];
   }
@@ -567,10 +600,10 @@ export class Typechecker {
   #checkType(expr: Expr, type: Type, context: TypeContext, indexPath: TreeIndexPath): void {
     if (!this.#checkType_(expr, type, context, indexPath)) {
       this.errors.add(indexPath, {
-        tag: "InvalidAssignment",
+        tag: "InvalidAssignmentToType",
         expr,
         type,
-      } satisfies InvalidAssignment);
+      } satisfies InvalidAssignmentToType);
     }
   }
 

@@ -96,6 +96,9 @@ export type ForallType = {
 export function isForallType(type: Type): type is ForallType {
   return "forall" in type;
 }
+export function typeVarsBoundBy(forallType: ForallType): string[] {
+  return forallType.forall.map((slot) => isTypeVar(slot) && slot.var).filter((x) => x) as string[];
+}
 export function isTypeVarBoundBy(typeVarName: string, forallType: ForallType) {
   return forallType.forall.some((slot) => isTypeVar(slot) && slot.var === typeVarName);
 }
@@ -141,8 +144,7 @@ export type BuiltinType =
   | { tag: "String" }
   | { tag: "Symbol" }
   | { tag: "List"; of: [element: Type] }
-  | { tag: "Function"; of: Type[] }
-  | { tag: "Promise"; of: [value: Type] };
+  | { tag: "Function"; of: Type[] };
 
 export const Untyped: SimpleConcreteType<"?"> = { tag: "?" };
 export const Any: SimpleConcreteType<"Any"> = { tag: "Any" };

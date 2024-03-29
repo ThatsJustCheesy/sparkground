@@ -1,3 +1,4 @@
+import { difference } from "lodash";
 import {
   Type,
   isConcreteType,
@@ -7,6 +8,7 @@ import {
   isTypeVarBoundBy,
   isTypeVarSlot,
   typeParams,
+  typeVarsBoundBy,
 } from "./type";
 
 export type TypeSubstitution = Record<string, Type>;
@@ -26,6 +28,21 @@ export function typeSubstitute(type: Type, sub: TypeSubstitution): Type {
     const params = typeParams(type).map((typeParam) => typeSubstitute(typeParam, sub));
     return params.length ? { tag, of: params } : { tag };
   }
+}
+
+export function typeVarsFreeIn(type: Type): string[] {
+  if (isTypeVar(type)) {
+    return [type.var];
+  } else if (isForallType(type)) {
+    const freeInBody = typeVarsFreeIn(type.body);
+    const shadowed = typeVarsBoundBy(type);
+    return difference(freeInBody, shadowed);
+  } else if (isConcreteType(type)) {
+    return (type.of ?? []).flatMap(typeVarsFreeIn);
+  } else if (isTypeNameHole(type)) {
+    return [];
+  }
+  throw "invalid type passed to typeVarsFreeIn";
 }
 
 export function typeVarOccurs(typeVarName: string, type: Type): boolean {
