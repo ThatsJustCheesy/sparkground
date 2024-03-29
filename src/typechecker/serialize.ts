@@ -48,7 +48,7 @@ export function prettyPrintType(t: Type): string {
       return (
         "(" +
         functionParamTypes(t).map(prettyPrintType).join(" ") +
-        " → " +
+        " ➜ " +
         prettyPrintType(functionResultType(t)) +
         ")"
       );
@@ -59,7 +59,7 @@ export function prettyPrintType(t: Type): string {
         paramTypes.slice(0, -1).map(prettyPrintType).join(" ") +
         (paramTypes.length > 1 ? " " : "") +
         prettyPrintType(paramTypes.at(-1)!) +
-        "... → " +
+        "... ➜ " +
         prettyPrintType(functionResultType(t)) +
         ")"
       );
