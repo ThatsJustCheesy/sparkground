@@ -94,7 +94,7 @@
   padding: 0.5em;
 
   background: rgb(220, 228, 234);
-  border: 1px solid black;
+  border: 0.09em solid black;
   border-radius: 0.5em;
 }
 
@@ -292,7 +292,7 @@
   padding-right: 0.55em;
 
   background: #fcff58;
-  border: 1px solid black;
+  border: 0.09em solid black;
   border-radius: 0.75em;
 }
 
@@ -370,7 +370,7 @@
 .block-hole-symbol {
   width: 100%;
   padding: 0.2em;
-  border: 1px solid #333;
+  border: 0.09em solid #333;
   border-radius: 0.5em;
 }
 .block-name-hole-symbol::before {
