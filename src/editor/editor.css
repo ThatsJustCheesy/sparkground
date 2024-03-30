@@ -238,9 +238,12 @@
   margin: auto;
 }
 
-/* Visible on identifier hover */
 .block-h-label,
 .block-v-label {
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+
+  /* Visible on identifier hover */
   border-radius: 0.25em;
 }
 
