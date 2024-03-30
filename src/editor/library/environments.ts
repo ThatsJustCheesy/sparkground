@@ -198,58 +198,6 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "for-each",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [
-          { name: "proc", type: "Function" },
-          { name: "lists", type: "List", variadic: true },
-        ],
-        body: (args, evaluator): Value => {
-          const [proc] = args as [FnValue];
-          const lists = getVariadic<ListValue>(1, args);
-
-          if (!lists.length) return { kind: "List", heads: [] };
-
-          const vectors = lists.map(listValueAsVector);
-          if (vectors.some((vector) => vector === undefined)) {
-            throw "one of the lists passed to 'for-each' is an improper list";
-          }
-          const rows = vectors as Value[][];
-
-          const width = vectors[0]!.length;
-          for (let i = 0; i < width; i++) {
-            const tentativeCol = rows.map((row) => row[i]);
-            if (tentativeCol.some((entry) => entry === undefined)) {
-              throw "lists passed to 'for-each' have different length";
-            }
-            const col = tentativeCol as Value[];
-
-            evaluator.call(proc, col);
-          }
-
-          return { kind: "List", heads: [] };
-        },
-      },
-    },
-    attributes: {
-      doc: "Runs `proc` on the elements of `lists`, in order from the first element to the last. Any values that `proc` returns are discarded.",
-      typeAnnotation: {
-        forall: [{ kind: "type-name-binding", id: "Element" }],
-        body: {
-          tag: "Function*",
-          of: [
-            { tag: "Function", of: [{ var: "Element" }, { tag: "Any" }] },
-            { tag: "List", of: [{ var: "Element" }] },
-            { tag: "Any" },
-          ],
-          minArgCount: 1,
-        },
-      },
-    },
-  },
-  {
     name: "eval",
     cell: {
       value: {

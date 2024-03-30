@@ -26,7 +26,6 @@ export const LibraryCategories: LibraryCategory[] = [
       { kind: "call", called: hole, args: [] },
       { kind: "call", called: { kind: "var", id: "apply" }, args: [] },
       { kind: "call", called: { kind: "var", id: "map" }, args: [] },
-      { kind: "call", called: { kind: "var", id: "for-each" }, args: [] },
       { kind: "call", called: { kind: "var", id: "eval" }, args: [] },
     ],
   },
