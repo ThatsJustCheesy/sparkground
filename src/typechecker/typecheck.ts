@@ -403,7 +403,9 @@ export class Typechecker {
           );
           const paramTypes = [
             ...variadicParamTypes,
-            ...Array(argTypes.length - variadicParamTypes.length).fill(variadicParamTypes.at(-1)!),
+            ...Array(Math.max(0, argTypes.length - variadicParamTypes.length)).fill(
+              variadicParamTypes.at(-1)!
+            ),
           ];
 
           const instantiatedResultType = this.#inferResultType(
