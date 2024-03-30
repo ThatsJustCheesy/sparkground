@@ -17,12 +17,12 @@ import {
 } from "./trees/tree";
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
-import { Var } from "../expr/expr";
+import { Expr, Var } from "../expr/expr";
 import { Evaluator } from "../evaluator/evaluate";
 import { Datum } from "../datum/datum";
 import { Defines } from "../evaluator/defines";
 import { Cell } from "./library/environments";
-import { Value } from "../evaluator/value";
+import { ComponentValue, Value } from "../evaluator/value";
 import { Untyped } from "../typechecker/type";
 import { Parser } from "../expr/parse";
 import { serializeExpr } from "./trees/serialize";
@@ -171,6 +171,23 @@ function App() {
     }
   }
 
+  async function pasteOverBlockContextMenuSubject(event: SyntheticEvent) {
+    if (!blockContextMenuSubject) return;
+
+    const source = await navigator.clipboard.readText();
+    const expr = Parser.parseToExpr(source);
+
+    const location = mouseCursorLocation(event);
+    if (blockContextMenuSubject.path.length) {
+      orphanExpr(blockContextMenuSubject, location, true);
+      replaceExpr(blockContextMenuSubject, expr);
+    } else {
+      // Target is the root of a tree; don't replace, just add a new tree
+      newTree(expr, location, globalMeta.currentPageID!);
+    }
+    rerender();
+  }
+
   function duplicateBlockContextMenuSubject(event: SyntheticEvent) {
     if (blockContextMenuSubject) {
       const location = mouseCursorLocation(event);
@@ -212,6 +229,7 @@ function App() {
       <MenuItemSeparator />
       <ContextMenuItem onClick={cutBlockContextMenuSubject}>Cut</ContextMenuItem>
       <ContextMenuItem onClick={copyBlockContextMenuSubject}>Copy</ContextMenuItem>
+      <ContextMenuItem onClick={pasteOverBlockContextMenuSubject}>Paste</ContextMenuItem>
       <MenuItemSeparator />
       <ContextMenuItem onClick={duplicateBlockContextMenuSubject}>Duplicate</ContextMenuItem>
       <ContextMenuItem onClick={deleteBlockContextMenuSubject}>Delete</ContextMenuItem>
@@ -342,6 +360,12 @@ function App() {
       <ContextMenu id="block-menu-apply-evaluable" hideOnLeave={false}>
         {commonContextMenu}
         {evaluateContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-pull-tab" hideOnLeave={false}>
+        <ContextMenuItem onClick={textEditBlockContextMenuSubject}>Edit as Text</ContextMenuItem>
+        <MenuItemSeparator />
+        <ContextMenuItem onClick={pasteOverBlockContextMenuSubject}>Paste</ContextMenuItem>
       </ContextMenu>
     </>
   );

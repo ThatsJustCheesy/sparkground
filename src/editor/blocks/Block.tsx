@@ -555,24 +555,28 @@ export default function Block({
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* tail slot */ + expr.heads.length)}
                 isCopySource={isCopySource}
+                onEditValue={onEditValue}
               />
             ) : data.type === "happly" && expr && expr.kind === "call" ? (
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
                 isCopySource={isCopySource}
+                onEditValue={onEditValue}
               />
             ) : isAndOr ? (
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, expr.args.length)}
                 isCopySource={isCopySource}
+                onEditValue={onEditValue}
               />
             ) : isVariadicCall ? (
               <BlockPullTab
                 id={`${id}-pull-tab`}
                 indexPath={extendIndexPath(indexPath, 1 /* called */ + expr.args.length)}
                 isCopySource={isCopySource}
+                onEditValue={onEditValue}
               />
             ) : (
               ""
