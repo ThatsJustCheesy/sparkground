@@ -5,7 +5,7 @@
 
   flex-grow: 0;
   overflow: auto;
-  z-index: 99900;
+  z-index: 99999900;
 
   border-left: 0.14rem solid black;
   background: #e1e8ed;

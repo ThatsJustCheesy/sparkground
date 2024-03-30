@@ -470,7 +470,7 @@ export default function Block({
           followCursor={true}
           offset={[5, 10]}
           placement="top-start"
-          zIndex={99999 + 2}
+          zIndex={99999999 + 2}
         >
           <div
             ref={callEach(setNodeRef1, setNodeRef2)}

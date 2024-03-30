@@ -213,7 +213,7 @@ export default function Editor({
           <CodeEditorModal indexPath={codeEditorSubject} onClose={onCodeEditorClose} />
           <ValueEditorModal indexPath={valueEditorSubject} onClose={onValueEditorClose} />
 
-          <DragOverlay dropAnimation={null} zIndex={99999} className="drag-overlay">
+          <DragOverlay dropAnimation={null} zIndex={99999999} className="drag-overlay">
             {activeDrag &&
               new Renderer(
                 // TODO: Do we need to use a better symbol table here?

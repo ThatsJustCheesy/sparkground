@@ -483,8 +483,8 @@
 }
 
 .modal {
-  z-index: 99999;
+  z-index: 99999999;
 }
 .modal-backdrop {
-  z-index: 99900;
+  z-index: 99999901;
 }
