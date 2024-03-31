@@ -181,8 +181,7 @@ function tokenize(source: string): Token[] {
       continue;
     }
 
-    // TODO: Real number parsing
-    let match = source.match(/^-?\d+/);
+    let match = source.match(/^-?(\d*\.\d+|\d+)([eE][-+]?\d+)?/);
     if (match) {
       const [matchText] = match;
       source = source.slice(matchText.length);
