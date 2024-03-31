@@ -547,10 +547,10 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Computes the (positive or negative) remainder of the integer division `dividend / divisor`.",
+      doc: "Computes the (positive or negative) remainder of dividing `dividend` by `divisor`.",
       typeAnnotation: {
         tag: "Function",
-        of: [{ tag: "Integer" }, { tag: "Integer" }, { tag: "Integer" }],
+        of: [{ tag: "Number" }, { tag: "Number" }, { tag: "Number" }],
       },
       infix: true,
     },
