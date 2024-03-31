@@ -144,7 +144,8 @@ export type BuiltinType =
   | { tag: "String" }
   | { tag: "Symbol" }
   | { tag: "List"; of: [element: Type] }
-  | { tag: "Function"; of: Type[] };
+  | { tag: "Function"; of: Type[] }
+  | { tag: "Component"; of: [state: Type] };
 
 export const Untyped: SimpleConcreteType<"?"> = { tag: "?" };
 export const Any: SimpleConcreteType<"Any"> = { tag: "Any" };

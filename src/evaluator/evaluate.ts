@@ -12,12 +12,14 @@ import { Expr, NameBinding, getIdentifier, getPrettyName } from "../expr/expr";
 import { Defines } from "./defines";
 import { DynamicParamSignature, checkCallAgainstTypeSignature } from "./dynamic-type";
 import { FnValue, ListValue, Value, listValueAsVector, valueAsBool } from "./value";
+import { SparkgroundComponent } from "./component";
 
 /** Call-by-value evaluator */
 export class Evaluator {
   baseEnv: Environment;
   env: Environment;
   defines: Defines<Cell<Value>>;
+  components: SparkgroundComponent[] = [];
 
   constructor({
     baseEnv,
@@ -101,10 +103,17 @@ export class Evaluator {
                 (fieldName): DynamicParamSignature => ({ name: getPrettyName(fieldName) })
               ),
               body: (args: Value[]): Value => {
-                return { kind: "List", heads: args };
+                return {
+                  kind: "List",
+                  heads: [{ kind: "Symbol", value: getIdentifier(expr.name) }, ...args],
+                };
               },
             },
-          })
+          }),
+          {
+            typeAnnotation: isHole(expr.name) ? undefined : expr.name.type,
+            bodyArgHints: expr.fields.map((name) => getPrettyName(name)),
+          }
         );
 
         // Field accessors
@@ -125,7 +134,7 @@ export class Evaluator {
                     )} is an improper list`;
                   }
 
-                  const fieldValue = vector[fieldIndex];
+                  const fieldValue = vector[fieldIndex + 1];
                   if (!fieldValue) {
                     throw `wrong structure type passed to field accessor for ${getPrettyName(
                       fieldName

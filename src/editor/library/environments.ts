@@ -1,6 +1,7 @@
 import { keyBy, multiply, reduce, repeat, sumBy } from "lodash";
 import { Datum, ListDatum, NumberDatum, StringDatum, SymbolDatum } from "../../datum/datum";
 import {
+  ComponentValue,
   FnValue,
   ListValue,
   Value,
@@ -16,7 +17,7 @@ import { Parser } from "../../expr/parse";
 import { flattenDatum } from "../../datum/flattened";
 import { DynamicTypeAny } from "../../evaluator/dynamic-type";
 import { datumEqual } from "../../datum/equality";
-import { GraphicValue, drawGraphic } from "../../evaluator/graphics";
+import { SparkgroundComponent } from "../../evaluator/component";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -33,12 +34,9 @@ export type BindingAttributes = {
   binder?: TreeIndexPath;
   doc?: string;
 
-  argTypes?: Type[];
-  retType?: Type;
-
   headingArgCount?: number;
   bodyArgHints?: string[];
-
+  hat?: boolean;
   infix?: boolean;
 };
 
@@ -1464,84 +1462,6 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "draw",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [{ name: "graphic", type: "List" }],
-        body: (args): Value => {
-          const [graphic] = args as [GraphicValue];
-
-          const canvas = document.querySelector(".output-area canvas");
-          if (canvas) {
-            const ctx = (canvas as HTMLCanvasElement).getContext?.("2d");
-            if (ctx) drawGraphic(ctx, graphic);
-          }
-
-          return { kind: "List", heads: [] };
-        },
-      },
-    },
-    attributes: {
-      doc: "Draws a graphic to the screen.",
-      typeAnnotation: {
-        tag: "Function",
-        of: [{ tag: "Graphic" }, { tag: "Empty" }],
-      },
-    },
-  },
-  {
-    name: "animate",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [
-          { name: "duration", type: "Number" },
-          { name: "graphic", type: "fn" },
-        ],
-        body: (args, evaluator): Value => {
-          const [duration, graphicFn] = args as [NumberDatum, FnValue];
-
-          let t = 0;
-          const tMax = duration.value * 1000;
-
-          const intervalID = setInterval(() => {
-            t += 1000 / 24;
-            console.log(t, tMax);
-            if (t > tMax) clearInterval(intervalID);
-
-            // TODO: Dynamic typecheck!
-            const graphic = evaluator.call(graphicFn, [
-              { kind: "Number", value: t / 1000 },
-            ]) as GraphicValue;
-
-            const canvas = document.querySelector(".output-area canvas");
-            if (canvas) {
-              const ctx = (canvas as HTMLCanvasElement).getContext?.("2d");
-              if (ctx) drawGraphic(ctx, graphic);
-            }
-
-            return { kind: "List", heads: [] };
-          }, 1000 / 24);
-
-          return { kind: "List", heads: [] };
-        },
-      },
-    },
-    attributes: {
-      doc: "Animates a continuous succession of `graphics` for `duration` seconds.",
-      typeAnnotation: {
-        tag: "Function",
-        of: [
-          { tag: "Number" },
-          { tag: "Function", of: [{ tag: "Number" }, { tag: "Graphic" }] },
-          { tag: "Empty" },
-        ],
-      },
-      headingArgCount: 1,
-    },
-  },
-  {
     name: "ellipse",
     cell: {
       value: {
@@ -1611,6 +1531,202 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { tag: "Graphic" },
         ],
       },
+    },
+  },
+  {
+    name: "image",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "url", type: "String" },
+          { name: "x", type: "Number" },
+          { name: "y", type: "Number" },
+        ],
+        body: (args): Value => {
+          type ND = NumberDatum;
+          type SD = StringDatum;
+          const [url, x, y] = args as [SD, ND, ND];
+
+          return {
+            kind: "List",
+            heads: [{ kind: "Symbol", value: "image" }, url, x, y],
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Makes an image graphic.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "Number" }, { tag: "Number" }, { tag: "Graphic" }],
+      },
+    },
+  },
+  {
+    name: "component",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "initial-state" }],
+        body: (args, evaluator): Value => {
+          const [initialState] = args as [Value];
+          return SparkgroundComponent.create(initialState, evaluator);
+        },
+      },
+    },
+    attributes: {
+      doc: "Defines a new component.",
+      typeAnnotation: {
+        forall: [{ kind: "type-name-binding", id: "State" }],
+        body: {
+          tag: "Function",
+          of: [{ var: "State" }, { tag: "Component", of: [{ var: "State" }] }],
+        },
+      },
+      headingArgCount: 1,
+    },
+  },
+  {
+    name: "to-draw",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "component", type: "component" },
+          { name: "draw-function", type: "fn" },
+        ],
+        body: (args, evaluator): Value => {
+          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
+
+          const compnoent = componentValue.component;
+          compnoent.toDraw = (state): Value => {
+            return evaluator.call(drawFn, [state]);
+          };
+
+          return { kind: "List", heads: [] };
+        },
+      },
+    },
+    attributes: {
+      doc: "Describes how `component` is drawn to the screen.",
+      typeAnnotation: {
+        forall: [{ kind: "type-name-binding", id: "State" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "Component", of: [{ var: "State" }] },
+            { tag: "Function", of: [{ var: "State" }, { tag: "Graphic" }] },
+            { tag: "Empty" },
+          ],
+        },
+      },
+      headingArgCount: 1,
+      hat: true,
+    },
+  },
+  {
+    name: "on-tick",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "component", type: "component" },
+          { name: "tick-function", type: "fn" },
+        ],
+        body: (args, evaluator): Value => {
+          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
+
+          const compnoent = componentValue.component;
+          compnoent.onTick = (state): Value => {
+            return evaluator.call(drawFn, [state]);
+          };
+
+          return { kind: "List", heads: [] };
+        },
+      },
+    },
+    attributes: {
+      doc: "Describes how `component` changes state after each tick of Sparkground's internal clock (1/60 of a second).",
+      typeAnnotation: {
+        forall: [{ kind: "type-name-binding", id: "State" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "Component", of: [{ var: "State" }] },
+            { tag: "Function", of: [{ var: "State" }, { var: "State" }] },
+            { tag: "Empty" },
+          ],
+        },
+      },
+      headingArgCount: 1,
+      hat: true,
+    },
+  },
+  {
+    name: "on-key",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "component", type: "component" },
+          { name: "key-function", type: "fn" },
+        ],
+        body: (args, evaluator): Value => {
+          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
+
+          throw "TODO: on-key";
+        },
+      },
+    },
+    attributes: {
+      doc: "Describes how `component` changes state after a keyboard key is pressed.",
+      typeAnnotation: {
+        forall: [{ kind: "type-name-binding", id: "State" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "Component", of: [{ var: "State" }] },
+            { tag: "Function", of: [{ var: "State" }, { var: "State" }] },
+            { tag: "Empty" },
+          ],
+        },
+      },
+      headingArgCount: 1,
+      hat: true,
+    },
+  },
+  {
+    name: "on-mouse",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "component", type: "component" },
+          { name: "mouse-function", type: "fn" },
+        ],
+        body: (args, evaluator): Value => {
+          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
+
+          throw "TODO: on-mouse";
+        },
+      },
+    },
+    attributes: {
+      doc: "Describes how `component` changes state after a mouse button is pressed.",
+      typeAnnotation: {
+        forall: [{ kind: "type-name-binding", id: "State" }],
+        body: {
+          tag: "Function",
+          of: [
+            { tag: "Component", of: [{ var: "State" }] },
+            { tag: "Function", of: [{ var: "State" }, { var: "State" }] },
+            { tag: "Empty" },
+          ],
+        },
+      },
+      headingArgCount: 1,
+      hat: true,
     },
   },
 ]);

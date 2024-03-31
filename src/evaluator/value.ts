@@ -1,7 +1,7 @@
 import { BoolDatum, Datum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
 import { Environment } from "../editor/library/environments";
 import { Expr } from "../expr/expr";
-import { SparkgroundComponent } from "./components";
+import { SparkgroundComponent } from "./component";
 import { DynamicFnSignature } from "./dynamic-type";
 import { Evaluator } from "./evaluate";
 

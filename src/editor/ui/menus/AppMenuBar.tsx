@@ -11,10 +11,22 @@ export type Props = {
   onShowSave: (event: SyntheticEvent) => Promise<void>;
   onShowHelp: (event: SyntheticEvent) => void;
 
+  onRunAll: (event: SyntheticEvent) => void;
+  onStopAll: (event: SyntheticEvent) => void;
+
   rerender: () => void;
 };
 
-export default function AppMenuBar({ onShowLoad, onShowSave, onShowHelp, rerender }: Props) {
+export default function AppMenuBar({
+  onShowLoad,
+  onShowSave,
+  onShowHelp,
+
+  onRunAll,
+  onStopAll,
+
+  rerender,
+}: Props) {
   return (
     <MenuBar>
       <MenuBarTitle>Sparkground</MenuBarTitle>
@@ -66,6 +78,11 @@ export default function AppMenuBar({ onShowLoad, onShowSave, onShowHelp, rerende
         Save
       </MenuBarButton>
       <MenuBarButton action={onShowHelp}>Help</MenuBarButton>
+
+      <MenuBarButton className="ms-5" action={onRunAll}>
+        Run
+      </MenuBarButton>
+      <MenuBarButton action={onStopAll}>Stop</MenuBarButton>
     </MenuBar>
   );
 }

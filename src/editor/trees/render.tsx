@@ -25,7 +25,6 @@ import { Environment, extendEnv } from "../library/environments";
 import {
   Type,
   TypeVarSlot,
-  Untyped,
   functionMinArgCount,
   hasTag,
   isForallType,
@@ -375,8 +374,6 @@ export class Renderer {
   #renderCall(expr: Call): JSX.Element {
     let { called, args } = expr;
 
-    const resultType = this.typechecker.inferType(expr);
-
     if (called.kind === "var") {
       const calledType = this.typechecker.inferType(called);
       const minArgCount = functionMinArgCount(calledType) ?? 0;
@@ -403,7 +400,7 @@ export class Renderer {
       const heading = headingArgCount ? renderedArgs.slice(0, headingArgCount) : [];
       const body = renderedArgs.slice(headingArgCount);
 
-      if (resultType && hasTag(resultType, "Empty")) {
+      if (calledAttributes.hat) {
         return this.#block(
           {
             type: "hat",
@@ -414,7 +411,7 @@ export class Renderer {
           },
           this.#hintBodyArgs(body, bodyArgHints)
         );
-      } else if (calledAttributes?.headingArgCount || calledAttributes?.bodyArgHints?.length) {
+      } else if (calledAttributes.headingArgCount || calledAttributes.bodyArgHints?.length) {
         return this.#block(
           {
             type: "v",
@@ -426,7 +423,7 @@ export class Renderer {
           this.#hintBodyArgs(body, bodyArgHints)
         );
       } else {
-        if (calledAttributes?.infix) {
+        if (calledAttributes.infix) {
           const argCount = renderedArgs.length;
           for (let i = 0; i < argCount - 1; i++) {
             renderedArgs.splice(2 * i + 1, 0, <div className="block-h-label">{called.id}</div>);
@@ -451,8 +448,6 @@ export class Renderer {
   }
 
   #renderStruct(expr: Struct): JSX.Element {
-    this.environment = this.#extendedEnvironment([expr.name]);
-
     const heading = this.#renderVarSlot(expr.name, 0);
     const body = (
       <>
@@ -472,8 +467,6 @@ export class Renderer {
   }
 
   #renderDefine(expr: Define): JSX.Element {
-    this.environment = this.#extendedEnvironment([expr.name]);
-
     const heading = this.#renderVarSlot(expr.name, 0);
     const body = this.#renderSubexpr(expr.value, 1);
 

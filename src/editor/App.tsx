@@ -17,16 +17,14 @@ import {
 } from "./trees/tree";
 import LoadDialog from "./projects/LoadDialog";
 import SaveDialog from "./projects/SaveDialog";
-import { Expr, Var } from "../expr/expr";
-import { Evaluator } from "../evaluator/evaluate";
+import { Var } from "../expr/expr";
 import { Datum } from "../datum/datum";
-import { Defines } from "../evaluator/defines";
-import { Cell } from "./library/environments";
-import { ComponentValue, Value } from "../evaluator/value";
 import { Untyped } from "../typechecker/type";
 import { Parser } from "../expr/parse";
 import { serializeExpr } from "./trees/serialize";
 import { cloneDeep } from "lodash";
+import { Simulator } from "../simulator/simulate";
+import { Program } from "../simulator/program";
 
 function App() {
   const [renderCounter, setRenderCounter] = useState(0);
@@ -40,6 +38,8 @@ function App() {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+
+  const [simulator, setSimulator] = useState(new Simulator());
 
   function onBlockContextMenu(indexPath: TreeIndexPath) {
     setBlockContextMenuSubject(indexPath);
@@ -208,16 +208,23 @@ function App() {
 
     const subject = nodeAtIndexPath(blockContextMenuSubject);
 
-    const defines = new Defines<Cell<Value>>();
-    const evaluator = new Evaluator({ defines });
-
-    evaluator.addDefines(trees().map(({ root }) => root));
-    const result = cloneDeep(evaluator.eval(subject));
+    const program = new Program(trees().map(({ root }) => root));
+    const result = cloneDeep(program.evalInProgram(subject));
 
     const location = mouseCursorLocation(event);
     // FIXME: builtin function representation
     newTree(result as Datum, location, blockContextMenuSubject.tree.page);
     rerender();
+  }
+
+  function runAll() {
+    const program = new Program(trees().map(({ root }) => root));
+    simulator.setProgram(program);
+    simulator.run();
+  }
+
+  function stopAll() {
+    simulator.stop();
   }
 
   const [loadResolve, setLoadResolve] = useState<(source: string | undefined) => void>();
@@ -259,6 +266,8 @@ function App() {
           })
         }
         onShowHelp={() => setShowHelpDialog(true)}
+        onRunAll={() => runAll()}
+        onStopAll={() => stopAll()}
         rerender={rerender}
       />
 

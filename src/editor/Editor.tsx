@@ -41,7 +41,7 @@ import {
   RenderCounterContext,
   RerenderContext,
 } from "./editor-contexts";
-import { InitialEnvironment } from "./library/environments";
+import { InitialEnvironment, mergeEnvs } from "./library/environments";
 import { CustomKeyboardSensor, CustomPointerSensor } from "./blocks/drag-sensors";
 import Split from "react-split";
 import { Typechecker } from "../typechecker/typecheck";
@@ -53,6 +53,7 @@ import { groupBy, keyBy } from "lodash";
 import { ProjectMeta } from "../project-meta";
 import Tippy from "@tippyjs/react";
 import { ContextMenuTrigger } from "rctx-contextmenu";
+import { Program } from "../simulator/program";
 
 export type Props = {
   trees: Tree[];
@@ -196,6 +197,9 @@ export default function Editor({
     }
   }, [meta]);
 
+  const program = new Program(trees.map(({ root }) => root));
+  const environment = mergeEnvs<unknown>(InitialEnvironment, program.defines.environment());
+
   return (
     <DndContext
       autoScroll={false}
@@ -215,14 +219,9 @@ export default function Editor({
 
           <DragOverlay dropAnimation={null} zIndex={99999999} className="drag-overlay">
             {activeDrag &&
-              new Renderer(
-                // TODO: Do we need to use a better symbol table here?
-                InitialEnvironment,
-                typechecker,
-                {
-                  forDragOverlay: activeDragOver ?? true,
-                }
-              ).render(activeDrag.indexPath)}
+              new Renderer(environment, typechecker, {
+                forDragOverlay: activeDragOver ?? true,
+              }).render(activeDrag.indexPath)}
           </DragOverlay>
         </>
       )}
@@ -286,7 +285,7 @@ export default function Editor({
                                 zIndex: tree.zIndex,
                               }}
                             >
-                              {new Renderer(InitialEnvironment, typechecker, {
+                              {new Renderer(environment, typechecker, {
                                 onEditValue,
                               }).render(rootIndexPath(tree))}
                             </div>
@@ -318,7 +317,7 @@ export default function Editor({
                             {exprCount} {exprCount === 1 ? "expression" : "expressions"} (
                             {defineCount} {defineCount === 1 ? "definition" : "definitions"})
                           </div>
-                          <div>Double-click to rename this component</div>
+                          <div>Double-click to rename this page</div>
                         </small>
                       }
                       className="text-bg-dark"
@@ -331,7 +330,7 @@ export default function Editor({
                         <Nav.Link
                           eventKey={pageID}
                           onDoubleClick={() => {
-                            const newName = prompt("Enter component name:");
+                            const newName = prompt("Enter page name:");
                             if (newName === null) return;
 
                             const page = pagesByID[pageID];
@@ -344,7 +343,7 @@ export default function Editor({
                             rerender();
                           }}
                         >
-                          {pagesByID[pageID]?.name ?? `Component ${pageID}`}
+                          {pagesByID[pageID]?.name ?? `Page ${pageID}`}
                         </Nav.Link>
                       </Nav.Item>
                     </Tippy>
@@ -354,7 +353,7 @@ export default function Editor({
                 <Nav.Link
                   className="px-2"
                   onClick={() => {
-                    const name = prompt("Enter component name:");
+                    const name = prompt("Enter page name:");
                     if (name === null) return;
 
                     meta.pages ??= [];

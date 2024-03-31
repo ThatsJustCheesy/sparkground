@@ -1,5 +1,8 @@
+import { cloneDeep } from "lodash";
+import { Binding, BindingAttributes, Environment } from "../editor/library/environments";
+
 export class Defines<Value> {
-  #defines: Record<string, () => Value> = {};
+  #bindings: Environment<() => Value> = {};
   #computed: Record<string, Value> = {};
   #computing: Set<string> = new Set();
 
@@ -8,7 +11,7 @@ export class Defines<Value> {
   }
 
   clear(): void {
-    this.#defines = {};
+    this.#bindings = {};
     this.#computed = {};
     this.#computing = new Set();
   }
@@ -23,12 +26,24 @@ export class Defines<Value> {
     }
   }
 
-  add(identifier: string, compute: () => Value): void {
-    this.#defines[identifier] = compute;
+  add(identifier: string, compute: () => Value, attributes?: BindingAttributes): void {
+    this.addBinding({ name: identifier, cell: { value: compute }, attributes });
+  }
+
+  addBinding(binding: Binding<() => Value>): void {
+    this.#bindings[binding.name] = binding;
   }
 
   has(identifier: string): boolean {
-    return identifier in this.#defines;
+    return identifier in this.#bindings;
+  }
+
+  binding(name: string): Binding<() => Value> | undefined {
+    return cloneDeep(this.#bindings[name]);
+  }
+
+  environment(): Environment<() => Value> {
+    return cloneDeep(this.#bindings);
   }
 
   get(name: string): Value | undefined | "circular" {
@@ -38,8 +53,9 @@ export class Defines<Value> {
         return "circular";
       }
 
-      if (!(name in this.#defines)) return undefined;
-      const compute = this.#defines[name]!;
+      if (!(name in this.#bindings)) return undefined;
+      const binding = this.#bindings[name]!;
+      const compute = binding.cell.value!;
 
       this.#computing.add(name);
       try {
@@ -53,7 +69,7 @@ export class Defines<Value> {
   }
 
   names(): string[] {
-    return Object.keys(this.#defines);
+    return Object.keys(this.#bindings);
   }
 
   computeAll(): void {

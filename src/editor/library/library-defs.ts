@@ -213,28 +213,76 @@ export const LibraryCategories: LibraryCategory[] = [
     ],
   },
   {
-    name: "State",
+    name: "Components",
     entries: [
-      { kind: "call", called: { kind: "var", id: "state" }, args: [] },
-      { kind: "call", called: { kind: "var", id: "state-get" }, args: [] },
-      { kind: "call", called: { kind: "var", id: "state-set" }, args: [] },
+      {
+        kind: "define",
+        name: hole,
+        value: {
+          kind: "call",
+          called: { kind: "var", id: "component" },
+          args: [],
+        },
+      },
+      {
+        kind: "call",
+        called: { kind: "var", id: "to-draw" },
+        args: [
+          hole,
+          {
+            kind: "lambda",
+            params: [{ kind: "name-binding", id: "state" }],
+            body: hole,
+          },
+        ],
+      },
+      {
+        kind: "call",
+        called: { kind: "var", id: "on-tick" },
+        args: [
+          hole,
+          {
+            kind: "lambda",
+            params: [{ kind: "name-binding", id: "state" }],
+            body: { kind: "var", id: "state" },
+          },
+        ],
+      },
+      {
+        kind: "call",
+        called: { kind: "var", id: "on-mouse" },
+        args: [
+          hole,
+          {
+            kind: "lambda",
+            params: [{ kind: "name-binding", id: "state" }],
+            body: { kind: "var", id: "state" },
+          },
+        ],
+      },
+      {
+        kind: "call",
+        called: { kind: "var", id: "on-key" },
+        args: [
+          hole,
+          {
+            kind: "lambda",
+            params: [{ kind: "name-binding", id: "state" }],
+            body: { kind: "var", id: "state" },
+          },
+        ],
+      },
     ],
   },
   {
     name: "Graphics",
     subcategories: [
       {
-        name: "Placement",
-        entries: [
-          { kind: "call", called: { kind: "var", id: "draw" }, args: [] },
-          { kind: "call", called: { kind: "var", id: "animate" }, args: [] },
-        ],
-      },
-      {
         name: "Shapes",
         entries: [
           { kind: "call", called: { kind: "var", id: "rectangle" }, args: [] },
           { kind: "call", called: { kind: "var", id: "ellipse" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "image" }, args: [] },
         ],
       },
     ],

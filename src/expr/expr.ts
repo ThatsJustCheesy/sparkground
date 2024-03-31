@@ -70,6 +70,7 @@ export type Define = {
   name: VarSlot;
   value: Expr;
 };
+
 export type Let = {
   kind: "let";
   bindings: [name: VarSlot, value: Expr][];
@@ -80,11 +81,13 @@ export type Letrec = {
   bindings: [name: VarSlot, value: Expr][];
   body: Expr;
 };
+
 export type Lambda = {
   kind: "lambda";
   params: VarSlot[];
   body: Expr;
 };
+
 export type Sequence = {
   kind: "sequence";
   exprs: Expr[];
