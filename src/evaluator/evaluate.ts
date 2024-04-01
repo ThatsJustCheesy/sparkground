@@ -7,12 +7,23 @@ import {
   makeEnv,
   mergeEnvs,
 } from "../editor/library/environments";
-import { isHole } from "../editor/trees/tree";
+import { TreeIndexPath, extendIndexPath, isHole, nodeAtIndexPath } from "../editor/trees/tree";
 import { Expr, NameBinding, getIdentifier, getPrettyName } from "../expr/expr";
 import { Defines } from "./defines";
 import { DynamicParamSignature, checkCallAgainstTypeSignature } from "./dynamic-type";
 import { FnValue, ListValue, Value, listValueAsVector, valueAsBool } from "./value";
 import { SparkgroundComponent } from "./component";
+import { ErrorsByIndexPath } from "../expr/errors";
+import {
+  CallToNonFunction,
+  CircularDependency,
+  HoleEval,
+  ImproperList,
+  RuntimeError,
+  UnboundVariable,
+  UninitializedVariable,
+  WrongStructType,
+} from "./errors";
 
 /** Call-by-value evaluator */
 export class Evaluator {
@@ -20,6 +31,9 @@ export class Evaluator {
   env: Environment;
   defines: Defines<Cell<Value>>;
   components: SparkgroundComponent[] = [];
+
+  indexPath?: TreeIndexPath;
+  errors: ErrorsByIndexPath<RuntimeError> = new ErrorsByIndexPath();
 
   constructor({
     baseEnv,
@@ -33,28 +47,66 @@ export class Evaluator {
     this.defines = defines ?? new Defines();
   }
 
-  addDefines(roots: Expr[]) {
-    for (const root of roots) {
+  addDefines(rootIndexPaths: TreeIndexPath[]) {
+    for (const rootIndexPath of rootIndexPaths) {
+      const root = nodeAtIndexPath(rootIndexPath);
       switch (root.kind) {
         case "struct":
         case "define":
-          this.eval(root);
+          this.eval(root, { indexPath: rootIndexPath });
       }
     }
   }
 
-  eval(expr: Expr, extendEnv: Environment = {}): Value {
-    return this.#eval(expr, { extendEnv });
+  eval(
+    expr: Expr,
+    { indexPath, extendEnv }: { indexPath?: TreeIndexPath; extendEnv?: Environment } = {}
+  ): Value | undefined {
+    try {
+      return this.#eval(expr, { indexPath, extendEnv });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  #eval(expr: Expr, { env, extendEnv }: { env?: Environment; extendEnv?: Environment } = {}) {
+  #eval(
+    expr: Expr,
+    {
+      indexPath,
+      index,
+      env,
+      extendEnv,
+    }: {
+      indexPath?: TreeIndexPath;
+      index?: number;
+      env?: Environment;
+      extendEnv?: Environment;
+    } = {}
+  ) {
     const prevEnv = this.env;
     if (env) this.env = mergeEnvs(this.baseEnv, env);
     if (extendEnv) this.env = mergeEnvs(this.env, extendEnv);
 
-    const result = this.#eval_(expr);
+    const prevIndexPath = this.indexPath;
+    if (indexPath) this.indexPath = indexPath;
+    if (index !== undefined && this.indexPath) {
+      this.indexPath = extendIndexPath(this.indexPath, index);
+    }
+    console.log("eval with indexPath", this.indexPath);
+
+    let result: Value;
+    try {
+      result = this.#eval_(expr);
+    } catch (error) {
+      if (typeof error === "object" && "tag" in error && this.indexPath) {
+        this.errors.add(this.indexPath, error);
+      }
+      // FIXME: Don't just rethrow; abort execution
+      throw error;
+    }
 
     this.env = prevEnv;
+    this.indexPath = prevIndexPath;
     return result;
   }
 
@@ -66,17 +118,22 @@ export class Evaluator {
       case "Symbol":
       case "List":
         if (isHole(expr)) {
-          // TODO: More helpful behaviour
-          throw "evaluating hole as expression";
+          throw { tag: "HoleEval" } satisfies HoleEval;
         }
         return expr;
 
       case "var": {
         const cell = this.#get(expr.id);
-        // TODO: Better error messages & metadata
-        if (!cell) throw "unbound variable: " + expr.id;
-        if (cell === "circular") throw "circular dependency: " + expr.id;
-        if (!cell.value) throw "uninitialized variable: " + expr.id;
+
+        if (!cell) {
+          throw { tag: "UnboundVariable", name: expr.id } satisfies UnboundVariable;
+        }
+        if (cell === "circular") {
+          throw { tag: "CircularDependency", name: expr.id } satisfies CircularDependency;
+        }
+        if (!cell.value) {
+          throw { tag: "UninitializedVariable", name: expr.id } satisfies UninitializedVariable;
+        }
 
         return cell.value;
       }
@@ -84,10 +141,12 @@ export class Evaluator {
       case "call": {
         const { called, args } = expr;
 
-        const calledValue = this.#eval(called);
-        if (calledValue.kind !== "fn") throw "cannot call non-function";
+        const calledValue = this.#eval(called, { index: 0 });
+        if (calledValue.kind !== "fn") {
+          throw { tag: "CallToNonFunction", called: calledValue } satisfies CallToNonFunction;
+        }
 
-        const argValues = args.map((arg) => this.#eval(arg));
+        const argValues = args.map((arg, index) => this.#eval(arg, { index: index + 1 }));
 
         return this.call(calledValue, argValues);
       }
@@ -129,16 +188,19 @@ export class Evaluator {
 
                   const vector = listValueAsVector(struct);
                   if (!vector) {
-                    throw `structure passed to field accessor for ${getPrettyName(
-                      fieldName
-                    )} is an improper list`;
+                    throw {
+                      tag: "ImproperList",
+                      functionName: getPrettyName(fieldName),
+                      argValue: struct,
+                    } satisfies ImproperList;
                   }
 
                   const fieldValue = vector[fieldIndex + 1];
                   if (!fieldValue) {
-                    throw `wrong structure type passed to field accessor for ${getPrettyName(
-                      fieldName
-                    )}`;
+                    throw {
+                      tag: "WrongStructType",
+                      structName: getPrettyName(fieldName),
+                    } satisfies WrongStructType;
                   }
 
                   return fieldValue;
@@ -152,20 +214,26 @@ export class Evaluator {
       }
 
       case "define": {
-        this.defines.add(getIdentifier(expr.name), () => ({ value: this.eval(expr.value) }));
+        const defineBodyIndexPath = this.indexPath ? extendIndexPath(this.indexPath, 1) : undefined;
+        this.defines.add(getIdentifier(expr.name), () => ({
+          value: this.#eval(expr.value, { indexPath: defineBodyIndexPath }),
+        }));
 
         return { kind: "List", heads: [] };
       }
 
       case "let": {
         const valueBindings = expr.bindings.map(
-          ([name, value]): Binding<Value> => ({
+          ([name, value], index): Binding<Value> => ({
             name: (name as NameBinding).id,
-            cell: { value: this.#eval(value) },
+            cell: { value: this.#eval(value, { index: 2 * index + 1 }) },
           })
         );
 
-        return this.#eval(expr.body, { extendEnv: makeEnv(valueBindings) });
+        return this.#eval(expr.body, {
+          index: 2 * expr.bindings.length,
+          extendEnv: makeEnv(valueBindings),
+        });
       }
 
       case "letrec": {
@@ -179,15 +247,27 @@ export class Evaluator {
           ({ name }) => name
         );
 
-        expr.bindings.forEach(([name, value]) => {
+        expr.bindings.forEach(([name, value], index) => {
           const binding = valueBindings[(name as NameBinding).id]!;
-          binding.cell.value = this.#eval(value, { extendEnv: makeEnv([binding]) });
+          binding.cell.value = this.#eval(value, {
+            index: 2 * index + 1,
+            extendEnv: makeEnv([binding]),
+          });
         });
 
-        return this.#eval(expr.body, { extendEnv: makeEnv(Object.values(valueBindings)) });
+        return this.#eval(expr.body, {
+          index: 2 * expr.bindings.length,
+          extendEnv: makeEnv(Object.values(valueBindings)),
+        });
       }
 
       case "lambda":
+        console.log(
+          `lambda body indexPath:
+            
+          `,
+          this.indexPath ? extendIndexPath(this.indexPath, expr.params.length + 1) : undefined
+        );
         return {
           kind: "fn",
           signature: expr.params.map((param) => ({
@@ -195,13 +275,16 @@ export class Evaluator {
             // TODO: type and variadic?
           })),
           body: expr.body,
+          indexPath: this.indexPath
+            ? extendIndexPath(this.indexPath, expr.params.length + 1)
+            : undefined,
           env: this.env,
         };
 
       case "sequence": {
         let result: Value = { kind: "List", heads: [] };
-        expr.exprs.forEach((expr) => {
-          result = this.#eval(expr);
+        expr.exprs.forEach((expr, index) => {
+          result = this.#eval(expr, { index });
         });
 
         return result;
@@ -213,9 +296,10 @@ export class Evaluator {
         let args = [...expr.args];
         console.log(JSON.stringify(args));
         let value: Value;
+        let index = 0;
         do {
           const arg = args.shift()!;
-          value = this.#eval(arg);
+          value = this.#eval(arg, { index: index++ });
         } while (args.length && valueAsBool(value));
 
         return value;
@@ -226,17 +310,22 @@ export class Evaluator {
 
         let args = [...expr.args];
         let value: Value;
+        let index = 0;
         do {
           const arg = args.shift()!;
-          value = this.#eval(arg);
+          value = this.#eval(arg, { index: index++ });
         } while (args.length && !valueAsBool(value));
 
         return value;
       }
 
       case "if": {
-        const condition = this.#eval(expr.if);
-        return this.#eval(valueAsBool(condition) ? expr.then : expr.else);
+        const condition = this.#eval(expr.if, { index: 0 });
+        if (valueAsBool(condition)) {
+          return this.#eval(expr.then, { index: 1 });
+        } else {
+          return this.#eval(expr.else, { index: 2 });
+        }
       }
 
       case "cond":
@@ -267,7 +356,10 @@ export class Evaluator {
       // Builtin
       result = fn.body(args, this);
     } else {
-      result = this.#eval(fn.body, { env: callEnv });
+      result = this.#eval(fn.body, {
+        indexPath: fn.indexPath,
+        env: callEnv,
+      });
     }
 
     return result;

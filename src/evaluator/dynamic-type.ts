@@ -1,3 +1,4 @@
+import { DynamicSignatureMismatch } from "./errors";
 import { Value } from "./value";
 
 export type DynamicType = string;
@@ -11,11 +12,20 @@ export type DynamicParamSignature = {
   type?: DynamicType;
 };
 
-export type DynamicSignatureMismatch = {
-  tag: "DynamicSignatureMismatch";
-  argValues: Value[];
-  signature: DynamicFnSignature;
-};
+export function prettyPrintSignature(signature: DynamicFnSignature): string {
+  return signature
+    .map(
+      (param) =>
+        (param.type ? "(" + param.name + " : " + param.type + ")" : param.name) +
+        (param.variadic ? "..." : param.optional ? "?" : "")
+    )
+    .join(" ");
+}
+export function prettyPrintSignatureNames(signature: DynamicFnSignature): string {
+  return signature
+    .map((param) => param.name + (param.variadic ? "..." : param.optional ? "?" : ""))
+    .join(" ");
+}
 
 export function checkCallAgainstTypeSignature(
   argValues: Value[],

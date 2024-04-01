@@ -39,7 +39,12 @@ function App() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
 
+  const [program, setProgram_] = useState(new Program(trees()));
   const [simulator, setSimulator] = useState(new Simulator());
+  const setProgram = (newValue: any) => {
+    console.log("setProgram");
+    setProgram_(newValue);
+  };
 
   function onBlockContextMenu(indexPath: TreeIndexPath) {
     setBlockContextMenuSubject(indexPath);
@@ -206,25 +211,35 @@ function App() {
   function evaluateContextMenuSubject(event: SyntheticEvent) {
     if (!blockContextMenuSubject) return;
 
-    const subject = nodeAtIndexPath(blockContextMenuSubject);
+    const program = new Program(trees());
+    setProgram(program);
 
-    const program = new Program(trees().map(({ root }) => root));
-    const result = cloneDeep(program.evalInProgram(subject));
+    const result = cloneDeep(program.evalInProgram(blockContextMenuSubject));
 
-    const location = mouseCursorLocation(event);
-    // FIXME: builtin function representation
-    newTree(result as Datum, location, blockContextMenuSubject.tree.page);
+    if (result !== undefined) {
+      const location = mouseCursorLocation(event);
+      // FIXME: builtin function representation
+      newTree(result as Datum, location, blockContextMenuSubject.tree.page);
+    }
+
     rerender();
   }
 
-  function runAll() {
-    const program = new Program(trees().map(({ root }) => root));
+  async function runAll() {
+    const program = new Program(trees());
+    setProgram(program);
+
     simulator.setProgram(program);
     simulator.run();
+
+    rerender();
   }
 
   function stopAll() {
+    if (program) setProgram(new Program(trees()));
+
     simulator.stop();
+    rerender();
   }
 
   const [loadResolve, setLoadResolve] = useState<(source: string | undefined) => void>();
@@ -274,6 +289,7 @@ function App() {
       <Editor
         trees={trees()}
         meta={globalMeta}
+        program={program}
         onBlockContextMenu={onBlockContextMenu}
         codeEditorSubject={codeEditorSubject}
         setCodeEditorSubject={setCodeEditorSubject}

@@ -20,7 +20,9 @@ describe("evaluate", () => {
 
   it("evals variables", () => {
     expect(() => evaluator.eval({ kind: "var", id: "x" })).toThrow()
-    expect(evaluator.eval({ kind: "var", id: "x" }, { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } })).toEqual<Value>({
+    expect(
+      evaluator.eval({ kind: "var", id: "x" }, { extendEnv: { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } } })
+    ).toEqual<Value>({
       kind: "Number",
       value: 42,
     })
@@ -102,7 +104,9 @@ describe("evaluate", () => {
     expect(
       evaluator.eval(
         { kind: "call", called: { kind: "var", id: "closure" }, args: [] },
-        { closure: { name: "closure", cell: { value: closure } } }
+        {
+          extendEnv: { closure: { name: "closure", cell: { value: closure } } },
+        }
       )
     ).toEqual<Value>({ kind: "Number", value: 42 })
   })
@@ -110,13 +114,13 @@ describe("evaluate", () => {
   it("evals quote and returns value verbatim", () => {
     const quoteResult = evaluator.eval(Parser.parseToExpr("(quote (1 #t abc () (2 3)))"))
     const datum = DatumParser.parseToDatum("(1 #t abc () (2 3))")
-    expect(datumEqual(quoteResult, datum))
+    expect(datumEqual(quoteResult!, datum))
   })
 
   it("evals calls to builtins", () => {
     const consResult = evaluator.eval(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 (null))))"))
     const datum = DatumParser.parseToDatum("(3 2 1)")
-    expect(datumEqual(consResult, datum)).toBeTruthy()
+    expect(datumEqual(consResult!, datum)).toBeTruthy()
   })
 
   it("checks the types of function parameters", () => {

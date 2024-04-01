@@ -8,7 +8,7 @@ import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
 import { Type, functionMaxArgCount } from "../../typechecker/type";
 import { prettyPrintType } from "../../typechecker/serialize";
-import { describeInferenceError } from "../../typechecker/errors";
+import { describeTypecheckError } from "../../typechecker/errors";
 import {
   ActiveDragContext,
   OnContextMenuContext,
@@ -20,6 +20,9 @@ import { FnValue, Value } from "../../evaluator/value";
 import { Point, newTree } from "../trees/trees";
 import { moveExprInTree } from "../trees/mutate";
 import { Typechecker } from "../../typechecker/typecheck";
+import { describeRuntimeError } from "../../evaluator/errors";
+import { prettyPrintSignatureNames } from "../../evaluator/dynamic-type";
+import { Program } from "../../simulator/program";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
@@ -29,6 +32,7 @@ type Props = PropsWithChildren<{
   isCopySource?: boolean;
 
   typechecker: Typechecker;
+  program: Program;
   identifierTag?: string;
 
   forDragOverlay?: boolean | Over;
@@ -141,6 +145,7 @@ export default function Block({
   isCopySource,
 
   typechecker,
+  program,
   identifierTag,
 
   forDragOverlay,
@@ -242,7 +247,7 @@ export default function Block({
           : undefined
       );
     } catch (error) {
-      setType(describeInferenceError(error) ?? `${error}`);
+      setType(describeTypecheckError(error) ?? `${error}`);
     }
 
     if (identifierTag) {
@@ -268,9 +273,7 @@ export default function Block({
             <>
               ({binding.name}
               <div className="ms-2 fst-italic">
-                {(binding.cell.value as FnValue).signature
-                  .map((param) => param.name + (param.variadic ? "..." : param.optional ? "?" : ""))
-                  .join(" ")}
+                {prettyPrintSignatureNames((binding.cell.value as FnValue).signature)}{" "}
               </div>
               )
             </>
@@ -325,6 +328,8 @@ export default function Block({
     typecheckingError = typechecker.errors.for(extendIndexPath(indexPath, 0));
   }
 
+  const runtimeError = program.evaluator.errors.for(indexPath);
+
   const tooltipContentParts = [
     data.type === "name-binding" && <small>Double-click to rename this variable</small>,
     nameable && (
@@ -350,9 +355,15 @@ export default function Block({
     //     .join(", ")}
     // </>,
 
+    !!runtimeError && (
+      <span className="text-warning">
+        <b>Runtime Error:</b> <i>{describeRuntimeError(runtimeError)}</i>
+      </span>
+    ),
+
     !!typecheckingError && (
       <span className="text-warning">
-        <b>Type Error:</b> <i>{describeInferenceError(typecheckingError)}</i>{" "}
+        <b>Type Error:</b> <i>{describeTypecheckError(typecheckingError)}</i>{" "}
       </span>
     ),
     data.type !== "type" &&
@@ -532,10 +543,10 @@ export default function Block({
               } ${nameable ? "block-nameable" : ""} ${
                 forDragOverlay ? "block-dragging" : validDraggedOver ? "block-dragged-over" : ""
               } ${forDragOverlay && over?.id === "library" ? "block-drop-will-delete" : ""} ${
-                !!typecheckingError ? "block-error" : ""
-              } ${identifierTag ? `block-identifier-${identifierTag}` : ""} ${
-                data.type === "name-hole" && data.phantom ? "block-name-hole-phantom" : ""
-              }`}
+                !!runtimeError ? "block-error" : ""
+              } ${!!typecheckingError ? "block-warning" : ""} ${
+                identifierTag ? `block-identifier-${identifierTag}` : ""
+              } ${data.type === "name-hole" && data.phantom ? "block-name-hole-phantom" : ""}`}
               onMouseOver={(event) => {
                 if ((event.target as Element).closest(".block") === divRef.current) {
                   setTooltipVisible(true);

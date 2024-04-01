@@ -59,6 +59,8 @@ export type Props = {
   trees: Tree[];
   meta: ProjectMeta;
 
+  program: Program;
+
   onBlockContextMenu: (indexPath: TreeIndexPath) => void;
 
   codeEditorSubject: TreeIndexPath | undefined;
@@ -124,6 +126,7 @@ let isAltPressed = false;
 export default function Editor({
   trees,
   meta,
+  program,
   onBlockContextMenu,
   rerender,
   codeEditorSubject,
@@ -197,7 +200,6 @@ export default function Editor({
     }
   }, [meta]);
 
-  const program = new Program(trees.map(({ root }) => root));
   const environment = mergeEnvs<unknown>(InitialEnvironment, program.defines.environment());
 
   return (
@@ -219,7 +221,7 @@ export default function Editor({
 
           <DragOverlay dropAnimation={null} zIndex={99999999} className="drag-overlay">
             {activeDrag &&
-              new Renderer(environment, typechecker, {
+              new Renderer(environment, typechecker, program, {
                 forDragOverlay: activeDragOver ?? true,
               }).render(activeDrag.indexPath)}
           </DragOverlay>
@@ -285,7 +287,7 @@ export default function Editor({
                                 zIndex: tree.zIndex,
                               }}
                             >
-                              {new Renderer(environment, typechecker, {
+                              {new Renderer(environment, typechecker, program, {
                                 onEditValue,
                               }).render(rootIndexPath(tree))}
                             </div>

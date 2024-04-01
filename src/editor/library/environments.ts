@@ -18,6 +18,7 @@ import { flattenDatum } from "../../datum/flattened";
 import { DynamicTypeAny } from "../../evaluator/dynamic-type";
 import { datumEqual } from "../../datum/equality";
 import { SparkgroundComponent } from "../../evaluator/component";
+import { ImproperList } from "../../evaluator/errors";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -114,7 +115,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           const [fn, argList] = args as [FnValue, ListValue];
 
           const argv = listValueAsVector(argList);
-          if (!argv) throw "argument list passed to 'apply' is an improper list";
+          if (!argv) {
+            throw {
+              tag: "ImproperList",
+              functionName: "apply",
+              argValue: argList,
+            } satisfies ImproperList;
+          }
 
           return evaluator.call(fn, argv);
         },
@@ -158,8 +165,13 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           if (!lists.length) return { kind: "List", heads: [] };
 
           const vectors = lists.map(listValueAsVector);
-          if (vectors.some((vector) => vector === undefined)) {
-            throw "one of the lists passed to 'map' is an improper list";
+          const invalidIndex = vectors.findIndex((vector) => vector === undefined);
+          if (invalidIndex !== -1) {
+            throw {
+              tag: "ImproperList",
+              functionName: "map",
+              argValue: lists[invalidIndex],
+            } satisfies ImproperList;
           }
           const rows = vectors as Value[][];
 
@@ -211,7 +223,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           if (expression.kind === "List") {
             const vector = listValueAsVector(expression);
             if (vector === undefined) {
-              throw "expression passed to 'eval' is an improper list";
+              throw {
+                tag: "ImproperList",
+                functionName: "eval",
+                argValue: expression,
+              } satisfies ImproperList;
             }
             expressionDatum = { kind: "List", heads: vector as Datum[] };
           } else {
@@ -220,7 +236,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           // TODO: Use env (what should be the runtime representation?)
 
-          return evaluator.eval(new Parser().parsePrimary(flattenDatum(expressionDatum)));
+          return (
+            evaluator.eval(new Parser().parsePrimary(flattenDatum(expressionDatum))) ?? {
+              kind: "List",
+              heads: [],
+            }
+          );
         },
       },
     },
@@ -1116,7 +1137,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           const vecs = lists.map(listValueAsVector).filter((x) => x);
           if (vecs.length !== lists.length) {
-            throw "argument to 'concatenate' is an improper list";
+            const invalidIndex = lists.map(listValueAsVector).findIndex((x) => !x);
+            throw {
+              tag: "ImproperList",
+              functionName: "concatenate",
+              argValue: lists[invalidIndex],
+            } satisfies ImproperList;
           }
 
           return { kind: "List", heads: (vecs as Value[][]).flat(1) };
@@ -1148,7 +1174,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           const vec = listValueAsVector(list);
           if (!vec) {
-            throw "argument to 'reverse' is an improper list";
+            throw {
+              tag: "ImproperList",
+              functionName: "reverse",
+              argValue: list,
+            } satisfies ImproperList;
           }
 
           return { kind: "List", heads: [...vec].reverse() };
@@ -1254,7 +1284,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           const vector = listValueAsVector(list);
           if (vector === undefined) {
-            throw "argument passed to 'length' is an improper list";
+            throw {
+              tag: "ImproperList",
+              functionName: "length",
+              argValue: list,
+            } satisfies ImproperList;
           }
 
           return { kind: "Number", value: vector.length };
@@ -1286,7 +1320,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           const vector = listValueAsVector(list);
           if (vector === undefined) {
-            throw "argument passed to 'index-of' is an improper list";
+            throw {
+              tag: "ImproperList",
+              functionName: "index-of",
+              argValue: list,
+            } satisfies ImproperList;
           }
 
           return {
@@ -1321,7 +1359,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           const vector = listValueAsVector(list);
           if (vector === undefined) {
-            throw "argument passed to 'contains?' is an improper list";
+            throw {
+              tag: "ImproperList",
+              functionName: "contains?",
+              argValue: list,
+            } satisfies ImproperList;
           }
 
           return { kind: "Boolean", value: vector.some((listItem) => datumEqual(listItem, item)) };

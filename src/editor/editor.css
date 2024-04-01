@@ -477,9 +477,29 @@
   outline: 0.4em solid rgba(221, 66, 66, 0.987);
 }
 
+.block-warning,
+.block-warning + .block-h-pull-tab-container > .menu-trigger > .block-h-pull-tab {
+  box-shadow: 0px 0px 0.1em 0.25em #fca534;
+}
+
 .block-error,
 .block-error + .block-h-pull-tab-container > .menu-trigger > .block-h-pull-tab {
-  box-shadow: 0px 0px 0em 0.25em #ff6b55;
+  box-shadow: 0px 0px 0.25em 0.3em #f13a1d;
+  animation: block-error-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes block-error-pulse {
+  0% {
+    box-shadow: 0px 0px 0.25em 0.35em #f1391d69;
+  }
+
+  50% {
+    box-shadow: 0px 0px 0.25em 0.35em #f13a1d;
+  }
+
+  100% {
+    box-shadow: 0px 0px 0.25em 0.35em #f1391d69;
+  }
 }
 
 .modal {

@@ -1,5 +1,7 @@
 import { BoolDatum, Datum, NumberDatum, StringDatum, SymbolDatum } from "../datum/datum";
+import { serializeDatum } from "../datum/serialize";
 import { Environment } from "../editor/library/environments";
+import { TreeIndexPath } from "../editor/trees/tree";
 import { Expr } from "../expr/expr";
 import { SparkgroundComponent } from "./component";
 import { DynamicFnSignature } from "./dynamic-type";
@@ -24,6 +26,7 @@ export type FnValue = {
   kind: "fn";
   signature: DynamicFnSignature;
   body: BuiltinFn | Expr;
+  indexPath?: TreeIndexPath;
   env?: Environment;
 };
 
@@ -33,6 +36,27 @@ export type ComponentValue = {
   kind: "component";
   component: SparkgroundComponent;
 };
+
+export function prettyPrintValue(value: Value): string {
+  switch (value.kind) {
+    case "Boolean":
+    case "Number":
+    case "String":
+    case "Symbol":
+      return serializeDatum(value);
+    case "List":
+      const heads = value.heads.map(serializeDatum).join(" ");
+      if (value.tail) {
+        const tail = prettyPrintValue(value.tail);
+        return `(${heads} . ${tail})`;
+      }
+      return `(${heads})`;
+    case "fn":
+      return "[function]";
+    case "component":
+      return "[component]";
+  }
+}
 
 export function valueIsDatum(value: Value): value is Datum {
   switch (value.kind) {

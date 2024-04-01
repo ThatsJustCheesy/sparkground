@@ -4,7 +4,7 @@ import { Define, Expr, NameBinding, VarSlot, getIdentifier, getTypeAnnotation } 
 import {
   ArityMismatch,
   DuplicateDefinition,
-  InferenceError,
+  TypecheckError,
   InvalidAssignment,
   InvalidAssignmentToType,
   NotCallable,
@@ -26,7 +26,6 @@ import { InvisiblePageID, Tree, newTree, removeTree } from "../editor/trees/tree
 import { isSubtype, typeJoin } from "./subtyping";
 import { Defines } from "../evaluator/defines";
 import { InitialTypeContext } from "../editor/typecheck";
-import { uniqueId } from "lodash";
 import {
   ConstraintSet,
   computeMinimalSubstitution,
@@ -34,6 +33,7 @@ import {
 } from "./constraints/constraint-set";
 import { eliminateUp, generateConstraints } from "./constraints/constraint-gen";
 import { typeSubstitute } from "./type-substitution";
+import { ErrorsByIndexPath } from "../expr/errors";
 
 export type TypeContext = Record<string, Type>;
 
@@ -67,34 +67,10 @@ class InferenceCache {
   }
 }
 
-export class TypecheckerErrors {
-  #errors: Record<string, InferenceError> = {};
-
-  clear() {
-    this.#errors = {};
-  }
-
-  add(indexPath: TreeIndexPath, error: InferenceError) {
-    this.#errors[this.#encode(indexPath)] = error;
-  }
-
-  for(indexPath: TreeIndexPath) {
-    return this.#errors[this.#encode(indexPath)];
-  }
-
-  all() {
-    return Object.values(this.#errors);
-  }
-
-  #encode(indexPath: TreeIndexPath) {
-    return indexPath.tree.id + "#" + indexPath.path.map((x) => `${x}`).join("#");
-  }
-}
-
 export class Typechecker {
   baseContext: TypeContext;
 
-  errors = new TypecheckerErrors();
+  errors: ErrorsByIndexPath<TypecheckError> = new ErrorsByIndexPath();
   autoReset: boolean;
 
   #defines: Defines<Type> = new Defines();
@@ -199,7 +175,7 @@ export class Typechecker {
       inferred = this.#inferType_(expr, context, indexPath);
     } catch (error) {
       if (typeof error === "object" && "tag" in error) {
-        this.errors.add(indexPath, error as InferenceError);
+        this.errors.add(indexPath, error as TypecheckError);
       } else {
         console.error(error);
       }

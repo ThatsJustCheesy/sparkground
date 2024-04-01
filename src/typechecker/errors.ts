@@ -2,7 +2,7 @@ import { Var, Expr, Call, NameBinding, Define } from "../expr/expr";
 import { serializeType } from "./serialize";
 import { Type } from "./type";
 
-export type InferenceError =
+export type TypecheckError =
   | DuplicateDefinition
   | UnboundVariable
   | NotCallable
@@ -56,7 +56,7 @@ export type VariadicArityMismatch = {
   attemptedCallArity: number;
 };
 
-export function describeInferenceError(e: InferenceError): string {
+export function describeTypecheckError(e: TypecheckError): string {
   switch (e.tag) {
     case "DuplicateDefinition":
       return `duplicate definition of ${e.id}`;
@@ -76,22 +76,5 @@ export function describeInferenceError(e: InferenceError): string {
         : !e.maxArity
         ? `wrong number of arguments: got ${e.attemptedCallArity}, expecting at least ${e.minArity}`
         : `wrong number of arguments: got ${e.attemptedCallArity}, expecting between ${e.minArity} and ${e.maxArity}`;
-  }
-}
-
-export function errorInvolvesExpr(e: InferenceError, expr: Expr): boolean {
-  switch (e.tag) {
-    case "DuplicateDefinition":
-      return expr === e.define;
-    case "UnboundVariable":
-      return expr === e.v;
-    case "InvalidAssignmentToType":
-    case "InvalidAssignment":
-      return expr === e.expr;
-    case "NotCallable":
-      return expr === e.call;
-    case "ArityMismatch":
-    case "VariadicArityMismatch":
-      return expr === e.call;
   }
 }

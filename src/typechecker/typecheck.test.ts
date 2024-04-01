@@ -1,5 +1,5 @@
 import { Lambda } from "../expr/expr"
-import { InferenceError } from "./errors"
+import { TypecheckError } from "./errors"
 import { Any, BuiltinType } from "./type"
 import { Typechecker } from "./typecheck"
 
@@ -202,18 +202,18 @@ describe("Typechecker", () => {
 
   it("complains about arity mismatch", () => {
     checker.inferType({ kind: "call", called: const42, args: [{ kind: "Number", value: 42 }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("ArityMismatch")
+    expect(checker.errors.all()[0]?.tag).toEqual<TypecheckError["tag"]>("ArityMismatch")
 
     checker.inferType({ kind: "call", called: numberIdentity, args: [] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("ArityMismatch")
+    expect(checker.errors.all()[0]?.tag).toEqual<TypecheckError["tag"]>("ArityMismatch")
   })
 
   it("complains about invalid assignments", () => {
     checker.inferType({ kind: "call", called: intIdentity, args: [{ kind: "Number", value: 4.2 }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
+    expect(checker.errors.all()[0]?.tag).toEqual<TypecheckError["tag"]>("InvalidAssignmentToType")
 
     checker.inferType({ kind: "call", called: numberIdentity, args: [{ kind: "String", value: "foo" }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
+    expect(checker.errors.all()[0]?.tag).toEqual<TypecheckError["tag"]>("InvalidAssignmentToType")
 
     checker.inferType({
       kind: "call",
@@ -240,10 +240,10 @@ describe("Typechecker", () => {
       },
       args: [callIntToNumber],
     })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
+    expect(checker.errors.all()[0]?.tag).toEqual<TypecheckError["tag"]>("InvalidAssignmentToType")
 
     checker.inferType({ kind: "call", called: uncallable, args: [{ kind: "Number", value: 42 }] })
-    expect(checker.errors.all()[0]?.tag).toEqual<InferenceError["tag"]>("InvalidAssignmentToType")
+    expect(checker.errors.all()[0]?.tag).toEqual<TypecheckError["tag"]>("InvalidAssignmentToType")
   })
 
   it("infers list types", () => {

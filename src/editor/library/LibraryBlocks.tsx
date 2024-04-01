@@ -7,6 +7,7 @@ import Tab from "react-bootstrap/Tab";
 import { InitialEnvironment } from "./environments";
 import { Typechecker } from "../../typechecker/typecheck";
 import { rootIndexPath } from "../trees/tree";
+import { Program } from "../../simulator/program";
 
 export default function LibraryBlocks() {
   return <LibraryCategoryTabs categories={LibraryCategories} />;
@@ -37,12 +38,14 @@ function LibraryCategoryTabs({ categories }: { categories?: LibraryCategory[] })
                 zIndex: 1,
               };
 
-              return new Renderer(InitialEnvironment, new Typechecker(), {}).render(
-                rootIndexPath(tree),
-                {
-                  isCopySource: true,
-                }
-              );
+              return new Renderer(
+                InitialEnvironment,
+                new Typechecker(),
+                new Program([]),
+                {}
+              ).render(rootIndexPath(tree), {
+                isCopySource: true,
+              });
             })}
 
             {<LibraryCategoryTabs categories={category.subcategories} />}
