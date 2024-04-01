@@ -79,7 +79,7 @@ export default function AppMenuBar({
       </MenuBarButton>
       <MenuBarButton action={onShowHelp}>Help</MenuBarButton>
 
-      <MenuBarButton className="ms-5" action={onRunAll}>
+      <MenuBarButton className="ms-4" action={onRunAll}>
         Run
       </MenuBarButton>
       <MenuBarButton action={onStopAll}>Stop</MenuBarButton>
