@@ -137,10 +137,10 @@ export const LibraryCategories: LibraryCategory[] = [
             name: "Exact",
             entries: [
               { kind: "call", called: { kind: "var", id: "string=?" }, args: [] },
-              { kind: "call", called: { kind: "var", id: "string-<?" }, args: [] },
-              { kind: "call", called: { kind: "var", id: "string->?" }, args: [] },
-              { kind: "call", called: { kind: "var", id: "string-<=?" }, args: [] },
-              { kind: "call", called: { kind: "var", id: "string->=?" }, args: [] },
+              { kind: "call", called: { kind: "var", id: "string<?" }, args: [] },
+              { kind: "call", called: { kind: "var", id: "string>?" }, args: [] },
+              { kind: "call", called: { kind: "var", id: "string<=?" }, args: [] },
+              { kind: "call", called: { kind: "var", id: "string>=?" }, args: [] },
             ],
           },
           {

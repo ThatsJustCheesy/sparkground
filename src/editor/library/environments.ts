@@ -1504,6 +1504,257 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
+    name: "string=?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return { kind: "Boolean", value: string1.value === string2.value };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` and `string2` are equal; that is, they have exactly the same characters in exactly the same order.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string<?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return { kind: "Boolean", value: string1.value < string2.value };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares less than `string2` in lexicographic (dictionary) order.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string>?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return { kind: "Boolean", value: string1.value > string2.value };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares greater than `string2` in lexicographic (dictionary) order.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string<=?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return { kind: "Boolean", value: string1.value <= string2.value };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares less than or equal to `string2` in lexicographic (dictionary) order.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string>=?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return { kind: "Boolean", value: string1.value >= string2.value };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares greater than or equal to `string2` in lexicographic (dictionary) order.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string-ci=?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return {
+            kind: "Boolean",
+            value:
+              string1.value.localeCompare(string2.value, undefined, { sensitivity: "accent" }) ===
+              0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` and `string2` are equal, ignoring letter case; that is, they have the same characters (ignoring letter case) in exactly the same order.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string-ci<?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return {
+            kind: "Boolean",
+            value:
+              string1.value.localeCompare(string2.value, undefined, { sensitivity: "accent" }) < 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares less than `string2` in lexicographic (dictionary) order, ignoring letter case.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string-ci>?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return {
+            kind: "Boolean",
+            value:
+              string1.value.localeCompare(string2.value, undefined, { sensitivity: "accent" }) > 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares greater than `string2` in lexicographic (dictionary) order, ignoring letter case.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string-ci<=?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return {
+            kind: "Boolean",
+            value:
+              string1.value.localeCompare(string2.value, undefined, { sensitivity: "accent" }) <= 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares less than or equal to `string2` in lexicographic (dictionary) order, ignoring letter case.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
+    name: "string-ci>=?",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [
+          { name: "string1", type: "String" },
+          { name: "string2", type: "String" },
+        ],
+        body: (args): Value => {
+          const [string1, string2] = args as [StringDatum, StringDatum];
+          return {
+            kind: "Boolean",
+            value:
+              string1.value.localeCompare(string2.value, undefined, { sensitivity: "accent" }) >= 0,
+          };
+        },
+      },
+    },
+    attributes: {
+      doc: "Determines whether `string1` compares greater than or equal to `string2` in lexicographic (dictionary) order, ignoring letter case.",
+      typeAnnotation: {
+        tag: "Function",
+        of: [{ tag: "String" }, { tag: "String" }, { tag: "Boolean" }],
+      },
+    },
+  },
+  {
     name: "ellipse",
     cell: {
       value: {
