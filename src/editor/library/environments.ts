@@ -18,7 +18,7 @@ import { flattenDatum } from "../../datum/flattened";
 import { DynamicTypeAny } from "../../evaluator/dynamic-type";
 import { datumEqual } from "../../datum/equality";
 import { SparkgroundComponent } from "../../evaluator/component";
-import { ImproperList } from "../../evaluator/errors";
+import { ImproperList, IndexOutOfBounds } from "../../evaluator/errors";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -1307,14 +1307,52 @@ export const SchemeReportEnvironment: Environment = makeEnv([
     },
   },
   {
-    name: "index-of",
+    name: "item-at",
     cell: {
       value: {
         kind: "fn",
         signature: [
           { name: "list", type: "List" },
-          { name: "item", type: DynamicTypeAny },
+          { name: "index", type: "Number" },
         ],
+        body: (args): Value => {
+          const [list, index] = args as [ListValue, NumberDatum];
+
+          const vector = listValueAsVector(list);
+          if (vector === undefined) {
+            throw {
+              tag: "ImproperList",
+              functionName: "index-of",
+              argValue: list,
+            } satisfies ImproperList;
+          }
+
+          const item = vector[index.value];
+          if (item === undefined) {
+            throw { tag: "IndexOutOfBounds", list, index: index.value } satisfies IndexOutOfBounds;
+          }
+
+          return item;
+        },
+      },
+    },
+    attributes: {
+      doc: "Returns the item at `index` in `list`.",
+      typeAnnotation: {
+        forall: [{ kind: "type-name-binding", id: "Element" }],
+        body: {
+          tag: "Function",
+          of: [{ tag: "List", of: [{ var: "Element" }] }, { tag: "Integer" }, { var: "Element" }],
+        },
+      },
+    },
+  },
+  {
+    name: "index-of",
+    cell: {
+      value: {
+        kind: "fn",
+        signature: [{ name: "list", type: "List" }, { name: "item" }],
         body: (args): Value => {
           const [list, item] = args as [ListValue, Value];
 

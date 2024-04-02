@@ -1,11 +1,12 @@
 import { DynamicFnSignature, prettyPrintSignature } from "./dynamic-type";
-import { Value, prettyPrintValue } from "./value";
+import { ListValue, Value, prettyPrintValue } from "./value";
 
 export type RuntimeError =
   | HoleEval
   | CallToNonFunction
   | DynamicSignatureMismatch
   | ImproperList
+  | IndexOutOfBounds
   | WrongStructType
   | UnboundVariable
   | UninitializedVariable
@@ -30,6 +31,12 @@ export type ImproperList = {
   tag: "ImproperList";
   functionName: string;
   argValue?: Value;
+};
+
+export type IndexOutOfBounds = {
+  tag: "IndexOutOfBounds";
+  list: ListValue;
+  index: number;
 };
 
 export type WrongStructType = {
@@ -68,6 +75,8 @@ export function describeRuntimeError(e: RuntimeError): string {
       return `argument ${
         e.argValue ? prettyPrintValue(e.argValue) : "[none]"
       } passed to built-in function \"${e.functionName}\" is an improper list`;
+    case "IndexOutOfBounds":
+      return `index ${e.index} is out of bounds for list ${prettyPrintValue(e.list)}`;
     case "WrongStructType":
       return `wrong structure type passed to field accessor for ${e.structName}`;
     case "UnboundVariable":

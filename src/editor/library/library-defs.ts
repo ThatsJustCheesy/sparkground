@@ -110,6 +110,7 @@ export const LibraryCategories: LibraryCategory[] = [
           { kind: "call", called: { kind: "var", id: "first" }, args: [] },
           { kind: "call", called: { kind: "var", id: "rest" }, args: [] },
           { kind: "call", called: { kind: "var", id: "length" }, args: [] },
+          { kind: "call", called: { kind: "var", id: "item-at" }, args: [] },
           { kind: "call", called: { kind: "var", id: "index-of" }, args: [] },
           { kind: "call", called: { kind: "var", id: "contains?" }, args: [] },
         ],
