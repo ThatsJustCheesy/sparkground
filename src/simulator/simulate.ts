@@ -29,6 +29,7 @@ export class Simulator {
       for (const component of evaluator.components) {
         // TODO: Dynamic typecheck!
         const graphic = component.draw() as GraphicValue;
+        if (!graphic) continue;
 
         const canvas = document.querySelector(".output-area canvas");
         if (canvas) {
