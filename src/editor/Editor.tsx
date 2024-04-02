@@ -134,11 +134,7 @@ export default function Editor({
   renderCounter,
 }: Props) {
   const typechecker = new Typechecker();
-  trees
-    .filter((tree) => tree.root.kind === "define" && tree.root.name.kind === "name-binding")
-    .forEach((tree) => {
-      typechecker.addDefine(tree as Tree<Define>);
-    });
+  typechecker.addDefines(trees);
 
   const [valueEditorSubject, setValueEditorSubject] = useState<TreeIndexPath>();
 
@@ -200,7 +196,10 @@ export default function Editor({
     }
   }, [meta]);
 
-  const environment = mergeEnvs<unknown>(InitialEnvironment, program.defines.environment());
+  const environment = mergeEnvs<unknown>(
+    InitialEnvironment,
+    new Program(trees).defines.environment()
+  );
 
   return (
     <DndContext

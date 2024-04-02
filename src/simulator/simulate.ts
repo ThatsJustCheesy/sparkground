@@ -5,6 +5,7 @@ export class Simulator {
   #program: Program;
 
   #intervalID: ReturnType<typeof setInterval>;
+  #keyListener: Parameters<typeof document.addEventListener>[1];
 
   setProgram(program: Program) {
     this.#program = program;
@@ -36,9 +37,17 @@ export class Simulator {
         }
       }
     }, 1000 / 60);
+
+    this.#keyListener = (event: KeyboardEvent) => {
+      for (const component of evaluator.components) {
+        component.handleKeypress(event.key);
+      }
+    };
+    document.addEventListener("keydown", this.#keyListener);
   }
 
   stop() {
     clearInterval(this.#intervalID);
+    document.removeEventListener("keydown", this.#keyListener);
   }
 }

@@ -1,6 +1,14 @@
 import { Datum } from "../datum/datum";
 import { TreeIndexPath, extendIndexPath, hole, isHole, rootIndexPath } from "../editor/trees/tree";
-import { Define, Expr, NameBinding, VarSlot, getIdentifier, getTypeAnnotation } from "../expr/expr";
+import {
+  Define,
+  Expr,
+  NameBinding,
+  Struct,
+  VarSlot,
+  getIdentifier,
+  getTypeAnnotation,
+} from "../expr/expr";
 import {
   ArityMismatch,
   DuplicateDefinition,
@@ -108,13 +116,28 @@ export class Typechecker {
     this.#inferenceCache.clear();
   }
 
-  addDefine(tree: Tree<Define>): void {
+  addDefines(trees: Tree[]) {
+    for (const tree of trees) {
+      try {
+        const { root } = tree;
+        switch (root.kind) {
+          case "struct":
+          case "define":
+            this.addDefine(tree as Tree<typeof root>);
+        }
+      } catch (error) {
+        // TODO: Remove this try/catch once eval() is changed to not throw any errors
+        console.error(error);
+      }
+    }
+  }
+
+  addDefine(tree: Tree<Define | Struct>): void {
     const define = tree.root;
 
     if (this.#defines.has(getIdentifier(tree.root.name))) {
       this.errors.add(rootIndexPath(tree), {
         tag: "DuplicateDefinition",
-        define,
         id: (define.name as NameBinding).id,
       } satisfies DuplicateDefinition);
     }

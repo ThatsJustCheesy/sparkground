@@ -1,6 +1,4 @@
-import { cloneDeep } from "lodash";
 import { Evaluator } from "../evaluator/evaluate";
-import { Expr } from "../expr/expr";
 import { Value } from "../evaluator/value";
 import { Cell } from "../editor/library/environments";
 import { Defines } from "../evaluator/defines";
@@ -16,8 +14,8 @@ export class Program {
    *                    except when doing so would create a circular dependency.
    */
   constructor(entryPoints: (Tree | TreeIndexPath)[]) {
-    this.#entryPointIndexPaths = cloneDeep(
-      entryPoints.map((ep): TreeIndexPath => ("tree" in ep ? ep : rootIndexPath(ep)))
+    this.#entryPointIndexPaths = entryPoints.map(
+      (ep): TreeIndexPath => ("tree" in ep ? ep : rootIndexPath(ep))
     );
   }
 

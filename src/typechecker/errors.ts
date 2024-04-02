@@ -13,7 +13,6 @@ export type TypecheckError =
 
 export type DuplicateDefinition = {
   tag: "DuplicateDefinition";
-  define: Define;
   id: string;
 };
 

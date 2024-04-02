@@ -4,6 +4,7 @@ import { Value, ComponentValue } from "./value";
 export class SparkgroundComponent {
   toDraw: (state: Value) => Value;
   onTick: (state: Value) => Value;
+  onKey: (state: Value, key: string) => Value;
 
   private constructor(public state: Value) {}
 
@@ -14,10 +15,29 @@ export class SparkgroundComponent {
   }
 
   draw() {
-    return this.toDraw(this.state);
+    try {
+      return this.toDraw(this.state);
+    } catch (error) {
+      // TODO: Remove this try/catch once eval() is changed to not throw any errors
+      console.error(error);
+    }
   }
 
   tick() {
-    this.state = this.onTick(this.state);
+    try {
+      this.state = this.onTick(this.state);
+    } catch (error) {
+      // TODO: Remove this try/catch once eval() is changed to not throw any errors
+      console.error(error);
+    }
+  }
+
+  handleKeypress(key: string) {
+    try {
+      this.state = this.onKey(this.state, key);
+    } catch (error) {
+      // TODO: Remove this try/catch once eval() is changed to not throw any errors
+      console.error(error);
+    }
   }
 }

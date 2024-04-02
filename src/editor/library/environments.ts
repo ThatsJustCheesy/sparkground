@@ -1928,11 +1928,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "tick-function", type: "fn" },
         ],
         body: (args, evaluator): Value => {
-          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
+          const [componentValue, tickFn] = args as [ComponentValue, FnValue];
 
           const compnoent = componentValue.component;
           compnoent.onTick = (state): Value => {
-            return evaluator.call(drawFn, [state]);
+            return evaluator.call(tickFn, [state]);
           };
 
           return { kind: "List", heads: [] };
@@ -1966,9 +1966,14 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "key-function", type: "fn" },
         ],
         body: (args, evaluator): Value => {
-          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
+          const [componentValue, keyFn] = args as [ComponentValue, FnValue];
 
-          throw "TODO: on-key";
+          const compnoent = componentValue.component;
+          compnoent.onKey = (state, key): Value => {
+            return evaluator.call(keyFn, [state, { kind: "String", value: key }]);
+          };
+
+          return { kind: "List", heads: [] };
         },
       },
     },
@@ -1980,40 +1985,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           tag: "Function",
           of: [
             { tag: "Component", of: [{ var: "State" }] },
-            { tag: "Function", of: [{ var: "State" }, { var: "State" }] },
-            { tag: "Empty" },
-          ],
-        },
-      },
-      headingArgCount: 1,
-      hat: true,
-    },
-  },
-  {
-    name: "on-mouse",
-    cell: {
-      value: {
-        kind: "fn",
-        signature: [
-          { name: "component", type: "component" },
-          { name: "mouse-function", type: "fn" },
-        ],
-        body: (args, evaluator): Value => {
-          const [componentValue, drawFn] = args as [ComponentValue, FnValue];
-
-          throw "TODO: on-mouse";
-        },
-      },
-    },
-    attributes: {
-      doc: "Describes how `component` changes state after a mouse button is pressed.",
-      typeAnnotation: {
-        forall: [{ kind: "type-name-binding", id: "State" }],
-        body: {
-          tag: "Function",
-          of: [
-            { tag: "Component", of: [{ var: "State" }] },
-            { tag: "Function", of: [{ var: "State" }, { var: "State" }] },
+            { tag: "Function", of: [{ var: "State" }, { tag: "String" }, { var: "State" }] },
             { tag: "Empty" },
           ],
         },

@@ -49,11 +49,16 @@ export class Evaluator {
 
   addDefines(rootIndexPaths: TreeIndexPath[]) {
     for (const rootIndexPath of rootIndexPaths) {
-      const root = nodeAtIndexPath(rootIndexPath);
-      switch (root.kind) {
-        case "struct":
-        case "define":
-          this.eval(root, { indexPath: rootIndexPath });
+      try {
+        const root = nodeAtIndexPath(rootIndexPath);
+        switch (root.kind) {
+          case "struct":
+          case "define":
+            this.eval(root, { indexPath: rootIndexPath });
+        }
+      } catch (error) {
+        // TODO: Remove this try/catch once eval() is changed to not throw any errors
+        console.error(error);
       }
     }
   }
@@ -92,7 +97,6 @@ export class Evaluator {
     if (index !== undefined && this.indexPath) {
       this.indexPath = extendIndexPath(this.indexPath, index);
     }
-    console.log("eval with indexPath", this.indexPath);
 
     let result: Value;
     try {
@@ -262,12 +266,6 @@ export class Evaluator {
       }
 
       case "lambda":
-        console.log(
-          `lambda body indexPath:
-            
-          `,
-          this.indexPath ? extendIndexPath(this.indexPath, expr.params.length + 1) : undefined
-        );
         return {
           kind: "fn",
           signature: expr.params.map((param) => ({

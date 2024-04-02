@@ -250,24 +250,15 @@ export const LibraryCategories: LibraryCategory[] = [
       },
       {
         kind: "call",
-        called: { kind: "var", id: "on-mouse" },
-        args: [
-          hole,
-          {
-            kind: "lambda",
-            params: [{ kind: "name-binding", id: "state" }],
-            body: { kind: "var", id: "state" },
-          },
-        ],
-      },
-      {
-        kind: "call",
         called: { kind: "var", id: "on-key" },
         args: [
           hole,
           {
             kind: "lambda",
-            params: [{ kind: "name-binding", id: "state" }],
+            params: [
+              { kind: "name-binding", id: "state" },
+              { kind: "name-binding", id: "key" },
+            ],
             body: { kind: "var", id: "state" },
           },
         ],

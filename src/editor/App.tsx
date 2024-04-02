@@ -39,12 +39,8 @@ function App() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
 
-  const [program, setProgram_] = useState(new Program(trees()));
+  const [program, setProgram] = useState(new Program(trees()));
   const [simulator, setSimulator] = useState(new Simulator());
-  const setProgram = (newValue: any) => {
-    console.log("setProgram");
-    setProgram_(newValue);
-  };
 
   function onBlockContextMenu(indexPath: TreeIndexPath) {
     setBlockContextMenuSubject(indexPath);
