@@ -148,6 +148,26 @@ export default function LoadDialog({ show, onHide }: Props) {
       <Modal.Footer>
         <Button
           variant="outline-secondary"
+          className="d-flex align-items-center me-auto"
+          onClick={async (event) => {
+            event.stopPropagation();
+
+            if (!projects) return;
+
+            const a = document.createElement("a");
+            for (const project of projects) {
+              a.href = `data:text/plain,${project.source}`;
+              a.download = `${project.name}.sparkground`;
+              a.click();
+            }
+          }}
+        >
+          <SaveFill className="me-2" />
+          Save All as Files
+        </Button>
+
+        <Button
+          variant="outline-secondary"
           className="d-flex align-items-center"
           onClick={async (event) => {
             event.stopPropagation();
