@@ -10,14 +10,16 @@ type EllipseGraphic = [
   x: NumberDatum,
   y: NumberDatum,
   xRadius: NumberDatum,
-  rRadius: NumberDatum
+  rRadius: NumberDatum,
+  color: StringDatum
 ];
 type RectangleGraphic = [
   tag: { kind: "Symbol"; value: "rectangle" },
   x: NumberDatum,
   y: NumberDatum,
   width: NumberDatum,
-  height: NumberDatum
+  height: NumberDatum,
+  color: StringDatum
 ];
 type ImageGraphic = [
   tag: { kind: "Symbol"; value: "image" },
@@ -36,12 +38,14 @@ export async function drawGraphic(ctx: CanvasRenderingContext2D, graphic: Graphi
 
   switch (graphic.heads[0].value) {
     case "ellipse": {
-      const [, x, y, xRadius, yRadius] = graphic.heads as EllipseGraphic;
+      const [, x, y, xRadius, yRadius, color] = graphic.heads as EllipseGraphic;
+      ctx.fillStyle = color.value;
       ctx.ellipse(x.value, y.value, xRadius.value, yRadius.value, 0, 0, 2 * Math.PI);
       break;
     }
     case "rectangle": {
-      const [, x, y, width, height] = graphic.heads as RectangleGraphic;
+      const [, x, y, width, height, color] = graphic.heads as RectangleGraphic;
+      ctx.fillStyle = color.value;
       ctx.rect(x.value, y.value, width.value, height.value);
       break;
     }

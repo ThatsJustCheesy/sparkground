@@ -1802,14 +1802,15 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "y", type: "Number" },
           { name: "x-radius", type: "Number" },
           { name: "y-radius", type: "Number" },
+          { name: "color", type: "String" },
         ],
         body: (args): Value => {
           type ND = NumberDatum;
-          const [x, y, xRadius, yRadius] = args as [ND, ND, ND, ND];
+          const [x, y, xRadius, yRadius, color] = args as [ND, ND, ND, ND, StringDatum];
 
           return {
             kind: "List",
-            heads: [{ kind: "Symbol", value: "ellipse" }, x, y, xRadius, yRadius],
+            heads: [{ kind: "Symbol", value: "ellipse" }, x, y, xRadius, yRadius, color],
           };
         },
       },
@@ -1823,6 +1824,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { tag: "Number" },
           { tag: "Number" },
           { tag: "Number" },
+          { tag: "String" },
           { tag: "Graphic" },
         ],
       },
@@ -1838,14 +1840,15 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "y", type: "Number" },
           { name: "width", type: "Number" },
           { name: "height", type: "Number" },
+          { name: "color", type: "String" },
         ],
         body: (args): Value => {
           type ND = NumberDatum;
-          const [x, y, width, height] = args as [ND, ND, ND, ND];
+          const [x, y, width, height, color] = args as [ND, ND, ND, ND, StringDatum];
 
           return {
             kind: "List",
-            heads: [{ kind: "Symbol", value: "rectangle" }, x, y, width, height],
+            heads: [{ kind: "Symbol", value: "rectangle" }, x, y, width, height, color],
           };
         },
       },
@@ -1859,6 +1862,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { tag: "Number" },
           { tag: "Number" },
           { tag: "Number" },
+          { tag: "String" },
           { tag: "Graphic" },
         ],
       },
