@@ -6,7 +6,7 @@ import { TreeIndexPath, nodeAtIndexPath, extendIndexPath } from "../trees/tree";
 import BlockPullTab from "./BlockPullTab";
 import Tippy from "@tippyjs/react";
 import { followCursor } from "tippy.js";
-import { Type, functionMaxArgCount } from "../../typechecker/type";
+import { Type, functionMaxArgCount, hasTag } from "../../typechecker/type";
 import { prettyPrintType } from "../../typechecker/serialize";
 import { describeTypecheckError } from "../../typechecker/errors";
 import {
@@ -37,7 +37,7 @@ type Props = PropsWithChildren<{
 
   forDragOverlay?: boolean | Over;
 
-  onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
+  onEditValue?: (indexPath: TreeIndexPath, applyAsFunction?: boolean) => Promise<void>;
 }>;
 
 export type BlockData =
@@ -330,6 +330,11 @@ export default function Block({
 
   const runtimeError = program.evaluator.errors.for(indexPath);
 
+  const doubleClickAppliesAsFunction =
+    data.type === "ident" &&
+    typeof type === "object" &&
+    (hasTag(type, "Function") || hasTag(type, "Function*"));
+
   const tooltipContentParts = [
     data.type === "name-binding" && <small>Double-click to rename this variable</small>,
     nameable && (
@@ -340,6 +345,7 @@ export default function Block({
     onEditValue && (data.type === "number" || data.type === "string") && (
       <small>Double-click to edit value</small>
     ),
+    onEditValue && doubleClickAppliesAsFunction && <small>Double-click to apply function</small>,
 
     // Uncomment to see each block's index path in its tooltip:
     // <>
@@ -529,7 +535,7 @@ export default function Block({
               event.preventDefault();
               event.stopPropagation();
 
-              await onEditValue?.(indexPath);
+              await onEditValue?.(indexPath, doubleClickAppliesAsFunction);
               rerender?.();
             }}
           >

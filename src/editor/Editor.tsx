@@ -378,30 +378,35 @@ export default function Editor({
     </DndContext>
   );
 
-  async function onEditValue(indexPath: TreeIndexPath) {
+  async function onEditValue(indexPath: TreeIndexPath, applyAsFunction?: boolean) {
     const node = nodeAtIndexPath(indexPath);
-    switch (node.kind) {
-      case "name-binding":
-        const references: Var[] = referencesToBinding(node.id, parentIndexPath(indexPath));
 
-        const newName = prompt("Enter variable name:");
-        if (!newName) return;
+    if (applyAsFunction) {
+      replaceExpr(indexPath, { kind: "call", called: node, args: [] });
+    } else {
+      switch (node.kind) {
+        case "name-binding":
+          const references: Var[] = referencesToBinding(node.id, parentIndexPath(indexPath));
 
-        node.id = newName;
-        references.forEach((ref) => {
-          ref.id = newName;
-        });
-        break;
-      case "Boolean":
-        node.value = !node.value;
-        break;
-      case "Number":
-      case "String":
-        setValueEditorSubject(indexPath);
-        break;
-      default:
-        setCodeEditorSubject(indexPath);
-        break;
+          const newName = prompt("Enter variable name:");
+          if (!newName) return;
+
+          node.id = newName;
+          references.forEach((ref) => {
+            ref.id = newName;
+          });
+          break;
+        case "Boolean":
+          node.value = !node.value;
+          break;
+        case "Number":
+        case "String":
+          setValueEditorSubject(indexPath);
+          break;
+        default:
+          setCodeEditorSubject(indexPath);
+          break;
+      }
     }
   }
 

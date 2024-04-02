@@ -44,7 +44,7 @@ export class Renderer {
 
   forDragOverlay?: boolean | Over;
 
-  onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
+  onEditValue?: (indexPath: TreeIndexPath, applyAsFunction?: boolean) => Promise<void>;
 
   constructor(
     private environment: Environment<unknown>,
@@ -52,7 +52,7 @@ export class Renderer {
     private program: Program,
     options: {
       forDragOverlay?: boolean | Over;
-      onEditValue?: (indexPath: TreeIndexPath) => Promise<void>;
+      onEditValue?: (indexPath: TreeIndexPath, applyAsFunction?: boolean) => Promise<void>;
     } = {}
   ) {
     this.forDragOverlay = options.forDragOverlay;
