@@ -70,7 +70,12 @@ export class Evaluator {
     try {
       return this.#eval(expr, { indexPath, extendEnv });
     } catch (error) {
-      console.error(error);
+      if (!this.indexPath) {
+        // Throw for unit tests
+        throw error;
+      } else {
+        console.error(error);
+      }
     }
   }
 

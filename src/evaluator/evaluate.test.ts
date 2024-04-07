@@ -89,9 +89,9 @@ describe("evaluate", () => {
 
   it("treats lambdas as closures with lexical scoping", () => {
     const returnX: Lambda = { kind: "lambda", params: [], body: { kind: "var", id: "x" } }
-    const env: Environment = { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } }
+    const extendEnv: Environment = { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } }
 
-    const closure = evaluator.eval(returnX, env)
+    const closure = evaluator.eval(returnX, { extendEnv })
     expect(closure).toEqual<Value>({
       kind: "fn",
       signature: [],
