@@ -104,7 +104,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [
           {
             name: "function",
-            type: "Function",
+            type: "fn",
           },
           {
             name: "args",
@@ -150,7 +150,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
         signature: [
           {
             name: "function",
-            type: "Function",
+            type: "fn",
           },
           {
             name: "lists",
@@ -192,17 +192,19 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       },
     },
     attributes: {
-      doc: "Applies `function` elementwise to the elements of `lists` and returns a list of the results, in order.",
+      doc: "Applies `function` to each element of `list`, and returns the results as a new list.",
       typeAnnotation: {
-        forall: [{ kind: "type-name-binding", id: "Element" }],
+        forall: [
+          { kind: "type-name-binding", id: "Element" },
+          { kind: "type-name-binding", id: "NewElement" },
+        ],
         body: {
-          tag: "Function*",
+          tag: "Function",
           of: [
             { tag: "Function", of: [{ var: "Element" }, { var: "NewElement" }] },
             { tag: "List", of: [{ var: "Element" }] },
             { tag: "List", of: [{ var: "NewElement" }] },
           ],
-          minArgCount: 1,
         },
       },
     },
