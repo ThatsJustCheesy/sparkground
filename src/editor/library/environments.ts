@@ -1089,15 +1089,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       typeAnnotation: {
         forall: [{ kind: "type-name-binding", id: "Element" }],
         body: {
-          forall: [{ kind: "type-name-binding", id: "Element" }],
-          body: {
-            tag: "Function",
-            of: [
-              { var: "Element" },
-              { tag: "List", of: [{ var: "Element" }] },
-              { tag: "List", of: [{ var: "Element" }] },
-            ],
-          },
+          tag: "Function",
+          of: [
+            { var: "Element" },
+            { tag: "List", of: [{ var: "Element" }] },
+            { tag: "List", of: [{ var: "Element" }] },
+          ],
         },
       },
     },
