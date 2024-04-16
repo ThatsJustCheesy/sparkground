@@ -67,7 +67,7 @@ export function typeJoin(t1: Type, t2: Type): Type {
 
   if (isForallType(t1) || isForallType(t2)) {
     return isForallType(t1) && isForallType(t2) && isEqual(t1.forall, t2.forall)
-      ? { forall: t1.forall, body: typeMeet(t1.body, t2.body) }
+      ? { forall: t1.forall, body: typeJoin(t1.body, t2.body) }
       : Any;
   }
 
