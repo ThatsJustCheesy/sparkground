@@ -1,10 +1,11 @@
 import { SyntheticEvent } from "react";
 import { Parser } from "../../../expr/parse";
-import { deforest, Point, newTree, PageID, globalMeta, setGlobalMeta } from "../../trees/trees";
+import { Point, PageID } from "../../trees/Trees";
 import MenuBar from "./MenuBar";
 import MenuBarButton from "./MenuBarButton";
 import MenuBarTitle from "./MenuBarTitle";
 import { ProjectMeta, parseProjectMeta } from "../../../project-meta";
+import { Editor } from "../../state/Editor";
 
 export type Props = {
   onShowLoad: (event: SyntheticEvent) => Promise<string | undefined>;
@@ -14,7 +15,7 @@ export type Props = {
   onRunAll: (event: SyntheticEvent) => void;
   onStopAll: (event: SyntheticEvent) => void;
 
-  rerender: () => void;
+  editor: Editor;
 };
 
 export default function AppMenuBar({
@@ -25,7 +26,7 @@ export default function AppMenuBar({
   onRunAll,
   onStopAll,
 
-  rerender,
+  editor,
 }: Props) {
   return (
     <MenuBar>
@@ -36,8 +37,7 @@ export default function AppMenuBar({
           const ok = confirm("Any unsaved changes will be lost. Proceed?");
           if (!ok) return;
 
-          deforest();
-          rerender();
+          editor.deforest();
         }}
       >
         New
@@ -53,7 +53,7 @@ export default function AppMenuBar({
           const exprs = Parser.parseToExprsWithAttributes(source);
           if (!exprs.length) return;
 
-          deforest();
+          editor.deforest();
 
           let location: Point = { x: 0, y: 0 };
           exprs.forEach((expr) => {
@@ -61,11 +61,10 @@ export default function AppMenuBar({
               location = expr.attributes.location;
             }
             const pageID: PageID = expr.attributes?.page ?? 0;
-            newTree(expr, { ...location }, pageID);
+            editor.trees.addNew(expr, { ...location }, pageID);
             location.y += 200;
           });
-          setGlobalMeta(meta);
-          rerender();
+          editor.trees.meta = meta;
         }}
       >
         Load

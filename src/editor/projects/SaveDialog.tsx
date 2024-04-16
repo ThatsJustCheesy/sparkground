@@ -5,16 +5,18 @@ import ListGroupItem from "react-bootstrap/ListGroupItem";
 import { FileEarmarkArrowDownFill, PlusSquareFill } from "react-bootstrap-icons";
 import { useEffect, useState } from "react";
 import { Project, projectsDB } from "./project";
-import { globalMeta, trees } from "../trees/trees";
 import { serializeExprWithAttributes } from "../trees/serialize";
 import { serializeProjectMeta } from "../../project-meta";
+import { Editor } from "../state/Editor";
 
 export type Props = {
   show: boolean;
   onHide: () => void;
+
+  editor: Editor;
 };
 
-export default function SaveDialog({ show, onHide }: Props) {
+export default function SaveDialog({ show, onHide, editor }: Props) {
   const [projects, setProjects] = useState<Project[]>();
 
   async function fetchProjects() {
@@ -29,8 +31,9 @@ export default function SaveDialog({ show, onHide }: Props) {
 
   function serializeProject(name: string): Project {
     const source =
-      serializeProjectMeta(globalMeta) +
-      trees()
+      serializeProjectMeta(editor.trees.meta) +
+      editor.trees
+        .list()
         .map((tree) => {
           tree.root.attributes = tree.root.attributes ?? {};
           tree.root.attributes.location = tree.location;

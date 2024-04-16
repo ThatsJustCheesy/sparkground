@@ -17,12 +17,11 @@ import {
 } from "../editor-contexts";
 import { Binding } from "../library/environments";
 import { FnValue, Value } from "../../evaluator/value";
-import { Point, newTree } from "../trees/trees";
-import { moveExprInTree } from "../trees/mutate";
 import { Typechecker } from "../../typechecker/typecheck";
 import { describeRuntimeError } from "../../evaluator/errors";
 import { prettyPrintSignatureNames } from "../../evaluator/dynamic-type";
 import { Program } from "../../simulator/program";
+import { Editor } from "../state/Editor";
 
 type Props = PropsWithChildren<{
   id: UniqueIdentifier;
@@ -32,7 +31,7 @@ type Props = PropsWithChildren<{
   isCopySource?: boolean;
 
   typechecker: Typechecker;
-  program: Program;
+  editor: Editor;
   identifierTag?: string;
 
   forDragOverlay?: boolean | Over;
@@ -145,7 +144,7 @@ export default function Block({
   isCopySource,
 
   typechecker,
-  program,
+  editor,
   identifierTag,
 
   forDragOverlay,
@@ -328,7 +327,7 @@ export default function Block({
     typecheckingError = typechecker.errors.for(extendIndexPath(indexPath, 0));
   }
 
-  const runtimeError = program.evaluator.errors.for(indexPath);
+  const runtimeError = editor.runner.program.evaluator.errors.for(indexPath);
 
   const doubleClickAppliesAsFunction =
     data.type === "ident" &&
@@ -514,20 +513,7 @@ export default function Block({
                     event.preventDefault();
                     event.stopPropagation();
 
-                    const newName = prompt("Enter variable name:");
-                    if (!newName) return;
-
-                    const location: Point = { x: 0, y: 0 };
-                    const newBinding = newTree(
-                      {
-                        kind: "name-binding",
-                        id: newName,
-                      },
-                      location,
-                      indexPath.tree.page
-                    );
-                    moveExprInTree({ tree: newBinding, path: [] }, indexPath, location);
-                    rerender?.();
+                    editor.nameBinding(indexPath);
                   }
                 : undefined
             }

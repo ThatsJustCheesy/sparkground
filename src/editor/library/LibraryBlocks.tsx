@@ -1,13 +1,14 @@
 import "./library.css";
 import { Renderer } from "../trees/render";
 import { LibraryCategories, LibraryCategory } from "./library-defs";
-import { LibraryPageID, Tree } from "../trees/trees";
+import { LibraryPageID, Tree } from "../trees/Trees";
 import Nav from "react-bootstrap/Nav";
 import Tab from "react-bootstrap/Tab";
 import { InitialEnvironment } from "./environments";
 import { Typechecker } from "../../typechecker/typecheck";
 import { rootIndexPath } from "../trees/tree";
 import { Program } from "../../simulator/program";
+import { Editor } from "../state/Editor";
 
 export default function LibraryBlocks() {
   return <LibraryCategoryTabs categories={LibraryCategories} />;
@@ -38,14 +39,12 @@ function LibraryCategoryTabs({ categories }: { categories?: LibraryCategory[] })
                 zIndex: 1,
               };
 
-              return new Renderer(
-                InitialEnvironment,
-                new Typechecker(),
-                new Program([]),
-                {}
-              ).render(rootIndexPath(tree), {
-                isCopySource: true,
-              });
+              return new Renderer(InitialEnvironment, new Typechecker(), Editor.empty(), {}).render(
+                rootIndexPath(tree),
+                {
+                  isCopySource: true,
+                }
+              );
             })}
 
             {<LibraryCategoryTabs categories={category.subcategories} />}

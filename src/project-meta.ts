@@ -1,4 +1,4 @@
-import { Page, PageID } from "./editor/trees/trees";
+import { Page, PageID } from "./editor/trees/Trees";
 
 export type ProjectMeta = {
   pages?: Page[];

@@ -1,4 +1,4 @@
-import { PageID, Point } from "../editor/trees/trees";
+import { PageID, Point } from "../editor/trees/Trees";
 
 export type DefinitionAttributes = {
   location?: Point;

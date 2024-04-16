@@ -1,4 +1,4 @@
-import { Tree } from "./trees";
+import { Tree } from "./Trees";
 import { isEqual } from "lodash";
 import { Expr, Hole, TypeExpr, Var, VarSlot } from "../../expr/expr";
 import { Datum } from "../../datum/datum";
@@ -279,10 +279,10 @@ export function isSameOrAncestor(ancestor: TreeIndexPath, descendant: TreeIndexP
   );
 }
 
-export function referencesToBinding(id: string, root: TreeIndexPath): Var[] {
-  return children(nodeAtIndexPath(root)).flatMap((child, childIndex) => {
+export function referencesToBindingInScope(id: string, scope: TreeIndexPath): Var[] {
+  return children(nodeAtIndexPath(scope)).flatMap((child, childIndex) => {
     if (!child) return [];
-    const childIndexPath = extendIndexPath(root, childIndex);
+    const childIndexPath = extendIndexPath(scope, childIndex);
 
     switch (child.kind) {
       case "var":
@@ -305,7 +305,7 @@ export function referencesToBinding(id: string, root: TreeIndexPath): Var[] {
         break;
     }
 
-    return referencesToBinding(id, childIndexPath);
+    return referencesToBindingInScope(id, childIndexPath);
   });
 }
 

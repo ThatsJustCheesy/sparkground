@@ -3,7 +3,7 @@ import { Value } from "../evaluator/value";
 import { Cell } from "../editor/library/environments";
 import { Defines } from "../evaluator/defines";
 import { TreeIndexPath, nodeAtIndexPath, rootIndexPath } from "../editor/trees/tree";
-import { Tree } from "../editor/trees/trees";
+import { Tree } from "../editor/trees/Trees";
 
 export class Program {
   #entryPointIndexPaths: TreeIndexPath[];

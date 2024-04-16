@@ -6,7 +6,7 @@ import {
   nodeAtIndexPath,
   isAncestor,
   rootIndexPath,
-  referencesToBinding,
+  referencesToBindingInScope,
   parentIndexPath,
 } from "./trees/tree";
 import {
@@ -23,17 +23,10 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  moveExprInTree,
-  copyExprInTree,
-  orphanExpr,
-  deleteExpr,
-  replaceExpr,
-} from "./trees/mutate";
 import Library from "./library/Library";
-import { PageID, Tree, bringTreeToFront, globalMeta } from "./trees/trees";
+import { PageID } from "./trees/Trees";
 import CodeEditorModal from "./CodeEditorModal";
-import { Define, Expr, Var } from "../expr/expr";
+import { Expr, Var } from "../expr/expr";
 import { Parser } from "../expr/parse";
 import {
   ActiveDragContext,
@@ -50,23 +43,19 @@ import { OutputArea } from "./OutputArea";
 import Nav from "react-bootstrap/Nav";
 import Tab from "react-bootstrap/Tab";
 import { groupBy, keyBy } from "lodash";
-import { ProjectMeta } from "../project-meta";
 import Tippy from "@tippyjs/react";
 import { ContextMenuTrigger } from "rctx-contextmenu";
 import { Program } from "../simulator/program";
+import { Editor } from "./state/Editor";
 
 export type Props = {
-  trees: Tree[];
-  meta: ProjectMeta;
-
-  program: Program;
+  editor: Editor;
 
   onBlockContextMenu: (indexPath: TreeIndexPath) => void;
 
   codeEditorSubject: TreeIndexPath | undefined;
   setCodeEditorSubject: (indexPath?: TreeIndexPath) => void;
 
-  rerender: () => void;
   renderCounter: number;
 };
 
@@ -123,18 +112,18 @@ export type ActiveDrag = {
 
 let isAltPressed = false;
 
-export default function Editor({
-  trees,
-  meta,
-  program,
+export default function EditorComponent({
+  editor,
   onBlockContextMenu,
-  rerender,
   codeEditorSubject,
   setCodeEditorSubject,
   renderCounter,
 }: Props) {
+  const { trees, rerender } = editor;
+  const { meta } = trees;
+
   const typechecker = new Typechecker();
-  typechecker.addDefines(trees);
+  typechecker.addDefines(trees.list());
 
   const [valueEditorSubject, setValueEditorSubject] = useState<TreeIndexPath>();
 
@@ -176,11 +165,11 @@ export default function Editor({
   const [activePageID, setActivePageID] = useState<PageID>();
 
   useEffect(() => {
-    globalMeta.currentPageID = activePageID;
+    meta.currentPageID = activePageID;
   }, [activePageID]);
 
   const pagesByID = keyBy(meta.pages ?? [], ({ id }) => id);
-  const treesByPageID = groupBy(trees, ({ page }) => page);
+  const treesByPageID = groupBy(trees.list(), ({ page }) => page);
 
   const pageIDs = [
     ...new Set([...Object.keys(pagesByID), ...Object.keys(treesByPageID)].map(Number)).values(),
@@ -188,8 +177,8 @@ export default function Editor({
 
   useEffect(() => {
     const candidate =
-      globalMeta.currentPageID !== undefined && pageIDs.includes(globalMeta.currentPageID)
-        ? globalMeta.currentPageID
+      meta.currentPageID !== undefined && pageIDs.includes(meta.currentPageID)
+        ? meta.currentPageID
         : pageIDs.at(-1);
     if (candidate !== undefined || activePageID !== undefined) {
       setActivePageID(candidate);
@@ -198,7 +187,7 @@ export default function Editor({
 
   const environment = mergeEnvs<unknown>(
     InitialEnvironment,
-    new Program(trees).defines.environment()
+    new Program(trees.list()).defines.environment()
   );
 
   return (
@@ -220,7 +209,7 @@ export default function Editor({
 
           <DragOverlay dropAnimation={null} zIndex={99999999} className="drag-overlay">
             {activeDrag &&
-              new Renderer(environment, typechecker, program, {
+              new Renderer(environment, typechecker, editor, {
                 forDragOverlay: activeDragOver ?? true,
               }).render(activeDrag.indexPath)}
           </DragOverlay>
@@ -267,10 +256,10 @@ export default function Editor({
                           <div
                             style={{
                               width:
-                                Math.max(...trees.map((tree) => tree.location.x)) +
+                                Math.max(...trees.list().map((tree) => tree.location.x)) +
                                 document.documentElement.clientWidth / 2,
                               height:
-                                Math.max(...trees.map((tree) => tree.location.y)) +
+                                Math.max(...trees.list().map((tree) => tree.location.y)) +
                                 document.documentElement.clientHeight / 2,
                             }}
                           />
@@ -286,7 +275,7 @@ export default function Editor({
                                 zIndex: tree.zIndex,
                               }}
                             >
-                              {new Renderer(environment, typechecker, program, {
+                              {new Renderer(environment, typechecker, editor, {
                                 onEditValue,
                               }).render(rootIndexPath(tree))}
                             </div>
@@ -382,19 +371,11 @@ export default function Editor({
     const node = nodeAtIndexPath(indexPath);
 
     if (applyAsFunction) {
-      replaceExpr(indexPath, { kind: "call", called: node, args: [] });
+      trees.replaceExpr(indexPath, { kind: "call", called: node, args: [] });
     } else {
       switch (node.kind) {
         case "name-binding":
-          const references: Var[] = referencesToBinding(node.id, parentIndexPath(indexPath));
-
-          const newName = prompt("Enter variable name:");
-          if (!newName) return;
-
-          node.id = newName;
-          references.forEach((ref) => {
-            ref.id = newName;
-          });
+          editor.renameBinding(node, parentIndexPath(indexPath));
           break;
         case "Boolean":
           node.value = !node.value;
@@ -417,7 +398,7 @@ export default function Editor({
     if (!newSource || !codeEditorSubject) return;
 
     const newExpr = Parser.parseToExpr(newSource);
-    replaceExpr(codeEditorSubject, newExpr);
+    trees.replaceExpr(codeEditorSubject, newExpr);
   }
 
   function onValueEditorClose(newNode?: Expr) {
@@ -426,7 +407,7 @@ export default function Editor({
 
     if (!newNode || !valueEditorSubject) return;
 
-    replaceExpr(valueEditorSubject, newNode);
+    trees.replaceExpr(valueEditorSubject, newNode);
   }
 
   function indexPathFromDragged(item: Active | Over | null): TreeIndexPath | undefined {
@@ -464,7 +445,7 @@ export default function Editor({
     if (over?.data.current?.isLibrary) {
       if (shouldCopy) return;
 
-      deleteExpr(activeIndexPath);
+      trees.deleteExpr(activeIndexPath);
 
       rerender();
       return;
@@ -497,7 +478,7 @@ export default function Editor({
       }).kind === "type" &&
         nodeAtIndexPath(activeIndexPath).kind !== "type")
     ) {
-      const orphanTree = orphanExpr(
+      const orphanTree = trees.orphanExpr(
         activeIndexPath,
         {
           x: dragBounds.left,
@@ -508,19 +489,19 @@ export default function Editor({
       activeIndexPath = rootIndexPath(orphanTree);
     } else {
       if (shouldCopy) {
-        copyExprInTree(activeIndexPath, overIndexPath, {
+        trees.copyExprInTree(activeIndexPath, overIndexPath, {
           x: dragBounds.right,
           y: dragBounds.bottom,
         });
       } else {
-        moveExprInTree(activeIndexPath, overIndexPath, {
+        trees.moveExprInTree(activeIndexPath, overIndexPath, {
           x: dragBounds.right,
           y: dragBounds.bottom,
         });
       }
     }
 
-    bringTreeToFront(activeIndexPath.tree);
+    trees.bringToFront(activeIndexPath.tree);
     rerender();
   }
 }

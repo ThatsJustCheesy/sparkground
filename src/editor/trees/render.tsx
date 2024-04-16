@@ -34,7 +34,7 @@ import {
   typeParams,
 } from "../../typechecker/type";
 import { Typechecker } from "../../typechecker/typecheck";
-import { Program } from "../../simulator/program";
+import { Editor } from "../state/Editor";
 
 const BlockMemo = memo(Block);
 
@@ -49,7 +49,7 @@ export class Renderer {
   constructor(
     private environment: Environment<unknown>,
     private typechecker: Typechecker,
-    private program: Program,
+    private editor: Editor,
     options: {
       forDragOverlay?: boolean | Over;
       onEditValue?: (indexPath: TreeIndexPath, applyAsFunction?: boolean) => Promise<void>;
@@ -140,7 +140,7 @@ export class Renderer {
         data={data}
         isCopySource={this.isCopySource}
         typechecker={this.typechecker}
-        program={this.program}
+        editor={this.editor}
         identifierTag={
           binding?.attributes?.binder
             ? this.#keyForIndexPath(binding.attributes.binder).trim().replace(/\s/g, "-").trim()

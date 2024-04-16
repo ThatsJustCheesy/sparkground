@@ -30,7 +30,7 @@ import {
   hasTag,
   isForallType,
 } from "./type";
-import { InvisiblePageID, Tree, newTree, removeTree } from "../editor/trees/trees";
+import { InvisiblePageID, Tree } from "../editor/trees/Trees";
 import { isSubtype, typeJoin } from "./subtyping";
 import { Defines } from "../evaluator/defines";
 import { InitialTypeContext } from "../editor/typecheck";
@@ -83,6 +83,8 @@ export class Typechecker {
 
   #defines: Defines<Type> = new Defines();
   #inferenceCache = new InferenceCache();
+
+  #nextFakeTreeID = 0;
 
   constructor({
     baseContext,
@@ -150,21 +152,18 @@ export class Typechecker {
   inferType(tree: Tree | Expr, context: TypeContext = this.baseContext): Type {
     // If given an `Expr`, stuff it into its own tree before running inference,
     // as inference requires an index path into a tree (to deal with subexpressions).
-    let isTempTree = false;
     if (!("root" in tree)) {
-      isTempTree = true;
-      tree = newTree(tree, { x: -1000, y: -1000 }, InvisiblePageID);
+      tree = {
+        id: `inferType-${this.#nextFakeTreeID++}`,
+        root: tree,
+        location: { x: -1000, y: -1000 },
+        page: InvisiblePageID,
+        zIndex: -1000,
+      } satisfies Tree;
     }
 
-    try {
-      if (this.autoReset) this.reset();
-
-      return this.#inferType(tree.root, context, rootIndexPath(tree));
-    } finally {
-      // If we stuffed the given `Expr` into a temporary tree, ensure we clean that up.
-      // Like nothing ever happened. shhh
-      if (isTempTree) removeTree(tree);
-    }
+    if (this.autoReset) this.reset();
+    return this.#inferType(tree.root, context, rootIndexPath(tree));
   }
 
   inferSubexprType(indexPath: TreeIndexPath, context: TypeContext = this.baseContext): Type {
