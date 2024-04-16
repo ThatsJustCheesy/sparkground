@@ -17,35 +17,42 @@ import {
   Untyped,
 } from "./type";
 
-export function typeMeet(t1: Type, t2: Type): Type {
-  if (isSubtype(t1, t2)) return t1;
-  if (isSubtype(t2, t1)) return t2;
+function typeCombine(
+  t1: Type,
+  t2: Type,
+  takeMin: boolean,
+  giveUpType: Type,
+  typeCombineSame: (t1: Type, t2: Type) => Type,
+  typeCombineOpposite: (t1: Type, t2: Type) => Type
+): Type {
+  if (isSubtype(t1, t2)) return takeMin ? t1 : t2;
+  if (isSubtype(t2, t1)) return takeMin ? t2 : t1;
 
-  if (isTypeVar(t1) || isTypeVar(t2) || isTypeVarSlot(t1) || isTypeVarSlot(t2)) return Never;
+  if (isTypeVar(t1) || isTypeVar(t2) || isTypeVarSlot(t1) || isTypeVarSlot(t2)) return giveUpType;
 
   if (isForallType(t1) || isForallType(t2)) {
     return isForallType(t1) && isForallType(t2) && isEqual(t1.forall, t2.forall)
-      ? { forall: t1.forall, body: typeMeet(t1.body, t2.body) }
-      : Never;
+      ? { forall: t1.forall, body: typeCombineSame(t1.body, t2.body) }
+      : giveUpType;
   }
 
   // Concrete type
-  if (t1.tag !== t2.tag) return Never;
+  if (t1.tag !== t2.tag) return giveUpType;
 
   const t1Params = t1.of ?? [];
   const t2Params = t2.of ?? [];
   const signs = typeParamVariance(t1);
 
   if (signs.some((sign) => sign === "invariant")) {
-    return Never;
+    return giveUpType;
   }
 
   const newTypeParams = signs.map((sign, index) => {
     switch (sign) {
       case "covariant":
-        return typeMeet(t1Params[index]!, t2Params[index]!);
+        return typeCombineSame(t1Params[index]!, t2Params[index]!);
       case "contravariant":
-        return typeJoin(t1Params[index]!, t2Params[index]!);
+        return typeCombineOpposite(t1Params[index]!, t2Params[index]!);
       case "invariant":
         throw "unreachable";
     }
@@ -59,45 +66,12 @@ export function typeMeet(t1: Type, t2: Type): Type {
     : { tag: t1.tag };
 }
 
+export function typeMeet(t1: Type, t2: Type): Type {
+  return typeCombine(t1, t2, true, Never, typeMeet, typeJoin);
+}
+
 export function typeJoin(t1: Type, t2: Type): Type {
-  if (isSubtype(t1, t2)) return t2;
-  if (isSubtype(t2, t1)) return t1;
-
-  if (isTypeVar(t1) || isTypeVar(t2) || isTypeVarSlot(t1) || isTypeVarSlot(t2)) return Any;
-
-  if (isForallType(t1) || isForallType(t2)) {
-    return isForallType(t1) && isForallType(t2) && isEqual(t1.forall, t2.forall)
-      ? { forall: t1.forall, body: typeJoin(t1.body, t2.body) }
-      : Any;
-  }
-
-  if (t1.tag !== t2.tag) return Any;
-
-  const t1Params = t1.of ?? [];
-  const t2Params = t2.of ?? [];
-  const signs = typeParamVariance(t1);
-
-  if (signs.some((sign) => sign === "invariant")) {
-    return Any;
-  }
-
-  const newTypeParams = signs.map((sign, index) => {
-    switch (sign) {
-      case "covariant":
-        return typeJoin(t1Params[index]!, t2Params[index]!);
-      case "contravariant":
-        return typeMeet(t1Params[index]!, t2Params[index]!);
-      case "invariant":
-        throw "unreachable";
-    }
-  });
-
-  return newTypeParams.length
-    ? {
-        tag: t1.tag,
-        of: newTypeParams,
-      }
-    : { tag: t1.tag };
+  return typeCombine(t1, t2, false, Any, typeJoin, typeMeet);
 }
 
 export function isSubtype(t1: Type, t2: Type) {
