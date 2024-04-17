@@ -144,6 +144,8 @@ export class Renderer {
         identifierTag={
           binding?.attributes?.binder
             ? this.#keyForIndexPath(binding.attributes.binder).trim().replace(/\s/g, "-").trim()
+            : binding?.name
+            ? `global-${binding.name}`
             : undefined
         }
         forDragOverlay={this.forDragOverlay}

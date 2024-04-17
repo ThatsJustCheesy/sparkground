@@ -461,8 +461,9 @@ export default function Block({
       <style>
         {identifierTag
           ? `
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-hat-heading > .block-hat-label,
+          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-v-heading > .block-v-label,
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-h-label,
-          body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag} > .block-v-label,
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-ident,
           body.highlight-identifier-${identifierTag} .block-identifier-${identifierTag}.block-name-binding {
             transition: all 50ms linear;
