@@ -94,7 +94,10 @@ export class Editor {
     if (!newName) return;
 
     const scopeNode = nodeAtIndexPath(scope);
-    if (scopeNode.kind === "define" && scopeNode.name === binding) {
+    if (
+      (scopeNode.kind === "define" || scopeNode.kind === "struct") &&
+      scopeNode.name === binding
+    ) {
       const oldName = binding.id;
 
       binding.id = newName;
