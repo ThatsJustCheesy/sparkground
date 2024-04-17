@@ -53,6 +53,14 @@ export default function AppContextMenu({
     editor.removeTypeAnnotationFromBinding(await typedNodeAtIndexPath(subject, "name-binding"));
   }
 
+  async function returnTypeAnnotateSubject() {
+    editor.returnTypeAnnotateLambda(await typedNodeAtIndexPath(subject, "lambda"));
+  }
+
+  async function returnTypeUnannotateSubject() {
+    editor.removeReturnTypeAnnotation(await typedNodeAtIndexPath(subject, "lambda"));
+  }
+
   async function applySubject() {
     editor.applyAsFunction(await typedNodeAtIndexPath(subject, "var"), subject);
   }
@@ -172,6 +180,32 @@ export default function AppContextMenu({
 
       <ContextMenu id="block-menu-call-evaluable" hideOnLeave={false}>
         <ContextMenuItem onClick={unapplySubject}>Unapply</ContextMenuItem>
+        {commonContextMenu}
+        {evaluateContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-function" hideOnLeave={false}>
+        <ContextMenuItem onClick={returnTypeAnnotateSubject}>Annotate Return Type</ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-function-evaluable" hideOnLeave={false}>
+        <ContextMenuItem onClick={returnTypeAnnotateSubject}>Annotate Return Type</ContextMenuItem>
+        {commonContextMenu}
+        {evaluateContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-function-annotated" hideOnLeave={false}>
+        <ContextMenuItem onClick={returnTypeUnannotateSubject}>
+          Remove Return Type Annotation
+        </ContextMenuItem>
+        {commonContextMenu}
+      </ContextMenu>
+
+      <ContextMenu id="block-menu-function-annotated-evaluable" hideOnLeave={false}>
+        <ContextMenuItem onClick={returnTypeUnannotateSubject}>
+          Remove Return Type Annotation
+        </ContextMenuItem>
         {commonContextMenu}
         {evaluateContextMenu}
       </ContextMenu>

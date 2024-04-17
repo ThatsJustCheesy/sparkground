@@ -529,13 +529,16 @@ export class Renderer {
 
     const heading = (
       <>
-        {expr.params.map((param, index) =>
-          this.#renderVarSlot(param, index, {
-            environment: newEnvironment,
-          })
-        )}
         {
-          // Phantom "+" button (name hole) at the end
+          // Parameters
+          expr.params.map((param, index) =>
+            this.#renderVarSlot(param, index, {
+              environment: newEnvironment,
+            })
+          )
+        }
+        {
+          // Phantom "+" button (parameter name hole) at the end
           !this.isCopySource &&
             !this.forDragOverlay &&
             this.#renderVarSlot(hole, expr.params.length, {
@@ -543,13 +546,32 @@ export class Renderer {
               phantom: true,
             })
         }
+        {
+          // Return type annotation
+          expr.returnType ? (
+            <>
+              <span style={{ marginLeft: "0.5em", marginRight: "0.25em" }}>➜</span>
+              {this.#renderTypeArg(expr.returnType, expr.params.length + 1)}
+            </>
+          ) : (
+            ""
+          )
+        }
       </>
     );
     const body = this.#renderSubexpr(expr.body, expr.params.length + 1, {
       environment: newEnvironment,
     });
 
-    return this.#block({ type: "v", id: "function", heading }, body);
+    return this.#block(
+      {
+        type: "v",
+        id: "function",
+        heading,
+        returnTypeAnnotation: expr.returnType,
+      },
+      body
+    );
   }
 
   #renderSequence(expr: Sequence): JSX.Element {

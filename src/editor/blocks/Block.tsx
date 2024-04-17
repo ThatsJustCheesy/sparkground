@@ -71,6 +71,7 @@ type Vertical = {
   binding?: Binding<unknown>;
   calledIsVar?: boolean;
   heading?: JSX.Element;
+  returnTypeAnnotation?: Type;
 };
 type Horizontal = {
   type: "h";
@@ -79,6 +80,7 @@ type Horizontal = {
   calledIsVar?: boolean;
   definesSymbol?: boolean;
   argCount?: number;
+  returnTypeAnnotation?: Type;
 };
 type HorizontalApply = {
   type: "happly";
@@ -436,7 +438,15 @@ export default function Block({
         return "block-menu-typenamehole";
       case "h":
       case "v":
-        return (data.calledIsVar ? "block-menu-call" : "block-menu") + evaluable;
+        return (
+          (data.calledIsVar
+            ? "block-menu-call"
+            : data.id === "function"
+            ? data.returnTypeAnnotation
+              ? "block-menu-function-annotated"
+              : "block-menu-function"
+            : "block-menu") + evaluable
+        );
       case "happly":
         return (data ? "block-menu-apply" : "block-menu") + evaluable;
     }

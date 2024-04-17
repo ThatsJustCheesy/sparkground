@@ -34,7 +34,6 @@ export function serializeExpr(expr: Expr): string {
     case "var":
       return expr.id;
     case "call":
-      console.log("serialize args", expr.args.map(serializeExpr).join(" "));
       return (
         "(" +
         serializeExpr(expr.called) +
@@ -66,6 +65,7 @@ export function serializeExpr(expr: Expr): string {
       return (
         "(lambda (" +
         expr.params.map(serializeExpr).join(" ") +
+        (expr.returnType ? ` (→ ${serializeType(expr.returnType)})` : "") +
         ") " +
         serializeExpr(expr.body) +
         ")"

@@ -60,7 +60,12 @@ export function children(node: Expr): (Expr | undefined)[] {
     case "letrec":
       return [...node.bindings.flat(1), node.body];
     case "lambda":
-      return [...node.params, hole, node.body];
+      return [
+        ...node.params,
+        hole,
+        ...(node.returnType ? [{ kind: "type", type: node.returnType } satisfies TypeExpr] : []),
+        node.body,
+      ];
     case "sequence":
       return node.exprs;
     case "and":
@@ -132,7 +137,8 @@ export function setChildAtIndex(node: Expr, index: number, newChild: Expr): void
       break;
     case "lambda":
       if (index <= node.params.length) node.params[index] = asVarSlot(newChild);
-      if (index === node.params.length + 1) node.body = newChild;
+      if (index === node.params.length + 1) node.returnType = asType(newChild);
+      if (index === node.params.length + 2) node.body = newChild;
       node.params = node.params.filter((param) => !isHole(param));
       break;
     case "sequence":

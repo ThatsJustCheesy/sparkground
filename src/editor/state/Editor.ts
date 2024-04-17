@@ -1,5 +1,5 @@
 import { cloneDeep, isEqual } from "lodash";
-import { Expr, NameBinding, Var } from "../../expr/expr";
+import { Expr, Lambda, NameBinding, Var } from "../../expr/expr";
 import { Parser } from "../../expr/parse";
 import { Program } from "../../simulator/program";
 import { Untyped } from "../../typechecker/type";
@@ -125,6 +125,16 @@ export class Editor {
 
   removeTypeAnnotationFromBinding(binding: NameBinding) {
     delete binding.type;
+    this.rerender();
+  }
+
+  returnTypeAnnotateLambda(lambda: Lambda) {
+    lambda.returnType = Untyped;
+    this.rerender();
+  }
+
+  removeReturnTypeAnnotation(lambda: Lambda) {
+    delete lambda.returnType;
     this.rerender();
   }
 

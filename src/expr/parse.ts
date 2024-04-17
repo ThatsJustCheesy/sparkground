@@ -14,10 +14,11 @@ import {
   And,
   Or,
   Struct,
+  NameBinding,
 } from "./expr";
 import { FlattenedDatum, FlattenedListDatum, flattenDatum } from "../datum/flattened";
 import { Parser as DatumParser } from "../datum/parse";
-import { hole } from "../editor/trees/tree";
+import { hole, isHole } from "../editor/trees/tree";
 import { DefinitionAttributes, parseAttributes } from "./attributes";
 import { Parser as TypeParser } from "../typechecker/parse";
 import { merge } from "lodash";
@@ -214,10 +215,17 @@ export class Parser {
     const params: VarSlot[] = bindingList.heads.map((name) => this.parseVarSlot(name));
     const body = this.parseSequence(datum.heads.slice(2));
 
+    const returnTypeIndex = params.findIndex((param) => !isHole(param) && param.id === "→");
+    const returnType =
+      returnTypeIndex !== -1
+        ? (params.splice(returnTypeIndex, 1)[0] as NameBinding).type
+        : undefined;
+
     return {
       kind: "lambda",
       params,
       body,
+      ...(returnType ? { returnType } : {}),
     };
   }
 

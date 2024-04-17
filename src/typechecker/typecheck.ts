@@ -339,11 +339,19 @@ export class Typechecker {
           extendIndexPath(indexPath, expr.params.length + 1)
         );
 
+        if (expr.returnType && !isSubtype(bodyType, expr.returnType)) {
+          throw {
+            tag: "InvalidAssignmentToType",
+            expr: expr.body,
+            type: expr.returnType,
+          } satisfies InvalidAssignmentToType;
+        }
+
         return {
           tag: "Function",
           of: [
             ...expr.params.map((param) => (isHole(param) ? undefined : param.type) ?? Untyped),
-            bodyType,
+            expr.returnType ?? bodyType,
           ],
         };
       }

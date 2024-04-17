@@ -86,6 +86,7 @@ export type Lambda = {
   kind: "lambda";
   params: VarSlot[];
   body: Expr;
+  returnType?: Type;
 };
 
 export type Sequence = {

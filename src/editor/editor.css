@@ -420,14 +420,17 @@
 }
 
 .block-name-hole-phantom:not(:hover) {
-  display: none;
   opacity: 0.5;
   background-color: #eee;
 }
 
-.block-v-heading:hover > .menu-trigger > .block-outer-container > .block-name-hole-phantom,
-.block-hat:hover > .menu-trigger > .block-outer-container > .block-name-hole-phantom {
-  display: flex;
+.menu-trigger:has(> .block-outer-container > .block-name-hole-phantom:not(:hover)) {
+  display: none;
+}
+
+.block-v-heading:hover > .menu-trigger:has(> .block-outer-container > .block-name-hole-phantom),
+.block-hat:hover > .menu-trigger:has(> .block-outer-container > .block-name-hole-phantom) {
+  display: block;
 }
 
 .block-v-heading:hover
