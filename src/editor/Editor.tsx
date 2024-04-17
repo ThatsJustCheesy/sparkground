@@ -89,15 +89,16 @@ const collisionDetection: CollisionDetection = ({
             Math.max(rect.height / 2, collisionRect.height / 2)) &&
         rect.right >= collisionRect.left
       )
-    )
+    ) {
       continue;
+    }
 
-    const intersectionStrength = collisionRect.left - rect.left;
+    const intersectionStrength = collisionRect.left - rect.left + (id === "library" ? 20 : 0);
     if (intersectionStrength > 0) {
       collisions.push({
         id,
-        data: { droppableContainer, value: intersectionStrength },
-      });
+        data: { droppableContainer, value: id === "library" ? 0 : intersectionStrength },
+      } satisfies CollisionDescriptor);
     }
   }
 
