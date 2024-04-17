@@ -1,4 +1,4 @@
-import { cloneDeep } from "lodash";
+import { cloneDeep, isEqual } from "lodash";
 import { Expr, NameBinding, Var } from "../../expr/expr";
 import { Parser } from "../../expr/parse";
 import { Program } from "../../simulator/program";
@@ -9,6 +9,7 @@ import {
   extendIndexPath,
   nodeAtIndexPath,
   referencesToBindingInScope,
+  rootIndexPath,
 } from "../trees/tree";
 import { Point, Trees } from "../trees/Trees";
 import { Datum } from "../../datum/datum";
@@ -92,11 +93,24 @@ export class Editor {
     const newName = prompt("Enter variable name:");
     if (!newName) return;
 
-    const references: Var[] = referencesToBindingInScope(binding.id, scope);
-    binding.id = newName;
-    references.forEach((ref) => {
-      ref.id = newName;
-    });
+    const scopeNode = nodeAtIndexPath(scope);
+    if (scopeNode.kind === "define" && scopeNode.name === binding) {
+      const oldName = binding.id;
+
+      binding.id = newName;
+      for (const tree of this.trees.list()) {
+        const references: Var[] = referencesToBindingInScope(oldName, rootIndexPath(tree));
+        references.forEach((ref) => {
+          ref.id = newName;
+        });
+      }
+    } else {
+      const references: Var[] = referencesToBindingInScope(binding.id, scope);
+      binding.id = newName;
+      references.forEach((ref) => {
+        ref.id = newName;
+      });
+    }
 
     this.rerender();
   }

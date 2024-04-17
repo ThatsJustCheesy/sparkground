@@ -279,34 +279,55 @@ export function isSameOrAncestor(ancestor: TreeIndexPath, descendant: TreeIndexP
   );
 }
 
-export function referencesToBindingInScope(id: string, scope: TreeIndexPath): Var[] {
-  return children(nodeAtIndexPath(scope)).flatMap((child, childIndex) => {
-    if (!child) return [];
-    const childIndexPath = extendIndexPath(scope, childIndex);
+export function referencesToBindingInScope(
+  id: string,
+  scope: TreeIndexPath,
+  selfIsBindingExpr = true
+): Var[] {
+  const self = nodeAtIndexPath(scope);
 
-    switch (child.kind) {
-      case "var":
-        if (child.id === id) {
-          return [child];
-        }
-        break;
-      case "lambda":
-        if (child.params.some((slot) => slot.kind === "name-binding" && slot.id === id)) {
-          // Shadowed
-          return [];
-        }
-        break;
-      case "let":
-      case "letrec": // FIXME: not right for letrec
-        if (child.bindings.some(([slot]) => slot.kind === "name-binding" && slot.id === id)) {
-          // Shadowed
-          return [];
-        }
-        break;
-    }
+  let selfRef: [Var] | [] = [];
+  let unshadowedChildren: (Expr | undefined)[] = children(self);
+  switch (self.kind) {
+    case "var":
+      if (self.id === id) {
+        selfRef = [self];
+      }
+      unshadowedChildren = [];
+      break;
+    case "lambda":
+      if (
+        !selfIsBindingExpr &&
+        self.params.some((slot) => slot.kind === "name-binding" && slot.id === id)
+      ) {
+        // Shadowed in every child
+        unshadowedChildren = [];
+      }
+      break;
+    case "let":
+    case "letrec":
+      if (
+        !selfIsBindingExpr &&
+        self.bindings.some(([slot]) => slot.kind === "name-binding" && slot.id === id)
+      ) {
+        // Shadowed in body
+        unshadowedChildren.pop();
+      }
+      break;
+  }
 
-    return referencesToBindingInScope(id, childIndexPath);
-  });
+  return [
+    ...selfRef,
+    ...unshadowedChildren.flatMap((child, childIndex) => {
+      if (!child) return [];
+      const childIndexPath = extendIndexPath(scope, childIndex);
+      return referencesToBindingInScope(
+        id,
+        childIndexPath,
+        false /* if var is bound again further down the tree, it's shadowing this binding */
+      );
+    }),
+  ];
 }
 
 /**

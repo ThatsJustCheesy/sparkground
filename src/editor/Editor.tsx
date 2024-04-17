@@ -6,7 +6,6 @@ import {
   nodeAtIndexPath,
   isAncestor,
   rootIndexPath,
-  referencesToBindingInScope,
   parentIndexPath,
 } from "./trees/tree";
 import {
