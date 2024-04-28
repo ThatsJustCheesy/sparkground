@@ -78,6 +78,8 @@ export function isSubtype(t1: Type, t2: Type) {
   return (
     hasTag(t1, Untyped.tag) ||
     hasTag(t2, Untyped.tag) ||
+    hasTag(t1, Never.tag) ||
+    hasTag(t2, Any.tag) ||
     (isTypeVar(t1) && isTypeVar(t2) && t1.var === t2.var) ||
     (isForallType(t1) && isForallType(t2) && isForallSubtype(t1, t2)) ||
     (isConcreteType(t1) && isConcreteType(t2) && isConcreteSubtype(t1, t2))
@@ -89,7 +91,7 @@ function isForallSubtype(t1: ForallType, t2: ForallType): boolean {
 }
 
 function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
-  if (isPrimitiveSubtype(t1.tag, t2.tag)) return true;
+  if (isNominalSubtype(t1.tag, t2.tag)) return true;
 
   if (hasTag(t1, "Function*")) {
     // Variadic functions are a limited form of (possibly infinite) intersection types;
@@ -115,13 +117,8 @@ function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
   });
 }
 
-function isPrimitiveSubtype(tag1: string, tag2: string): boolean {
-  return (
-    tag2 === Any.tag ||
-    tag1 === Never.tag ||
-    (tag1 === "Integer" && tag2 === "Number") ||
-    (tag1 === "Empty" && tag2 === "List")
-  );
+function isNominalSubtype(tag1: string, tag2: string): boolean {
+  return (tag1 === "Integer" && tag2 === "Number") || (tag1 === "Empty" && tag2 === "List");
 }
 
 function isVariadicSubtype(variadic: VariadicFunctionType, t2: ConcreteType) {
