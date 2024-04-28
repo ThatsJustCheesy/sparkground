@@ -76,6 +76,8 @@ export function typeJoin(t1: Type, t2: Type): Type {
 
 export function isSubtype(t1: Type, t2: Type) {
   return (
+    hasTag(t1, Untyped.tag) ||
+    hasTag(t2, Untyped.tag) ||
     (isTypeVar(t1) && isTypeVar(t2) && t1.var === t2.var) ||
     (isForallType(t1) && isForallType(t2) && isForallSubtype(t1, t2)) ||
     (isConcreteType(t1) && isConcreteType(t2) && isConcreteSubtype(t1, t2))
@@ -115,8 +117,6 @@ function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
 
 function isPrimitiveSubtype(tag1: string, tag2: string): boolean {
   return (
-    tag1 === Untyped.tag ||
-    tag2 === Untyped.tag ||
     tag2 === Any.tag ||
     tag1 === Never.tag ||
     (tag1 === "Integer" && tag2 === "Number") ||
