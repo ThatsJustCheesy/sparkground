@@ -670,26 +670,7 @@ export class Typechecker {
 
     if (hasTag(type, Untyped.tag)) return true;
 
-    // TODO: This switch will become useful, I swear
-    switch (expr.kind) {
-      case "Boolean":
-      case "Number":
-      case "String":
-      case "Symbol":
-      case "List":
-        return isSubtype(exprType, type);
-
-      case "var":
-        return isSubtype(exprType, type);
-
-      case "lambda":
-        return isSubtype(exprType, type);
-
-      case "call":
-        return isSubtype(exprType, type);
-    }
-
-    throw "TODO";
+    return isSubtype(exprType, type);
   }
 
   #get(name: string, context: TypeContext): Type | undefined | "circular" {

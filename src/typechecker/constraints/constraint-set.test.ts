@@ -80,4 +80,19 @@ describe("constraint sets", () => {
       )
     ).toEqual({ X: Never, Y: { tag: "Integer" } })
   })
+
+  it("solves when lower bound is a forall type", () => {
+    expect(
+      computeMinimalSubstitution(
+        {
+          X: {
+            constraint: "subtype",
+            lowerBound: { forall: [{ kind: "type-name-binding", id: "Y" }], body: { tag: "Function", of: [{ var: "Y" }, { var: "Y" }] } },
+            upperBound: Any,
+          },
+        },
+        { tag: "Function", of: [{ var: "X" }, { var: "X" }] }
+      )
+    ).toEqual({ X: { forall: [{ kind: "type-name-binding", id: "Y" }], body: { tag: "Function", of: [{ var: "Y" }, { var: "Y" }] } } })
+  })
 })
