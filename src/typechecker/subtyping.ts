@@ -91,7 +91,7 @@ function isForallSubtype(t1: ForallType, t2: ForallType): boolean {
 }
 
 function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
-  if (isNominalSubtype(t1.tag, t2.tag)) return true;
+  if (isNominalSubtype(t1, t2)) return true;
 
   if (hasTag(t1, "Function*")) {
     // Variadic functions are a limited form of (possibly infinite) intersection types;
@@ -117,8 +117,15 @@ function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
   });
 }
 
-function isNominalSubtype(tag1: string, tag2: string): boolean {
-  return (tag1 === "Integer" && tag2 === "Number") || (tag1 === "Empty" && tag2 === "List");
+function isNominalSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
+  function matches(type: ConcreteType, tag: string, argCount: number) {
+    return type.tag === tag && (type.of?.length ?? 0) === argCount;
+  }
+
+  return (
+    (matches(t1, "Integer", 0) && matches(t2, "Number", 0)) ||
+    (matches(t1, "Empty", 0) && matches(t2, "List", 1))
+  );
 }
 
 function isVariadicSubtype(variadic: VariadicFunctionType, t2: ConcreteType) {
