@@ -1,6 +1,15 @@
 import { mapValues } from "lodash";
-import { Type, Untyped, isForallType, isTypeVar, isTypeVarBoundBy, isTypeVarSlot } from "../type";
-import { TypeSubstitution } from "../type-substitution";
+import {
+  Any,
+  Never,
+  Type,
+  Untyped,
+  isForallType,
+  isTypeVar,
+  isTypeVarBoundBy,
+  isTypeVarSlot,
+} from "../type";
+import { TypeSubstitution, typeVarsFreeIn } from "../type-substitution";
 import { Constraint, TopConstraint, constraintMeet, isConstraintSatisfiable } from "./constraint";
 import { TypeParamVariance, typeParamVariance } from "../subtyping";
 
@@ -42,6 +51,14 @@ export function computeMinimalSubstitution(
   type: Type
 ): TypeSubstitution | undefined {
   if (!areConstraintsSatisfiable(constraints)) return undefined;
+
+  for (const typeVar of typeVarsFreeIn(type)) {
+    constraints[typeVar] ??= {
+      constraint: "subtype",
+      lowerBound: Never,
+      upperBound: Any,
+    };
+  }
 
   try {
     return mapValues(constraints, (constraint, name): Type => {
