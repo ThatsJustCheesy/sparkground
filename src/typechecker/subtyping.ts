@@ -25,8 +25,10 @@ function typeCombine(
   typeCombineSame: (t1: Type, t2: Type) => Type,
   typeCombineOpposite: (t1: Type, t2: Type) => Type
 ): Type {
-  if (isSubtype(t1, t2)) return takeMin ? t1 : t2;
-  if (isSubtype(t2, t1)) return takeMin ? t2 : t1;
+  if (hasTag(t1, Untyped.tag)) return t1;
+  if (hasTag(t2, Untyped.tag)) return t2;
+  if (isSubtype(t1, t2, true)) return takeMin ? t1 : t2;
+  if (isSubtype(t2, t1, true)) return takeMin ? t2 : t1;
 
   if (isTypeVar(t1) || isTypeVar(t2) || isTypeVarSlot(t1) || isTypeVarSlot(t2)) return giveUpType;
 
@@ -74,29 +76,28 @@ export function typeJoin(t1: Type, t2: Type): Type {
   return typeCombine(t1, t2, false, Any, typeJoin, typeMeet);
 }
 
-export function isSubtype(t1: Type, t2: Type) {
+export function isSubtype(t1: Type, t2: Type, knownOnly = false) {
+  if (hasTag(t1, Untyped.tag) || hasTag(t2, Untyped.tag)) return !knownOnly;
   return (
-    hasTag(t1, Untyped.tag) ||
-    hasTag(t2, Untyped.tag) ||
     hasTag(t1, Never.tag) ||
     hasTag(t2, Any.tag) ||
     (isTypeVar(t1) && isTypeVar(t2) && t1.var === t2.var) ||
-    (isForallType(t1) && isForallType(t2) && isForallSubtype(t1, t2)) ||
-    (isConcreteType(t1) && isConcreteType(t2) && isConcreteSubtype(t1, t2))
+    (isForallType(t1) && isForallType(t2) && isForallSubtype(t1, t2, knownOnly)) ||
+    (isConcreteType(t1) && isConcreteType(t2) && isConcreteSubtype(t1, t2, knownOnly))
   );
 }
 
-function isForallSubtype(t1: ForallType, t2: ForallType): boolean {
-  return isEqual(t1.forall, t2.forall) && isSubtype(t1.body, t2.body);
+function isForallSubtype(t1: ForallType, t2: ForallType, knownOnly: boolean): boolean {
+  return isEqual(t1.forall, t2.forall) && isSubtype(t1.body, t2.body, knownOnly);
 }
 
-function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
+function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType, knownOnly: boolean): boolean {
   if (isNominalSubtype(t1, t2)) return true;
 
   if (hasTag(t1, "Function*")) {
     // Variadic functions are a limited form of (possibly infinite) intersection types;
     // as such, they have special subtyping rules.
-    return isVariadicSubtype(t1, t2);
+    return isVariadicSubtype(t1, t2, knownOnly);
   }
 
   if (t1.tag !== t2.tag) return false;
@@ -108,9 +109,9 @@ function isConcreteSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
   return typeParamVariance(t1).every((variance, index) => {
     switch (variance) {
       case "covariant":
-        return isSubtype(t1Params[index]!, t2Params[index]!);
+        return isSubtype(t1Params[index]!, t2Params[index]!, knownOnly);
       case "contravariant":
-        return isSubtype(t2Params[index]!, t1Params[index]!);
+        return isSubtype(t2Params[index]!, t1Params[index]!, knownOnly);
       case "invariant":
         return isEqual(t1Params[index], t2Params[index]);
     }
@@ -128,7 +129,7 @@ function isNominalSubtype(t1: ConcreteType, t2: ConcreteType): boolean {
   );
 }
 
-function isVariadicSubtype(variadic: VariadicFunctionType, t2: ConcreteType) {
+function isVariadicSubtype(variadic: VariadicFunctionType, t2: ConcreteType, knownOnly: boolean) {
   if (hasTag(t2, "Function*")) {
     return isEqual(variadic, t2);
   }
@@ -147,12 +148,12 @@ function isVariadicSubtype(variadic: VariadicFunctionType, t2: ConcreteType) {
       (variadic.minArgCount ?? 0) <= fnParams.length &&
       fnParams.length <= (variadic.maxArgCount ?? Infinity) &&
       // Variadic result type can be assigned to function result type?
-      isSubtype(variadicResult, fnResult) &&
+      isSubtype(variadicResult, fnResult, knownOnly) &&
       // Function parameter types can be assigned to variadic parameter types?
       // If there are more function parameter types than variadic parameter types,
       // the last variadic parameter type T is treated as T* (Kleene star, repeating 0+ times).
       fnParams.every((fnParam, index) =>
-        isSubtype(fnParam, variadicParams[index] ?? variadicParams.at(-1)!)
+        isSubtype(fnParam, variadicParams[index] ?? variadicParams.at(-1)!, knownOnly)
       )
     );
   }

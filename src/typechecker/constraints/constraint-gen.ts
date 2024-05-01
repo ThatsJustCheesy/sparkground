@@ -39,7 +39,7 @@ export function generateConstraints(
         { constraint: "untyped" },
       ])
     );
-  } else if (isSubtype(subtype, supertype)) {
+  } else if (isSubtype(subtype, supertype, true)) {
     // Nothing to enforce!
     // CG-Refl falls into here
     return {};
