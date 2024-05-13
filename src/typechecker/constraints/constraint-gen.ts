@@ -1,4 +1,4 @@
-import { isEqual, merge } from "lodash";
+import { isEqual } from "lodash";
 import {
   Any,
   Never,
@@ -6,6 +6,7 @@ import {
   Untyped,
   hasTag,
   isForallType,
+  isTypeNameBinding,
   isTypeVar,
   isTypeVarSlot,
   typeParamMap,
@@ -84,7 +85,7 @@ export function generateConstraints(
     return generateConstraints(
       [
         ...varNamesInScope,
-        ...subtype.forall.flatMap((slot) => (isTypeVar(slot) ? [slot.var] : [])),
+        ...subtype.forall.flatMap((slot) => (isTypeNameBinding(slot) ? [slot.id] : [])),
       ],
       constrainVarNames,
       subtype.body,
