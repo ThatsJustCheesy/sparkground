@@ -73,7 +73,7 @@ export function describeTypecheckError(e: TypecheckError): string {
       return !e.minArity
         ? `wrong number of arguments: got ${e.attemptedCallArity}, expecting at most ${e.maxArity}`
         : !e.maxArity
-        ? `wrong number of arguments: got ${e.attemptedCallArity}, expecting at least ${e.minArity}`
-        : `wrong number of arguments: got ${e.attemptedCallArity}, expecting between ${e.minArity} and ${e.maxArity}`;
+          ? `wrong number of arguments: got ${e.attemptedCallArity}, expecting at least ${e.minArity}`
+          : `wrong number of arguments: got ${e.attemptedCallArity}, expecting between ${e.minArity} and ${e.maxArity}`;
   }
 }

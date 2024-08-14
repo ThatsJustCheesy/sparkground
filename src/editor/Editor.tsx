@@ -60,7 +60,7 @@ export type Props = {
 
 function sortCollisionsClosestToZero(
   { data: { value: a } }: CollisionDescriptor,
-  { data: { value: b } }: CollisionDescriptor
+  { data: { value: b } }: CollisionDescriptor,
 ) {
   return Math.abs(a) - Math.abs(b);
 }
@@ -187,7 +187,7 @@ export default function EditorComponent({
 
   const environment = mergeEnvs<unknown>(
     InitialEnvironment,
-    new Program(trees.list()).defines.environment()
+    new Program(trees.list()).defines.environment(),
   );
 
   return (
@@ -195,7 +195,7 @@ export default function EditorComponent({
       autoScroll={false}
       sensors={useSensors(
         useSensor(CustomPointerSensor, { activationConstraint: { distance: 4 } }),
-        useSensor(CustomKeyboardSensor)
+        useSensor(CustomKeyboardSensor),
       )}
       collisionDetection={collisionDetection}
       onDragStart={onBlockDragStart}
@@ -213,7 +213,7 @@ export default function EditorComponent({
                 forDragOverlay: activeDragOver ?? true,
               }).render(activeDrag.indexPath)}
           </DragOverlay>
-        </>
+        </>,
       )}
 
       <Split
@@ -280,7 +280,7 @@ export default function EditorComponent({
                               }).render(rootIndexPath(tree))}
                             </div>
                           ))}
-                        </>
+                        </>,
                       )}
                     </Tab.Pane>
                   ))}
@@ -484,7 +484,7 @@ export default function EditorComponent({
           x: dragBounds.left,
           y: dragBounds.top,
         },
-        shouldCopy
+        shouldCopy,
       );
       activeIndexPath = rootIndexPath(orphanTree);
     } else {

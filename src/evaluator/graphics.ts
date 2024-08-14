@@ -11,7 +11,7 @@ type EllipseGraphic = [
   y: NumberDatum,
   xRadius: NumberDatum,
   rRadius: NumberDatum,
-  color: StringDatum
+  color: StringDatum,
 ];
 type RectangleGraphic = [
   tag: { kind: "Symbol"; value: "rectangle" },
@@ -19,13 +19,13 @@ type RectangleGraphic = [
   y: NumberDatum,
   width: NumberDatum,
   height: NumberDatum,
-  color: StringDatum
+  color: StringDatum,
 ];
 type ImageGraphic = [
   tag: { kind: "Symbol"; value: "image" },
   url: StringDatum,
   x: NumberDatum,
-  y: NumberDatum
+  y: NumberDatum,
 ];
 
 const imageCache: Record<string, ImageBitmap> = {};

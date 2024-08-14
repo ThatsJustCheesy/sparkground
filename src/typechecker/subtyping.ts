@@ -23,7 +23,7 @@ function typeCombine(
   takeMin: boolean,
   giveUpType: Type,
   typeCombineSame: (t1: Type, t2: Type) => Type,
-  typeCombineOpposite: (t1: Type, t2: Type) => Type
+  typeCombineOpposite: (t1: Type, t2: Type) => Type,
 ): Type {
   if (hasTag(t1, Untyped.tag)) return t1;
   if (hasTag(t2, Untyped.tag)) return t2;
@@ -153,7 +153,7 @@ function isVariadicSubtype(variadic: VariadicFunctionType, t2: ConcreteType, kno
       // If there are more function parameter types than variadic parameter types,
       // the last variadic parameter type T is treated as T* (Kleene star, repeating 0+ times).
       fnParams.every((fnParam, index) =>
-        isSubtype(fnParam, variadicParams[index] ?? variadicParams.at(-1)!, knownOnly)
+        isSubtype(fnParam, variadicParams[index] ?? variadicParams.at(-1)!, knownOnly),
       )
     );
   }
@@ -171,7 +171,7 @@ export function typeParamVariance(t: ConcreteType): TypeParamVariance[] {
       return typeParams.map(() => "covariant");
     case "Function":
       return typeParams.map((param, index) =>
-        index === typeParams.length - 1 ? "covariant" : "contravariant"
+        index === typeParams.length - 1 ? "covariant" : "contravariant",
       );
     default:
       return typeParams.map(() => "invariant");

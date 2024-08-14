@@ -37,7 +37,7 @@ export default function AppContextMenu({
   async function renameSubject() {
     editor.renameBinding(
       await typedNodeAtIndexPath(subject, "name-binding"),
-      parentIndexPath(subject)
+      parentIndexPath(subject),
     );
   }
 

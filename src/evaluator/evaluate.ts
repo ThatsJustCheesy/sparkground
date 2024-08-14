@@ -65,7 +65,7 @@ export class Evaluator {
 
   eval(
     expr: Expr,
-    { indexPath, extendEnv }: { indexPath?: TreeIndexPath; extendEnv?: Environment } = {}
+    { indexPath, extendEnv }: { indexPath?: TreeIndexPath; extendEnv?: Environment } = {},
   ): Value | undefined {
     try {
       return this.#eval(expr, { indexPath, extendEnv });
@@ -91,7 +91,7 @@ export class Evaluator {
       index?: number;
       env?: Environment;
       extendEnv?: Environment;
-    } = {}
+    } = {},
   ) {
     const prevEnv = this.env;
     if (env) this.env = mergeEnvs(this.baseEnv, env);
@@ -168,7 +168,7 @@ export class Evaluator {
             value: {
               kind: "fn",
               signature: expr.fields.map(
-                (fieldName): DynamicParamSignature => ({ name: getPrettyName(fieldName) })
+                (fieldName): DynamicParamSignature => ({ name: getPrettyName(fieldName) }),
               ),
               body: (args: Value[]): Value => {
                 return {
@@ -181,7 +181,7 @@ export class Evaluator {
           {
             typeAnnotation: isHole(expr.name) ? undefined : expr.name.type,
             bodyArgHints: expr.fields.map((name) => getPrettyName(name)),
-          }
+          },
         );
 
         // Field accessors
@@ -216,7 +216,7 @@ export class Evaluator {
                 },
               },
             }),
-          ])
+          ]),
         );
 
         return { kind: "List", heads: [] };
@@ -236,7 +236,7 @@ export class Evaluator {
           ([name, value], index): Binding<Value> => ({
             name: (name as NameBinding).id,
             cell: { value: this.#eval(value, { index: 2 * index + 1 }) },
-          })
+          }),
         );
 
         return this.#eval(expr.body, {
@@ -251,9 +251,9 @@ export class Evaluator {
             ([name]): Binding<Value> => ({
               name: (name as NameBinding).id,
               cell: {},
-            })
+            }),
           ),
-          ({ name }) => name
+          ({ name }) => name,
         );
 
         expr.bindings.forEach(([name, value], index) => {

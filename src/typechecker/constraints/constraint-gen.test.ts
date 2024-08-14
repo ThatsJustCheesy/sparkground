@@ -11,7 +11,7 @@ describe("constraint generation", () => {
 
   it("generates lower-bound constraints", () => {
     expect(
-      generateConstraints([], ["X"], { tag: "Function", of: [{ var: "X" }, Never] }, { tag: "Function", of: [{ tag: "Integer" }, Never] })
+      generateConstraints([], ["X"], { tag: "Function", of: [{ var: "X" }, Never] }, { tag: "Function", of: [{ tag: "Integer" }, Never] }),
     ).toEqual<ConstraintSet>({
       X: { constraint: "subtype", lowerBound: { tag: "Integer" }, upperBound: Any },
     })

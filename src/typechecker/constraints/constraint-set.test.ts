@@ -14,8 +14,8 @@ describe("constraint sets", () => {
           // X is bounded below and above by unrelated types
           X: { constraint: "subtype", lowerBound: { tag: "Foo" }, upperBound: { tag: "Bar" } },
         },
-        Any
-      )
+        Any,
+      ),
     ).toBeUndefined()
   })
 
@@ -26,8 +26,8 @@ describe("constraint sets", () => {
           X: { constraint: "subtype", lowerBound: Never, upperBound: Any },
           Y: { constraint: "subtype", lowerBound: { tag: "Integer" }, upperBound: { tag: "Number" } },
         },
-        Any
-      )
+        Any,
+      ),
     ).toEqual({ X: Never, Y: { tag: "Integer" } })
   })
 
@@ -37,8 +37,8 @@ describe("constraint sets", () => {
         {
           X: { constraint: "subtype", lowerBound: { tag: "Integer" }, upperBound: { tag: "Number" } },
         },
-        { tag: "Function", of: [{ tag: "Integer" }, { var: "X" }] }
-      )
+        { tag: "Function", of: [{ tag: "Integer" }, { var: "X" }] },
+      ),
     ).toEqual({ X: { tag: "Integer" } })
   })
 
@@ -49,8 +49,8 @@ describe("constraint sets", () => {
           X: { constraint: "subtype", lowerBound: Never, upperBound: Any },
           Y: { constraint: "subtype", lowerBound: { tag: "Integer" }, upperBound: { tag: "Number" } },
         },
-        { tag: "Function", of: [{ var: "X" }, { tag: "Function", of: [{ var: "Y" }] }, { tag: "Integer" }] }
-      )
+        { tag: "Function", of: [{ var: "X" }, { tag: "Function", of: [{ var: "Y" }] }, { tag: "Integer" }] },
+      ),
     ).toEqual({ X: Any, Y: { tag: "Number" } })
   })
 
@@ -61,8 +61,8 @@ describe("constraint sets", () => {
           X: { constraint: "subtype", lowerBound: { tag: "Foo" }, upperBound: { tag: "Foo" } },
           Y: { constraint: "subtype", lowerBound: { tag: "Bar" }, upperBound: { tag: "Bar" } },
         },
-        { tag: "Function", of: [{ tag: "Function", of: [{ var: "X" }, { var: "Y" }] }, { var: "X" }, { var: "Y" }] }
-      )
+        { tag: "Function", of: [{ tag: "Function", of: [{ var: "X" }, { var: "Y" }] }, { var: "X" }, { var: "Y" }] },
+      ),
     ).toEqual({ X: { tag: "Foo" }, Y: { tag: "Bar" } })
   })
 
@@ -76,8 +76,8 @@ describe("constraint sets", () => {
           X: { constraint: "subtype", lowerBound: Never, upperBound: Any },
           Y: { constraint: "subtype", lowerBound: { tag: "Integer" }, upperBound: { tag: "Number" } },
         },
-        { tag: "Function", of: [{ tag: "Function", of: [{ var: "X" }, { var: "Y" }] }, { var: "X" }, { var: "Y" }] }
-      )
+        { tag: "Function", of: [{ tag: "Function", of: [{ var: "X" }, { var: "Y" }] }, { var: "X" }, { var: "Y" }] },
+      ),
     ).toEqual({ X: Never, Y: { tag: "Integer" } })
   })
 
@@ -91,8 +91,8 @@ describe("constraint sets", () => {
             upperBound: Any,
           },
         },
-        { tag: "Function", of: [{ var: "X" }, { var: "X" }] }
-      )
+        { tag: "Function", of: [{ var: "X" }, { var: "X" }] },
+      ),
     ).toEqual({ X: { forall: [{ kind: "type-name-binding", id: "Y" }], body: { tag: "Function", of: [{ var: "Y" }, { var: "Y" }] } } })
   })
 })

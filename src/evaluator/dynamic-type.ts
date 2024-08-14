@@ -17,7 +17,7 @@ export function prettyPrintSignature(signature: DynamicFnSignature): string {
     .map(
       (param) =>
         (param.type ? "(" + param.name + " : " + param.type + ")" : param.name) +
-        (param.variadic ? "..." : param.optional ? "?" : "")
+        (param.variadic ? "..." : param.optional ? "?" : ""),
     )
     .join(" ");
 }
@@ -29,12 +29,12 @@ export function prettyPrintSignatureNames(signature: DynamicFnSignature): string
 
 export function checkCallAgainstTypeSignature(
   argValues: Value[],
-  signature: DynamicFnSignature
+  signature: DynamicFnSignature,
 ): void {
   if (
     !dynamicSignatureMatch(
       argValues.map((value) => value.kind),
-      signature
+      signature,
     )
   ) {
     throw {

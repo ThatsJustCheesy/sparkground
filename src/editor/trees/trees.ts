@@ -77,13 +77,13 @@ export class Trees {
   }
 
   #destinationPageID(proposedID: PageID): PageID {
-    return proposedID >= 0 ? proposedID : this.meta.currentPageID ?? 0;
+    return proposedID >= 0 ? proposedID : (this.meta.currentPageID ?? 0);
   }
 
   moveExprInTree(
     { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
     { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath,
-    displaceTo: Point
+    displaceTo: Point,
   ) {
     if (destinationIndexPath.length === 0) {
       // Trying to replace root of a tree
@@ -92,7 +92,7 @@ export class Trees {
     if (
       isSameOrAncestor(
         { tree: sourceTree, path: sourceIndexPath },
-        { tree: destinationTree, path: destinationIndexPath }
+        { tree: destinationTree, path: destinationIndexPath },
       )
     ) {
       // Trying to move an expression such that it becomes a descendant of itself
@@ -104,7 +104,7 @@ export class Trees {
     const destination = nodeForIndexPathInTree(destinationTree, destinationIndexPath);
     const destinationParent = nodeForIndexPathInTree(
       destinationTree,
-      destinationIndexPath.slice(0, -1)
+      destinationIndexPath.slice(0, -1),
     );
 
     if (source === sourceTree.root) {
@@ -124,7 +124,7 @@ export class Trees {
   copyExprInTree(
     { tree: sourceTree, path: sourceIndexPath }: TreeIndexPath,
     { tree: destinationTree, path: destinationIndexPath }: TreeIndexPath,
-    displaceTo: Point
+    displaceTo: Point,
   ) {
     if (destinationIndexPath.length === 0) {
       // Trying to replace root of a tree
@@ -136,7 +136,7 @@ export class Trees {
     const destination = nodeForIndexPathInTree(destinationTree, destinationIndexPath);
     const destinationParent = nodeForIndexPathInTree(
       destinationTree,
-      destinationIndexPath.slice(0, -1)
+      destinationIndexPath.slice(0, -1),
     );
 
     if (destination === source || destination === destinationTree.root) return;
@@ -191,7 +191,7 @@ export class Trees {
           path: indexPath.path.slice(0, -1),
         }),
         indexPath.path.at(-1)!,
-        newNode
+        newNode,
       );
     }
   }

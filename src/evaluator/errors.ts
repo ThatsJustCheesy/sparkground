@@ -69,7 +69,7 @@ export function describeRuntimeError(e: RuntimeError): string {
       return `call to function with arguments (${e.argValues
         .map(prettyPrintValue)
         .join(" ")}) is incompatible with the required signature (${prettyPrintSignature(
-        e.signature
+        e.signature,
       )})`;
     case "ImproperList":
       return `argument ${

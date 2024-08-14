@@ -54,7 +54,7 @@ export function serializeExpr(expr: Expr): string {
         " (" +
         expr.bindings
           .map(
-            ([name, valueExpr]) => "(" + serializeExpr(name) + " " + serializeExpr(valueExpr) + ")"
+            ([name, valueExpr]) => "(" + serializeExpr(name) + " " + serializeExpr(valueExpr) + ")",
           )
           .join(" ") +
         ") " +
@@ -89,7 +89,7 @@ export function serializeExpr(expr: Expr): string {
       return (
         "(cond (" +
         expr.cases.map(
-          ([condition, value]) => serializeExpr(condition) + " " + serializeExpr(value)
+          ([condition, value]) => serializeExpr(condition) + " " + serializeExpr(value),
         ) +
         "))"
       );

@@ -21,7 +21,7 @@ describe("evaluate", () => {
   it("evals variables", () => {
     expect(() => evaluator.eval({ kind: "var", id: "x" })).toThrow()
     expect(
-      evaluator.eval({ kind: "var", id: "x" }, { extendEnv: { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } } })
+      evaluator.eval({ kind: "var", id: "x" }, { extendEnv: { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } } }),
     ).toEqual<Value>({
       kind: "Number",
       value: 42,
@@ -36,14 +36,14 @@ describe("evaluate", () => {
           { kind: "Boolean", value: false },
           { kind: "String", value: "result" },
         ],
-      })
+      }),
     ).toEqual<Value>({ kind: "String", value: "result" })
   })
 
   it("evals procedures", () => {
     const const42: Lambda = { kind: "lambda", params: [], body: { kind: "Number", value: 42 } }
     expect(evaluator.eval(const42)).toEqual<Value>(
-      expect.objectContaining({ kind: "fn", signature: [], body: { kind: "Number", value: 42 } })
+      expect.objectContaining({ kind: "fn", signature: [], body: { kind: "Number", value: 42 } }),
     )
     expect(evaluator.eval({ kind: "call", called: const42, args: [] })).toEqual<Value>({ kind: "Number", value: 42 })
   })
@@ -51,7 +51,7 @@ describe("evaluate", () => {
   it("evals unary functions", () => {
     const id: Lambda = { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } }
     expect(evaluator.eval(id)).toEqual<Value>(
-      expect.objectContaining({ kind: "fn", signature: [{ name: "x" }], body: { kind: "var", id: "x" } })
+      expect.objectContaining({ kind: "fn", signature: [{ name: "x" }], body: { kind: "var", id: "x" } }),
     )
     expect(evaluator.eval({ kind: "call", called: id, args: [{ kind: "Number", value: 42 }] })).toEqual<Value>({
       kind: "Number",
@@ -73,7 +73,7 @@ describe("evaluate", () => {
         kind: "fn",
         signature: [{ name: "x" }, { name: "y" }],
         body: { kind: "var", id: "y" },
-      })
+      }),
     )
     expect(
       evaluator.eval({
@@ -83,7 +83,7 @@ describe("evaluate", () => {
           { kind: "Number", value: 0 },
           { kind: "String", value: "" },
         ],
-      })
+      }),
     ).toEqual<Value>({ kind: "String", value: "" })
   })
 
@@ -106,8 +106,8 @@ describe("evaluate", () => {
         { kind: "call", called: { kind: "var", id: "closure" }, args: [] },
         {
           extendEnv: { closure: { name: "closure", cell: { value: closure } } },
-        }
-      )
+        },
+      ),
     ).toEqual<Value>({ kind: "Number", value: 42 })
   })
 
@@ -136,7 +136,7 @@ describe("evaluate", () => {
 
     // One formal, one actual, type mismatch
     expect(() =>
-      evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Number" }], body }, [{ kind: "Boolean", value: true }])
+      evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Number" }], body }, [{ kind: "Boolean", value: true }]),
     ).toThrow()
 
     // Variadic formal, no actual
@@ -147,7 +147,7 @@ describe("evaluate", () => {
       evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, [
         { kind: "Boolean", value: true },
         { kind: "Number", value: 123 },
-      ])
+      ]),
     ).not.toThrow()
   })
 })

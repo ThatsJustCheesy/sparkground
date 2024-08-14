@@ -165,7 +165,7 @@ export class Editor {
 
 export async function typedNodeAtIndexPath<Tag extends string>(
   indexPath: TreeIndexPath,
-  tag: Tag
+  tag: Tag,
 ): Promise<Expr & { kind: Tag }> {
   return new Promise((resolve) => {
     const node = nodeAtIndexPath(indexPath);

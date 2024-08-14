@@ -43,7 +43,7 @@ function LibraryCategoryTabs({ categories }: { categories?: LibraryCategory[] })
                 rootIndexPath(tree),
                 {
                   isCopySource: true,
-                }
+                },
               );
             })}
 

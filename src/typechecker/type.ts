@@ -39,12 +39,12 @@ export function typeParams(type: Type): Type[] {
 }
 
 export function functionParamTypes(
-  fnType: SimpleConcreteType<"Function"> | VariadicFunctionType
+  fnType: SimpleConcreteType<"Function"> | VariadicFunctionType,
 ): Type[] {
   return typeParams(fnType).slice(0, -1);
 }
 export function functionResultType(
-  fnType: SimpleConcreteType<"Function"> | VariadicFunctionType
+  fnType: SimpleConcreteType<"Function"> | VariadicFunctionType,
 ): Type {
   return typeParams(fnType).at(-1) ?? Any;
 }

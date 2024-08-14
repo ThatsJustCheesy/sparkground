@@ -22,7 +22,7 @@ import { serializeType } from "../../typechecker/serialize";
 
 export function isAtomic(node: Expr) {
   return (["Number", "Boolean", "String", "Symbol", "var"] satisfies Expr["kind"][]).includes(
-    node.kind as any
+    node.kind as any,
   );
 }
 
@@ -203,7 +203,7 @@ function asTypeVarSlot(node: Expr): TypeVarSlot {
 
   // Once again: Serialize the expression, then parse it back
   return new TypeParser().parseTypeVarSlot(
-    flattenDatum(DatumParser.parseToDatum(serializeType(type)))
+    flattenDatum(DatumParser.parseToDatum(serializeType(type))),
   );
 }
 
@@ -288,7 +288,7 @@ export function isSameOrAncestor(ancestor: TreeIndexPath, descendant: TreeIndexP
 export function referencesToBindingInScope(
   id: string,
   scope: TreeIndexPath,
-  selfIsBindingExpr = true
+  selfIsBindingExpr = true,
 ): Var[] {
   const self = nodeAtIndexPath(scope);
 
@@ -330,7 +330,7 @@ export function referencesToBindingInScope(
       return referencesToBindingInScope(
         id,
         childIndexPath,
-        false /* if var is bound again further down the tree, it's shadowing this binding */
+        false /* if var is bound again further down the tree, it's shadowing this binding */,
       );
     }),
   ];
@@ -371,8 +371,8 @@ export function unboundReferences(root: TreeIndexPath, env: Environment = {}): V
             extendEnv(
               env,
               root,
-              parent.bindings.map(([name]) => name)
-            )
+              parent.bindings.map(([name]) => name),
+            ),
           );
         }
 
@@ -382,8 +382,8 @@ export function unboundReferences(root: TreeIndexPath, env: Environment = {}): V
           extendEnv(
             env,
             root,
-            parent.bindings.map(([name]) => name)
-          )
+            parent.bindings.map(([name]) => name),
+          ),
         );
 
       default:

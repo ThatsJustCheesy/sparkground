@@ -94,7 +94,7 @@ describe("Typechecker", () => {
           { kind: "Number", value: 0 },
           { kind: "Boolean", value: false },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({ tag: "Boolean" })
     expectNoErrors()
   })
@@ -153,7 +153,7 @@ describe("Typechecker", () => {
           { kind: "Number", value: 42 },
           { kind: "String", value: "foo" },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({
       tag: "Integer",
     })
@@ -167,7 +167,7 @@ describe("Typechecker", () => {
           { kind: "Number", value: 42 },
           { kind: "String", value: "foo" },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({
       tag: "String",
     })
@@ -181,7 +181,7 @@ describe("Typechecker", () => {
           { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } },
           { kind: "Number", value: 42 },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({
       tag: "Number",
     })
@@ -192,8 +192,8 @@ describe("Typechecker", () => {
     expect(
       checker.inferType(
         { kind: "call", called: { kind: "var", id: "loop" }, args: [{ kind: "Number", value: 42 }] },
-        { loop: { tag: "Never" } }
-      )
+        { loop: { tag: "Never" } },
+      ),
     ).toEqual<BuiltinType>({
       tag: "Never",
     })
@@ -254,7 +254,7 @@ describe("Typechecker", () => {
           { kind: "Number", value: 42 },
           { kind: "Number", value: 24 },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "Integer" }] })
     expectNoErrors()
 
@@ -265,7 +265,7 @@ describe("Typechecker", () => {
           { kind: "Number", value: 42 },
           { kind: "Number", value: 2.4 },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "Number" }] })
     expectNoErrors()
 
@@ -276,7 +276,7 @@ describe("Typechecker", () => {
           { kind: "Number", value: 42 },
           { kind: "Boolean", value: true },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({ tag: "List", of: [Any] })
     expectNoErrors()
 
@@ -287,7 +287,7 @@ describe("Typechecker", () => {
           { kind: "List", heads: [{ kind: "Number", value: 42 }] },
           { kind: "List", heads: [{ kind: "Boolean", value: true }] },
         ],
-      })
+      }),
     ).toEqual<BuiltinType>({ tag: "List", of: [{ tag: "List", of: [Any] }] })
     expectNoErrors()
   })

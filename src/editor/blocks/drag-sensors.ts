@@ -11,7 +11,7 @@ export class CustomPointerSensor extends PointerSensor {
           shouldHandleEvent(event.nativeEvent.target as HTMLElement) && handler(event, options)
         );
       },
-    })
+    }),
   );
 }
 
@@ -25,7 +25,7 @@ export class CustomKeyboardSensor extends KeyboardSensor {
           handler(event, options, context)
         );
       },
-    })
+    }),
   );
 }
 

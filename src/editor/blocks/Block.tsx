@@ -245,7 +245,7 @@ export default function Block({
       setCalledType(
         expr?.kind === "call"
           ? typechecker.inferSubexprType(extendIndexPath(indexPath, 0))
-          : undefined
+          : undefined,
       );
     } catch (error) {
       setType(describeTypecheckError(error) ?? `${error}`);
@@ -442,10 +442,10 @@ export default function Block({
           (data.calledIsVar
             ? "block-menu-call"
             : data.id === "function"
-            ? data.returnTypeAnnotation
-              ? "block-menu-function-annotated"
-              : "block-menu-function"
-            : "block-menu") + evaluable
+              ? data.returnTypeAnnotation
+                ? "block-menu-function-annotated"
+                : "block-menu-function"
+              : "block-menu") + evaluable
         );
       case "happly":
         return (data ? "block-menu-apply" : "block-menu") + evaluable;

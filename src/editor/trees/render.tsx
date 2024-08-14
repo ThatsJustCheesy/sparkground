@@ -53,7 +53,7 @@ export class Renderer {
     options: {
       forDragOverlay?: boolean | Over;
       onEditValue?: (indexPath: TreeIndexPath, applyAsFunction?: boolean) => Promise<void>;
-    } = {}
+    } = {},
   ) {
     this.forDragOverlay = options.forDragOverlay;
     this.onEditValue = options.onEditValue;
@@ -65,7 +65,7 @@ export class Renderer {
       isCopySource,
     }: {
       isCopySource?: boolean;
-    } = {}
+    } = {},
   ) {
     this.indexPath = indexPath;
     if (isCopySource) this.isCopySource = isCopySource;
@@ -145,8 +145,8 @@ export class Renderer {
           binding?.attributes?.binder
             ? this.#keyForIndexPath(binding.attributes.binder).trim().replace(/\s/g, "-").trim()
             : binding?.name
-            ? `global-${binding.name}`
-            : undefined
+              ? `global-${binding.name}`
+              : undefined
         }
         forDragOverlay={this.forDragOverlay}
         onEditValue={this.onEditValue}
@@ -159,7 +159,7 @@ export class Renderer {
   #renderVarSlot(
     varSlot: VarSlot,
     index: number,
-    { environment, phantom }: { environment?: Environment<unknown>; phantom?: boolean } = {}
+    { environment, phantom }: { environment?: Environment<unknown>; phantom?: boolean } = {},
   ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
@@ -185,7 +185,7 @@ export class Renderer {
     {
       isCopySource,
       environment,
-    }: { isCopySource?: boolean; environment?: Environment<unknown> } = {}
+    }: { isCopySource?: boolean; environment?: Environment<unknown> } = {},
   ): JSX.Element {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
@@ -231,7 +231,7 @@ export class Renderer {
   #renderSubdatum(
     subdatum: Datum,
     index: number,
-    { isCopySource }: { isCopySource?: boolean } = {}
+    { isCopySource }: { isCopySource?: boolean } = {},
   ) {
     const parentIndexPath = this.indexPath;
     const parentIsCopySource = this.isCopySource;
@@ -272,11 +272,11 @@ export class Renderer {
         [
           ...type.forall.map((typeVar, index) => this.#renderTypeVarSlot(typeVar, index)),
           this.#renderTypeArg(type.body, type.forall.length),
-        ]
+        ],
       );
     } else {
       const renderedArgs = typeParams(type).map((typeArg, index) =>
-        this.#renderTypeArg(typeArg, index)
+        this.#renderTypeArg(typeArg, index),
       );
 
       if (hasTag(type, "Function")) {
@@ -284,7 +284,7 @@ export class Renderer {
         renderedArgs.splice(
           renderedArgs.length - 1,
           0,
-          <div className="block-type-label block-type-label-arrow">➜</div>
+          <div className="block-type-label block-type-label-arrow">➜</div>,
         );
       }
 
@@ -293,7 +293,7 @@ export class Renderer {
           type: "type",
           id: type.tag,
         },
-        renderedArgs
+        renderedArgs,
       );
     }
   }
@@ -358,7 +358,7 @@ export class Renderer {
         id,
         binding,
       },
-      body
+      body,
     );
   }
 
@@ -414,7 +414,7 @@ export class Renderer {
             heading: <>{heading}</>,
             calledIsVar: true,
           },
-          this.#hintBodyArgs(body, bodyArgHints)
+          this.#hintBodyArgs(body, bodyArgHints),
         );
       } else if (calledAttributes.headingArgCount || calledAttributes.bodyArgHints?.length) {
         return this.#block(
@@ -425,7 +425,7 @@ export class Renderer {
             heading: <>{heading}</>,
             calledIsVar: true,
           },
-          this.#hintBodyArgs(body, bodyArgHints)
+          this.#hintBodyArgs(body, bodyArgHints),
         );
       } else {
         if (calledAttributes.infix) {
@@ -443,7 +443,7 @@ export class Renderer {
             calledIsVar: true,
             argCount: args.length,
           },
-          renderedArgs
+          renderedArgs,
         );
       }
     } else {
@@ -534,7 +534,7 @@ export class Renderer {
           expr.params.map((param, index) =>
             this.#renderVarSlot(param, index, {
               environment: newEnvironment,
-            })
+            }),
           )
         }
         {
@@ -570,7 +570,7 @@ export class Renderer {
         heading,
         returnTypeAnnotation: expr.returnType,
       },
-      body
+      body,
     );
   }
 
@@ -588,7 +588,7 @@ export class Renderer {
 
     return this.#block(
       { type: "h", id: expr.kind },
-      expr.args.map((arg, index) => this.#renderSubexpr(arg, index))
+      expr.args.map((arg, index) => this.#renderSubexpr(arg, index)),
     );
   }
 
@@ -597,8 +597,8 @@ export class Renderer {
       { type: "v", id: "if", heading: this.#renderSubexpr(expr.if, 0) },
       this.#hintBodyArgs(
         [this.#renderSubexpr(expr.then, 1), this.#renderSubexpr(expr.else, 2)],
-        ["then", "else"]
-      )
+        ["then", "else"],
+      ),
     );
   }
 

@@ -55,7 +55,7 @@ export function mergeEnvs<Domain = Value>(
 export function extendEnv<Domain = Value>(
   environment: Environment<Domain>,
   parentIndexPath: TreeIndexPath,
-  varSlots: VarSlot[]
+  varSlots: VarSlot[],
 ) {
   return mergeEnvs(
     environment,
@@ -70,16 +70,16 @@ export function extendEnv<Domain = Value>(
               typeAnnotation: (slot as NameBinding).type,
               binder: extendIndexPath(parentIndexPath, index),
             },
-          })
-        )
-    )
+          }),
+        ),
+    ),
   );
 }
 
 // TODO: Move this
 function chainCompare<Item>(
   items: Item[],
-  compare: (item1: Item, item2: Item) => boolean
+  compare: (item1: Item, item2: Item) => boolean,
 ): boolean {
   if (items.length === 0) return true;
 
@@ -501,7 +501,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             value: reduce(
               numbers.map(({ value }) => value),
               multiply,
-              1
+              1,
             ),
           };
         },
@@ -532,7 +532,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
                 reduce(
                   numbers.map(({ value }) => value),
                   multiply,
-                  1
+                  1,
                 )
               : 1 / number.value,
           };
@@ -1498,7 +1498,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           const [string, start, end] = args as [
             StringDatum,
             NumberDatum | undefined,
-            NumberDatum | undefined
+            NumberDatum | undefined,
           ];
           const startIdx = start ? start.value : undefined;
           const endIdx = end ? end.value : undefined;
@@ -2057,5 +2057,5 @@ export const ExtensionsEnvironment: Environment = makeEnv([
 
 export const InitialEnvironment: Environment = mergeEnvs(
   ExtensionsEnvironment,
-  SchemeReportEnvironment
+  SchemeReportEnvironment,
 );

@@ -24,7 +24,7 @@ export function generateConstraints(
   // S
   subtype: Type,
   // T
-  supertype: Type
+  supertype: Type,
 ): ConstraintSet | undefined {
   if (isTypeVarSlot(subtype) || isTypeVarSlot(supertype)) return;
 
@@ -38,7 +38,7 @@ export function generateConstraints(
       typeVarsFreeIn(other).map((varName): [string, Constraint] => [
         varName,
         { constraint: "untyped" },
-      ])
+      ]),
     );
   } else if (isSubtype(subtype, supertype, true)) {
     // Nothing to enforce!
@@ -89,7 +89,7 @@ export function generateConstraints(
       ],
       constrainVarNames,
       subtype.body,
-      supertype.body
+      supertype.body,
     );
   } else if (subtype.tag === Never.tag || supertype.tag === Any.tag) {
     // CG-Bot, CG-Top
@@ -122,7 +122,7 @@ export function generateConstraints(
             return constraintSetMeet(positiveSet, negativeSet);
           }
         }
-      }
+      },
     );
 
     if (constraintSets.some((set) => set === undefined)) return;
@@ -136,7 +136,7 @@ function eliminate(
   type: Type,
   promoteToType: Type,
   eliminateSame: (variables: string[], type: Type) => Type,
-  eliminateOpposite: (variables: string[], type: Type) => Type
+  eliminateOpposite: (variables: string[], type: Type) => Type,
 ): Type {
   if (isTypeVarSlot(type)) return type;
 

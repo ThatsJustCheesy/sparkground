@@ -190,7 +190,7 @@ function tokenize(source: string): Token[] {
     }
 
     match = source.match(
-      /^·|[a-zA-Z!$%&*\/:<=>?^_~#][a-zA-Z!$%&*\/:<=>?^_~#0-9+\-\.@]*|\+|\-|\.\.\.|→/
+      /^·|[a-zA-Z!$%&*\/:<=>?^_~#][a-zA-Z!$%&*\/:<=>?^_~#0-9+\-\.@]*|\+|\-|\.\.\.|→/,
     );
     if (match) {
       const [symbol] = match;

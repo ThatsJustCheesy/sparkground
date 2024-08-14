@@ -15,7 +15,7 @@ export class Program {
    */
   constructor(entryPoints: (Tree | TreeIndexPath)[]) {
     this.#entryPointIndexPaths = entryPoints.map(
-      (ep): TreeIndexPath => ("tree" in ep ? ep : rootIndexPath(ep))
+      (ep): TreeIndexPath => ("tree" in ep ? ep : rootIndexPath(ep)),
     );
   }
 

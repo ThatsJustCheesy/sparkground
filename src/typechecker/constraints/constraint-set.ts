@@ -17,14 +17,14 @@ export type ConstraintSet = Record<string, Constraint>;
 
 export function constraintSetMeet(
   first: ConstraintSet,
-  second: ConstraintSet
+  second: ConstraintSet,
 ): ConstraintSet | undefined {
   const names = [...new Set([...Object.keys(first), ...Object.keys(second)]).values()];
   const constraintSet = Object.fromEntries(
     names.map((name) => [
       name,
       constraintMeet(first[name] ?? TopConstraint, second[name] ?? TopConstraint),
-    ])
+    ]),
   );
 
   if (Object.values(constraintSet).some((constraint) => constraint === undefined)) {
@@ -48,7 +48,7 @@ const NoMinimalSubstitution = {};
  */
 export function computeMinimalSubstitution(
   constraints: ConstraintSet,
-  type: Type
+  type: Type,
 ): TypeSubstitution | undefined {
   if (!areConstraintsSatisfiable(constraints)) return undefined;
 

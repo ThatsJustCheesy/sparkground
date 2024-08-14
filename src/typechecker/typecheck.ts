@@ -51,7 +51,7 @@ function bindInContext(context: TypeContext, binding: NameBinding): TypeContext 
 function bindInContextWithType(
   context: TypeContext,
   binding: NameBinding,
-  newType: Type
+  newType: Type,
 ): TypeContext {
   return {
     ...context,
@@ -238,7 +238,7 @@ export class Typechecker {
           this.#inferType(
             name,
             isHole(name) ? context : bindInContextWithType(context, name, type),
-            indexPath
+            indexPath,
           );
         };
 
@@ -259,7 +259,7 @@ export class Typechecker {
               cacheBindingType(fieldName, extendIndexPath(indexPath, fieldIndex + 1), accessorType);
               return accessorType;
             },
-          ])
+          ]),
         );
 
         this.#defines.add(getIdentifier(expr.name), () => {
@@ -268,7 +268,7 @@ export class Typechecker {
           // Synthesize constructor type
           const structName = getIdentifier(expr.name);
           const fieldTypes = expr.fields.map(
-            (fieldName) => getTypeAnnotation(fieldName) ?? Untyped
+            (fieldName) => getTypeAnnotation(fieldName) ?? Untyped,
           );
           const constructorType: SimpleConcreteType<"Function"> = {
             tag: "Function",
@@ -288,7 +288,7 @@ export class Typechecker {
           this.#inferType(
             name,
             isHole(name) ? context : bindInContextWithType(context, name, type),
-            indexPath
+            indexPath,
           );
         };
 
@@ -336,7 +336,7 @@ export class Typechecker {
         const bodyType = this.#inferType(
           expr.body,
           newContext,
-          extendIndexPath(indexPath, expr.params.length + 1)
+          extendIndexPath(indexPath, expr.params.length + 1),
         );
 
         if (expr.returnType && !isSubtype(bodyType, expr.returnType)) {
@@ -364,9 +364,9 @@ export class Typechecker {
           constrainVarNames.push(
             ...(
               calledType.forall.filter(
-                ({ kind }) => kind === "type-name-binding"
+                ({ kind }) => kind === "type-name-binding",
               ) as TypeNameBinding[]
-            ).map(({ id }) => id)
+            ).map(({ id }) => id),
           );
           calledType = calledType.body;
         }
@@ -405,12 +405,12 @@ export class Typechecker {
           }
 
           const argTypes = expr.args.map((arg, index) =>
-            this.#inferType(arg, context, extendIndexPath(indexPath, index + 1))
+            this.#inferType(arg, context, extendIndexPath(indexPath, index + 1)),
           );
           const paramTypes = [
             ...variadicParamTypes,
             ...Array(Math.max(0, argTypes.length - variadicParamTypes.length)).fill(
-              variadicParamTypes.at(-1)!
+              variadicParamTypes.at(-1)!,
             ),
           ];
 
@@ -419,7 +419,7 @@ export class Typechecker {
             expr.args,
             argTypes,
             paramTypes,
-            resultType
+            resultType,
           );
           if (instantiatedResultType === undefined) {
             throw {
@@ -447,7 +447,7 @@ export class Typechecker {
           }
 
           const argTypes = expr.args.map((arg, index) =>
-            this.#inferType(arg, context, extendIndexPath(indexPath, index + 1))
+            this.#inferType(arg, context, extendIndexPath(indexPath, index + 1)),
           );
 
           const instantiatedResultType = this.#inferResultType(
@@ -455,7 +455,7 @@ export class Typechecker {
             expr.args,
             argTypes,
             paramTypes,
-            resultType
+            resultType,
           );
           if (instantiatedResultType === undefined) {
             throw {
@@ -482,7 +482,7 @@ export class Typechecker {
               name.type,
               // Old context: This is plain `let`!
               context,
-              extendIndexPath(indexPath, 2 * index + 1)
+              extendIndexPath(indexPath, 2 * index + 1),
             );
           } else {
             // Infer a type for the definition
@@ -490,7 +490,7 @@ export class Typechecker {
               value,
               // Old context: This is plain `let`!
               context,
-              extendIndexPath(indexPath, 2 * index + 1)
+              extendIndexPath(indexPath, 2 * index + 1),
             );
 
             // Update the definition's type in the context
@@ -509,7 +509,7 @@ export class Typechecker {
         return this.#inferType(
           expr.body,
           newContext,
-          extendIndexPath(indexPath, 2 * expr.bindings.length)
+          extendIndexPath(indexPath, 2 * expr.bindings.length),
         );
       }
 
@@ -528,14 +528,14 @@ export class Typechecker {
               value,
               name.type,
               newContext,
-              extendIndexPath(indexPath, 2 * index + 1)
+              extendIndexPath(indexPath, 2 * index + 1),
             );
           } else {
             // Infer a type for the definition
             const inferredType = this.#inferType(
               value,
               newContext,
-              extendIndexPath(indexPath, 2 * index + 1)
+              extendIndexPath(indexPath, 2 * index + 1),
             );
 
             // Update the definition's type in the context
@@ -554,7 +554,7 @@ export class Typechecker {
         return this.#inferType(
           expr.body,
           newContext,
-          extendIndexPath(indexPath, 2 * expr.bindings.length)
+          extendIndexPath(indexPath, 2 * expr.bindings.length),
         );
       }
 
@@ -596,14 +596,14 @@ export class Typechecker {
         datum.heads.forEach((head, index) => {
           elementType = typeJoin(
             elementType,
-            this.#inferType(head, context, extendIndexPath(indexPath, index + 1))
+            this.#inferType(head, context, extendIndexPath(indexPath, index + 1)),
           );
         });
 
         if (datum.tail) {
           elementType = typeJoin(
             elementType,
-            this.#inferType(datum.tail, context, extendIndexPath(indexPath, 0))
+            this.#inferType(datum.tail, context, extendIndexPath(indexPath, 0)),
           );
         }
 
@@ -617,10 +617,10 @@ export class Typechecker {
     args: Expr[],
     argTypes: Type[],
     paramTypes: Type[],
-    resultType: Type
+    resultType: Type,
   ): Type | undefined {
     const constraintSet = constraintSetsMeet(
-      this.#generateConstraints(constrainVarNames, args, argTypes, paramTypes)
+      this.#generateConstraints(constrainVarNames, args, argTypes, paramTypes),
     );
     if (!constraintSet) return undefined;
 
@@ -635,10 +635,10 @@ export class Typechecker {
     constrainVarNames: string[],
     args: Expr[],
     argTypes: Type[],
-    paramTypes: Type[]
+    paramTypes: Type[],
   ) {
     const constraintSets: (ConstraintSet | undefined)[] = argTypes.map((argType, index) =>
-      generateConstraints([], constrainVarNames, argType, paramTypes[index]!)
+      generateConstraints([], constrainVarNames, argType, paramTypes[index]!),
     );
 
     const invalidIndex = constraintSets.findIndex((set) => set === undefined);
