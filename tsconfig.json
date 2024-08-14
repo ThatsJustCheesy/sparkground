@@ -5,6 +5,7 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
+    "noImplicitThis": true,
     "sourceMap": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
