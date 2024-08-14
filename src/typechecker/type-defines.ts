@@ -1,11 +1,10 @@
 import { cloneDeep } from "lodash";
-import { Binding, BindingAttributes, Cell, Environment } from "../editor/library/environments";
-import { EvalStateGenerator } from "./evaluate";
-import { Value } from "./value";
+import { Binding, BindingAttributes, Environment } from "../editor/library/environments";
+import { Type } from "./type";
 
-export class Defines {
-  #bindings: Environment<() => EvalStateGenerator<Cell<Value>>> = {};
-  #computed: Record<string, Cell<Value>> = {};
+export class TypeDefines {
+  #bindings: Environment<() => Type> = {};
+  #computed: Record<string, Type> = {};
   #computing: Set<string> = new Set();
 
   constructor() {
@@ -22,21 +21,17 @@ export class Defines {
     this.#computed = {};
   }
 
-  addAll(entries: [identifier: string, compute: () => EvalStateGenerator<Cell<Value>>][]): void {
+  addAll(entries: [identifier: string, compute: () => Type][]): void {
     for (const [identifier, compute] of entries) {
       this.add(identifier, compute);
     }
   }
 
-  add(
-    identifier: string,
-    compute: () => EvalStateGenerator<Cell<Value>>,
-    attributes?: BindingAttributes,
-  ): void {
+  add(identifier: string, compute: () => Type, attributes?: BindingAttributes): void {
     this.addBinding({ name: identifier, cell: { value: compute }, attributes });
   }
 
-  addBinding(binding: Binding<() => EvalStateGenerator<Cell<Value>>>): void {
+  addBinding(binding: Binding<() => Type>): void {
     this.#bindings[binding.name] = binding;
   }
 
@@ -44,15 +39,15 @@ export class Defines {
     return identifier in this.#bindings;
   }
 
-  binding(name: string): Binding<() => EvalStateGenerator<Cell<Value>>> | undefined {
+  binding(name: string): Binding<() => Type> | undefined {
     return cloneDeep(this.#bindings[name]);
   }
 
-  environment(): Environment<() => EvalStateGenerator<Cell<Value>>> {
+  environment(): Environment<() => Type> {
     return cloneDeep(this.#bindings);
   }
 
-  *get(name: string): EvalStateGenerator<Cell<Value> | undefined | "circular"> {
+  get(name: string): Type | undefined | "circular" {
     if (!(name in this.#computed)) {
       if (this.#computing.has(name)) {
         console.error(`Circular dependency for defined name: '${name}'`);
@@ -65,7 +60,7 @@ export class Defines {
 
       this.#computing.add(name);
       try {
-        this.#computed[name] = yield* compute();
+        this.#computed[name] = compute();
       } finally {
         this.#computing.delete(name);
       }

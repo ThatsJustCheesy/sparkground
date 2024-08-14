@@ -13,15 +13,15 @@ describe("evaluate", () => {
   })
 
   it("evals literal values", () => {
-    expect(evaluator.eval({ kind: "Number", value: 42 })).toEqual<Value>({ kind: "Number", value: 42 })
-    expect(evaluator.eval({ kind: "Boolean", value: true })).toEqual<Value>({ kind: "Boolean", value: true })
-    expect(evaluator.eval({ kind: "String", value: "hello" })).toEqual<Value>({ kind: "String", value: "hello" })
+    expect(evaluator.evalFully({ kind: "Number", value: 42 })).toEqual<Value>({ kind: "Number", value: 42 })
+    expect(evaluator.evalFully({ kind: "Boolean", value: true })).toEqual<Value>({ kind: "Boolean", value: true })
+    expect(evaluator.evalFully({ kind: "String", value: "hello" })).toEqual<Value>({ kind: "String", value: "hello" })
   })
 
   it("evals variables", () => {
-    expect(() => evaluator.eval({ kind: "var", id: "x" })).toThrow()
+    expect(() => evaluator.evalFully({ kind: "var", id: "x" })).toThrow()
     expect(
-      evaluator.eval({ kind: "var", id: "x" }, { extendEnv: { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } } }),
+      evaluator.evalFully({ kind: "var", id: "x" }, { extendEnv: { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } } }),
     ).toEqual<Value>({
       kind: "Number",
       value: 42,
@@ -30,7 +30,7 @@ describe("evaluate", () => {
 
   it("evals sequences", () => {
     expect(
-      evaluator.eval({
+      evaluator.evalFully({
         kind: "sequence",
         exprs: [
           { kind: "Boolean", value: false },
@@ -42,18 +42,18 @@ describe("evaluate", () => {
 
   it("evals procedures", () => {
     const const42: Lambda = { kind: "lambda", params: [], body: { kind: "Number", value: 42 } }
-    expect(evaluator.eval(const42)).toEqual<Value>(
+    expect(evaluator.evalFully(const42)).toEqual<Value>(
       expect.objectContaining({ kind: "fn", signature: [], body: { kind: "Number", value: 42 } }),
     )
-    expect(evaluator.eval({ kind: "call", called: const42, args: [] })).toEqual<Value>({ kind: "Number", value: 42 })
+    expect(evaluator.evalFully({ kind: "call", called: const42, args: [] })).toEqual<Value>({ kind: "Number", value: 42 })
   })
 
   it("evals unary functions", () => {
     const id: Lambda = { kind: "lambda", params: [{ kind: "name-binding", id: "x" }], body: { kind: "var", id: "x" } }
-    expect(evaluator.eval(id)).toEqual<Value>(
+    expect(evaluator.evalFully(id)).toEqual<Value>(
       expect.objectContaining({ kind: "fn", signature: [{ name: "x" }], body: { kind: "var", id: "x" } }),
     )
-    expect(evaluator.eval({ kind: "call", called: id, args: [{ kind: "Number", value: 42 }] })).toEqual<Value>({
+    expect(evaluator.evalFully({ kind: "call", called: id, args: [{ kind: "Number", value: 42 }] })).toEqual<Value>({
       kind: "Number",
       value: 42,
     })
@@ -68,7 +68,7 @@ describe("evaluate", () => {
       ],
       body: { kind: "var", id: "y" },
     }
-    expect(evaluator.eval(second)).toEqual<Value>(
+    expect(evaluator.evalFully(second)).toEqual<Value>(
       expect.objectContaining({
         kind: "fn",
         signature: [{ name: "x" }, { name: "y" }],
@@ -76,7 +76,7 @@ describe("evaluate", () => {
       }),
     )
     expect(
-      evaluator.eval({
+      evaluator.evalFully({
         kind: "call",
         called: second,
         args: [
@@ -91,7 +91,7 @@ describe("evaluate", () => {
     const returnX: Lambda = { kind: "lambda", params: [], body: { kind: "var", id: "x" } }
     const extendEnv: Environment = { x: { name: "x", cell: { value: { kind: "Number", value: 42 } } } }
 
-    const closure = evaluator.eval(returnX, { extendEnv })
+    const closure = evaluator.evalFully(returnX, { extendEnv })
     expect(closure).toEqual<Value>({
       kind: "fn",
       signature: [],
@@ -102,7 +102,7 @@ describe("evaluate", () => {
     })
 
     expect(
-      evaluator.eval(
+      evaluator.evalFully(
         { kind: "call", called: { kind: "var", id: "closure" }, args: [] },
         {
           extendEnv: { closure: { name: "closure", cell: { value: closure } } },
@@ -112,19 +112,19 @@ describe("evaluate", () => {
   })
 
   it("evals quote and returns value verbatim", () => {
-    const quoteResult = evaluator.eval(Parser.parseToExpr("(quote (1 #t abc () (2 3)))"))
+    const quoteResult = evaluator.evalFully(Parser.parseToExpr("(quote (1 #t abc () (2 3)))"))
     const datum = DatumParser.parseToDatum("(1 #t abc () (2 3))")
     expect(datumEqual(quoteResult!, datum))
   })
 
   it("evals calls to builtins", () => {
-    const consResult = evaluator.eval(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 (null))))"))
+    const consResult = evaluator.evalFully(Parser.parseToExpr("(cons 3 (cons 2 (cons 1 (null))))"))
     const datum = DatumParser.parseToDatum("(3 2 1)")
     expect(datumEqual(consResult!, datum)).toBeTruthy()
   })
 
   it("checks the types of function parameters", () => {
-    const body: FnValue["body"] = () => {
+    const body: FnValue["body"] = function* () {
       return { kind: "List", heads: [] }
     }
 

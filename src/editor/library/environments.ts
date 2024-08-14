@@ -19,6 +19,7 @@ import { DynamicTypeAny } from "../../evaluator/dynamic-type";
 import { datumEqual } from "../../datum/equality";
 import { SparkgroundComponent } from "../../evaluator/component";
 import { ImproperList, IndexOutOfBounds } from "../../evaluator/errors";
+import { EvalStateGenerator } from "../../evaluator/evaluate";
 
 export type Cell<Domain> = {
   value?: Domain;
@@ -111,7 +112,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             type: "List",
           },
         ],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [fn, argList] = args as [FnValue, ListValue];
 
           const argv = listValueAsVector(argList);
@@ -123,7 +124,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             } satisfies ImproperList;
           }
 
-          return evaluator.call(fn, argv);
+          return yield* evaluator.call(fn, argv);
         },
       },
     },
@@ -158,7 +159,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             variadic: true,
           },
         ],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [fn] = args as [FnValue];
           const lists = getVariadic<ListValue>(1, args);
 
@@ -184,7 +185,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
             }
             const col = tentativeCol as Value[];
 
-            results.push(evaluator.call(fn, col));
+            results.push(yield* evaluator.call(fn, col));
           }
 
           return { kind: "List", heads: results };
@@ -215,7 +216,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "expression" }, { name: "environment" }],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [expression, env] = args as [Value, Value];
           if (!valueIsDatum(expression)) {
             throw "expression passed to 'eval' must be serializable (Boolean/Number/String/Symbol/List)";
@@ -238,12 +239,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
 
           // TODO: Use env (what should be the runtime representation?)
 
-          return (
-            evaluator.eval(new Parser().parsePrimary(flattenDatum(expressionDatum))) ?? {
-              kind: "List",
-              heads: [],
-            }
-          );
+          return yield* evaluator.eval({
+            expr: new Parser().parsePrimary(flattenDatum(expressionDatum)),
+          }) ?? {
+            kind: "List",
+            heads: [],
+          };
         },
       },
     },
@@ -258,7 +259,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "value" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [value] = args as [Value];
           return { kind: "Boolean", value: !valueAsBool(value) };
         },
@@ -275,7 +276,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args as [Value];
           return { kind: "Boolean", value: obj.kind === "Boolean" };
         },
@@ -292,7 +293,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args as [Value];
           return { kind: "Boolean", value: obj.kind === "Symbol" };
         },
@@ -309,7 +310,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args as [Value];
           return { kind: "Boolean", value: obj.kind === "Number" };
         },
@@ -326,7 +327,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args as [Value];
           return { kind: "Boolean", value: obj.kind === "String" };
         },
@@ -343,7 +344,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args as [Value];
           return { kind: "Boolean", value: obj.kind === "List" };
         },
@@ -360,7 +361,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args as [Value];
           return { kind: "Boolean", value: obj.kind === "fn" };
         },
@@ -377,7 +378,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "string", type: "String" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string] = args as [StringDatum];
           return { kind: "Number", value: Number.parseInt(string.value) };
         },
@@ -394,7 +395,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "number", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [number] = args as [StringDatum];
           return { kind: "String", value: new Number(number.value).toString() };
         },
@@ -411,7 +412,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "name", type: "String" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [name] = args as [StringDatum];
           return { kind: "Symbol", value: name.value };
         },
@@ -428,7 +429,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "symbol", type: "Symbol" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [name] = args as [SymbolDatum];
           return { kind: "String", value: name.value };
         },
@@ -445,7 +446,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return { kind: "Number", value: sumBy(numbers, ({ value }) => value) };
         },
@@ -466,7 +467,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "number", type: "Number" },
           { name: "numbers", type: "Number", variadic: true },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [number] = args as [NumberDatum];
           const numbers = getVariadic<NumberDatum>(1, args);
           return {
@@ -494,7 +495,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
             kind: "Number",
@@ -522,7 +523,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "number", type: "Number" },
           { name: "numbers", type: "Number", variadic: true },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [number] = args as [NumberDatum];
           const numbers = getVariadic<NumberDatum>(1, args);
           return {
@@ -558,7 +559,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "dividend", type: "Number" },
           { name: "divisor", type: "Number" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [dividend, divisor] = args as [NumberDatum, NumberDatum];
           return {
             kind: "Number",
@@ -582,7 +583,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -602,7 +603,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -622,7 +623,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -642,7 +643,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -662,7 +663,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -682,7 +683,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -702,7 +703,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -725,7 +726,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "base", type: "Number" },
           { name: "exponent", type: "Number" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [base, exponent] = args as [NumberDatum, NumberDatum];
           return {
             kind: "Number",
@@ -749,7 +750,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "angle", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [angle] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -769,7 +770,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "angle", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [angle] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -789,7 +790,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "angle", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [angle] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -809,7 +810,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "ratio", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [ratio] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -829,7 +830,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "ratio", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [ratio] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -849,7 +850,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "ratio", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [ratio] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -869,7 +870,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x", type: "Number" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [NumberDatum];
           return {
             kind: "Number",
@@ -889,7 +890,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
             kind: "Boolean",
@@ -910,7 +911,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
             kind: "Boolean",
@@ -931,7 +932,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
             kind: "Boolean",
@@ -952,7 +953,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
             kind: "Boolean",
@@ -973,7 +974,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "numbers", type: "Number", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const numbers = getVariadic<NumberDatum>(0, args);
           return {
             kind: "Boolean",
@@ -994,7 +995,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [Value];
           return {
             kind: "Boolean",
@@ -1014,7 +1015,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [Value];
           return {
             kind: "Boolean",
@@ -1034,7 +1035,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [Value];
           return {
             kind: "Boolean",
@@ -1054,7 +1055,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "x" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [x] = args as [Value];
           return {
             kind: "Boolean",
@@ -1074,7 +1075,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "first" }, { name: "rest", type: "List" }],
-        body: (args): ListValue => {
+        *body(args): EvalStateGenerator<ListValue> {
           const [head, tail] = args as [Value, Value];
           return {
             kind: "List",
@@ -1105,7 +1106,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "elements", variadic: true }],
-        body: (args): ListValue => {
+        *body(args): EvalStateGenerator<ListValue> {
           const elements = getVariadic(0, args);
           return {
             kind: "List",
@@ -1131,7 +1132,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "lists", type: "List", variadic: true }],
-        body: (args): ListValue => {
+        *body(args): EvalStateGenerator<ListValue> {
           const lists = getVariadic<ListValue>(0, args);
 
           const vecs = lists.map(listValueAsVector).filter((x) => x);
@@ -1168,7 +1169,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "list", type: "List" }],
-        body: (args): ListValue => {
+        *body(args): EvalStateGenerator<ListValue> {
           const [list] = args as [ListValue];
 
           const vec = listValueAsVector(list);
@@ -1204,7 +1205,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "list", type: "List" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [list] = args as [ListDatum];
           // TODO: Length check
           return list.heads[0]!;
@@ -1228,7 +1229,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "list", type: "List" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [list] = args as [ListDatum];
           if (list.heads.length > 1) {
             return { kind: "List", heads: [...list.heads.slice(1)], tail: list.tail };
@@ -1258,7 +1259,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "obj" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [obj] = args;
           return { kind: "Boolean", value: obj?.kind === "List" && obj.heads.length === 0 };
         },
@@ -1278,7 +1279,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "list", type: "List" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [list] = args as [ListValue];
 
           const vector = listValueAsVector(list);
@@ -1314,7 +1315,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "list", type: "List" },
           { name: "index", type: "Number" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [list, index] = args as [ListValue, NumberDatum];
 
           const vector = listValueAsVector(list);
@@ -1352,7 +1353,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "list", type: "List" }, { name: "item" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [list, item] = args as [ListValue, Value];
 
           const vector = listValueAsVector(list);
@@ -1391,7 +1392,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "list", type: "List" },
           { name: "item", type: DynamicTypeAny },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [list, item] = args as [ListValue, Value];
 
           const vector = listValueAsVector(list);
@@ -1424,7 +1425,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "strings", type: "String", variadic: true }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const strings = getVariadic<StringDatum>(0, args);
           return {
             kind: "String",
@@ -1450,7 +1451,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string", type: "String" },
           { name: "count", type: "Number" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string, count] = args as [StringDatum, NumberDatum];
           return { kind: "String", value: repeat(string.value, count.value) };
         },
@@ -1470,7 +1471,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "string", type: "String" }],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string] = args as [StringDatum];
           return { kind: "Number", value: string.value.length };
         },
@@ -1494,7 +1495,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "start", type: "Number", optional: true },
           { name: "end", type: "Number", optional: true },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string, start, end] = args as [
             StringDatum,
             NumberDatum | undefined,
@@ -1525,7 +1526,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string", type: "String" },
           { name: "index", type: "Number" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string, index] = args as [StringDatum, NumberDatum];
           const char = string.value.at(index.value);
           return { kind: "String", value: char ?? "" };
@@ -1549,7 +1550,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return { kind: "Boolean", value: string1.value === string2.value };
         },
@@ -1572,7 +1573,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return { kind: "Boolean", value: string1.value < string2.value };
         },
@@ -1595,7 +1596,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return { kind: "Boolean", value: string1.value > string2.value };
         },
@@ -1618,7 +1619,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return { kind: "Boolean", value: string1.value <= string2.value };
         },
@@ -1641,7 +1642,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return { kind: "Boolean", value: string1.value >= string2.value };
         },
@@ -1664,7 +1665,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return {
             kind: "Boolean",
@@ -1692,7 +1693,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return {
             kind: "Boolean",
@@ -1719,7 +1720,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return {
             kind: "Boolean",
@@ -1746,7 +1747,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return {
             kind: "Boolean",
@@ -1773,7 +1774,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "string1", type: "String" },
           { name: "string2", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           const [string1, string2] = args as [StringDatum, StringDatum];
           return {
             kind: "Boolean",
@@ -1803,7 +1804,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "y-radius", type: "Number" },
           { name: "color", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           type ND = NumberDatum;
           const [x, y, xRadius, yRadius, color] = args as [ND, ND, ND, ND, StringDatum];
 
@@ -1841,7 +1842,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "height", type: "Number" },
           { name: "color", type: "String" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           type ND = NumberDatum;
           const [x, y, width, height, color] = args as [ND, ND, ND, ND, StringDatum];
 
@@ -1877,7 +1878,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "x", type: "Number" },
           { name: "y", type: "Number" },
         ],
-        body: (args): Value => {
+        *body(args): EvalStateGenerator {
           type ND = NumberDatum;
           type SD = StringDatum;
           const [url, x, y] = args as [SD, ND, ND];
@@ -1903,7 +1904,7 @@ export const SchemeReportEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [{ name: "initial-state" }],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [initialState] = args as [Value];
           return SparkgroundComponent.create(initialState, evaluator);
         },
@@ -1930,14 +1931,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "component", type: "component" },
           { name: "draw-function", type: "fn" },
         ],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [componentValue, drawFn] = args as [ComponentValue, FnValue];
 
           const compnoent = componentValue.component;
-          compnoent.toDraw = (state): Value => {
-            return evaluator.call(drawFn, [state]);
-          };
-
+          compnoent.toDraw = (state) => evaluator.call(drawFn, [state]);
           return { kind: "List", heads: [] };
         },
       },
@@ -1968,13 +1966,11 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "component", type: "component" },
           { name: "tick-function", type: "fn" },
         ],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [componentValue, tickFn] = args as [ComponentValue, FnValue];
 
           const compnoent = componentValue.component;
-          compnoent.onTick = (state): Value => {
-            return evaluator.call(tickFn, [state]);
-          };
+          compnoent.onTick = (state) => evaluator.call(tickFn, [state]);
 
           return { kind: "List", heads: [] };
         },
@@ -2006,14 +2002,12 @@ export const SchemeReportEnvironment: Environment = makeEnv([
           { name: "component", type: "component" },
           { name: "key-function", type: "fn" },
         ],
-        body: (args, evaluator): Value => {
+        *body(args, evaluator): EvalStateGenerator {
           const [componentValue, keyFn] = args as [ComponentValue, FnValue];
 
           const compnoent = componentValue.component;
-          compnoent.onKey = (state, key): Value => {
-            return evaluator.call(keyFn, [state, { kind: "String", value: key }]);
-          };
-
+          compnoent.onKey = (state, key) =>
+            evaluator.call(keyFn, [state, { kind: "String", value: key }]);
           return { kind: "List", heads: [] };
         },
       },
@@ -2044,7 +2038,7 @@ export const ExtensionsEnvironment: Environment = makeEnv([
       value: {
         kind: "fn",
         signature: [],
-        body: (args): ListValue => {
+        *body(): EvalStateGenerator<ListValue> {
           return {
             kind: "List",
             heads: [],

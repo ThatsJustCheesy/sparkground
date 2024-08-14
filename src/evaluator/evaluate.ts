@@ -1,4 +1,4 @@
-import { keyBy } from "lodash";
+import { keyBy, zipWith } from "lodash";
 import {
   Binding,
   Cell,
@@ -8,7 +8,7 @@ import {
   mergeEnvs,
 } from "../editor/library/environments";
 import { TreeIndexPath, extendIndexPath, isHole, nodeAtIndexPath } from "../editor/trees/tree";
-import { Expr, NameBinding, getIdentifier, getPrettyName } from "../expr/expr";
+import { Define, Expr, NameBinding, Struct, getIdentifier, getPrettyName } from "../expr/expr";
 import { Defines } from "./defines";
 import { DynamicParamSignature, checkCallAgainstTypeSignature } from "./dynamic-type";
 import { FnValue, ListValue, Value, listValueAsVector, valueAsBool } from "./value";
@@ -24,12 +24,55 @@ import {
   UninitializedVariable,
   WrongStructType,
 } from "./errors";
+import { collect, withIndices } from "../util";
 
+export type EvalState = {
+  expr: Expr;
+  indexPath?: TreeIndexPath;
+  index?: number;
+  env?: Environment;
+  extendEnv?: Environment;
+};
+
+export type EvalStateGenerator<ReturnValue = Value> = Generator<
+  /* yields */ EvalState,
+  /* returns */ ReturnValue,
+  /* accepts */ Value
+>;
+
+export interface EvaluatorInterface {
+  components: SparkgroundComponent[];
+
+  eval(fromState: EvalState): EvalStateGenerator;
+  call(fn: FnValue, args: Value[]): EvalStateGenerator;
+}
+
+export function evalFully(evaluator: EvaluatorInterface, fromState: EvalState): Value | undefined {
+  try {
+    return evalFullyOrThrow(evaluator, fromState);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function evalFullyOrThrow(evaluator: EvaluatorInterface, state: EvalState) {
+  return elaborate(evaluator, evaluator.eval(state));
+}
+
+export function elaborate(evaluator: EvaluatorInterface, generator: EvalStateGenerator) {
+  let { done, value } = generator.next();
+  while (!done) {
+    const state = value as EvalState;
+    ({ done, value } = generator.next(evalFullyOrThrow(evaluator, state)));
+  }
+
+  return value as Value;
+}
 /** Call-by-value evaluator */
-export class Evaluator {
+export class Evaluator implements EvaluatorInterface {
   baseEnv: Environment;
   env: Environment;
-  defines: Defines<Cell<Value>>;
+  defines: Defines;
   components: SparkgroundComponent[] = [];
 
   indexPath?: TreeIndexPath;
@@ -40,7 +83,7 @@ export class Evaluator {
     defines,
   }: {
     baseEnv?: Environment;
-    defines?: Defines<Cell<Value>>;
+    defines?: Defines;
   } = {}) {
     this.baseEnv = baseEnv ?? InitialEnvironment;
     this.env = { ...this.baseEnv };
@@ -53,8 +96,11 @@ export class Evaluator {
         const root = nodeAtIndexPath(rootIndexPath);
         switch (root.kind) {
           case "struct":
+            this.addStruct(root, rootIndexPath);
+            break;
           case "define":
-            this.eval(root, { indexPath: rootIndexPath });
+            this.addDefine(root, rootIndexPath);
+            break;
         }
       } catch (error) {
         // TODO: Remove this try/catch once eval() is changed to not throw any errors
@@ -63,36 +109,110 @@ export class Evaluator {
     }
   }
 
-  eval(
-    expr: Expr,
-    { indexPath, extendEnv }: { indexPath?: TreeIndexPath; extendEnv?: Environment } = {},
-  ): Value | undefined {
+  addDefine(define: Define, indexPath?: TreeIndexPath): void {
+    const prevIndexPath = this.indexPath;
+    if (indexPath) this.indexPath = indexPath;
+
+    const defineBodyIndexPath = this.indexPath ? extendIndexPath(this.indexPath, 1) : undefined;
+    const this_ = this;
+    this.defines.add(getIdentifier(define.name), function* (): EvalStateGenerator<Cell<Value>> {
+      return { value: yield* this_.eval({ expr: define.value, indexPath: defineBodyIndexPath }) };
+    });
+
+    this.indexPath = prevIndexPath;
+  }
+
+  addStruct(struct: Struct, indexPath?: TreeIndexPath): void {
+    const prevIndexPath = this.indexPath;
+    if (indexPath) this.indexPath = indexPath;
+
+    // Constructor
+    this.defines.add(
+      getIdentifier(struct.name),
+      function* (): EvalStateGenerator<Cell<FnValue>> {
+        return {
+          value: {
+            kind: "fn",
+            signature: struct.fields.map(
+              (fieldName): DynamicParamSignature => ({ name: getPrettyName(fieldName) }),
+            ),
+            *body(args: Value[]): EvalStateGenerator {
+              return {
+                kind: "List",
+                heads: [{ kind: "Symbol", value: getIdentifier(struct.name) }, ...args],
+              };
+            },
+          },
+        };
+      },
+      {
+        typeAnnotation: isHole(struct.name) ? undefined : struct.name.type,
+        bodyArgHints: struct.fields.map((name) => getPrettyName(name)),
+      },
+    );
+
+    // Field accessors
+    this.defines.addAll(
+      struct.fields.map((fieldName, fieldIndex) => [
+        getIdentifier(fieldName),
+        function* (): EvalStateGenerator<Cell<FnValue>> {
+          return {
+            value: {
+              kind: "fn",
+              signature: [{ name: "structure", type: "List" }],
+              *body(args: Value[]): EvalStateGenerator {
+                const [struct] = args as [ListValue];
+
+                const vector = listValueAsVector(struct);
+                if (!vector) {
+                  throw {
+                    tag: "ImproperList",
+                    functionName: getPrettyName(fieldName),
+                    argValue: struct,
+                  } satisfies ImproperList;
+                }
+
+                const fieldValue = vector[fieldIndex + 1];
+                if (!fieldValue) {
+                  throw {
+                    tag: "WrongStructType",
+                    structName: getPrettyName(fieldName),
+                  } satisfies WrongStructType;
+                }
+
+                return fieldValue;
+              },
+            },
+          };
+        },
+      ]),
+    );
+
+    this.indexPath = prevIndexPath;
+  }
+
+  /**
+   * Evaluates `expr` down to a value.
+   *
+   * This method exists for unit testing; use the separate `evalFully` function otherwise.
+   */
+  evalFully(expr: Expr, fromState: Omit<EvalState, "expr"> = {}): Value | undefined {
     try {
-      return this.#eval(expr, { indexPath, extendEnv });
+      return evalFullyOrThrow(this, { ...fromState, expr });
     } catch (error) {
       if (!this.indexPath) {
         // Throw for unit tests
         throw error;
       } else {
         console.error(error);
+        return;
       }
     }
   }
 
-  #eval(
-    expr: Expr,
-    {
-      indexPath,
-      index,
-      env,
-      extendEnv,
-    }: {
-      indexPath?: TreeIndexPath;
-      index?: number;
-      env?: Environment;
-      extendEnv?: Environment;
-    } = {},
-  ) {
+  *eval(fromState: EvalState): EvalStateGenerator {
+    const { expr, indexPath, index, env, extendEnv } = fromState;
+
     const prevEnv = this.env;
     if (env) this.env = mergeEnvs(this.baseEnv, env);
     if (extendEnv) this.env = mergeEnvs(this.env, extendEnv);
@@ -105,7 +225,7 @@ export class Evaluator {
 
     let result: Value;
     try {
-      result = this.#eval_(expr);
+      result = yield* this.#eval_(expr);
     } catch (error) {
       if (typeof error === "object" && "tag" in error && this.indexPath) {
         this.errors.add(this.indexPath, error);
@@ -119,7 +239,7 @@ export class Evaluator {
     return result;
   }
 
-  #eval_(expr: Expr): Value {
+  *#eval_(expr: Expr): EvalStateGenerator {
     switch (expr.kind) {
       case "Number":
       case "Boolean":
@@ -132,7 +252,7 @@ export class Evaluator {
         return expr;
 
       case "var": {
-        const cell = this.#get(expr.id);
+        const cell = yield* this.#get(expr.id);
 
         if (!cell) {
           throw { tag: "UnboundVariable", name: expr.id } satisfies UnboundVariable;
@@ -150,99 +270,42 @@ export class Evaluator {
       case "call": {
         const { called, args } = expr;
 
-        const calledValue = this.#eval(called, { index: 0 });
+        const calledValue = yield { expr: called, index: 0 };
         if (calledValue.kind !== "fn") {
           throw { tag: "CallToNonFunction", called: calledValue } satisfies CallToNonFunction;
         }
 
-        const argValues = args.map((arg, index) => this.#eval(arg, { index: index + 1 }));
-
-        return this.call(calledValue, argValues);
-      }
-
-      case "struct": {
-        // Constructor
-        this.defines.add(
-          getIdentifier(expr.name),
-          (): Cell<FnValue> => ({
-            value: {
-              kind: "fn",
-              signature: expr.fields.map(
-                (fieldName): DynamicParamSignature => ({ name: getPrettyName(fieldName) }),
-              ),
-              body: (args: Value[]): Value => {
-                return {
-                  kind: "List",
-                  heads: [{ kind: "Symbol", value: getIdentifier(expr.name) }, ...args],
-                };
-              },
-            },
-          }),
-          {
-            typeAnnotation: isHole(expr.name) ? undefined : expr.name.type,
-            bodyArgHints: expr.fields.map((name) => getPrettyName(name)),
-          },
+        const argValues = yield* collect(
+          args.map((arg, index): EvalState => ({ expr: arg, index: index + 1 })),
         );
 
-        // Field accessors
-        this.defines.addAll(
-          expr.fields.map((fieldName, fieldIndex) => [
-            getIdentifier(fieldName),
-            (): Cell<FnValue> => ({
-              value: {
-                kind: "fn",
-                signature: [{ name: "structure", type: "List" }],
-                body: (args: Value[]): Value => {
-                  const [struct] = args as [ListValue];
-
-                  const vector = listValueAsVector(struct);
-                  if (!vector) {
-                    throw {
-                      tag: "ImproperList",
-                      functionName: getPrettyName(fieldName),
-                      argValue: struct,
-                    } satisfies ImproperList;
-                  }
-
-                  const fieldValue = vector[fieldIndex + 1];
-                  if (!fieldValue) {
-                    throw {
-                      tag: "WrongStructType",
-                      structName: getPrettyName(fieldName),
-                    } satisfies WrongStructType;
-                  }
-
-                  return fieldValue;
-                },
-              },
-            }),
-          ]),
-        );
-
-        return { kind: "List", heads: [] };
+        return yield* this.call(calledValue, argValues);
       }
 
-      case "define": {
-        const defineBodyIndexPath = this.indexPath ? extendIndexPath(this.indexPath, 1) : undefined;
-        this.defines.add(getIdentifier(expr.name), () => ({
-          value: this.#eval(expr.value, { indexPath: defineBodyIndexPath }),
-        }));
-
+      case "struct":
+        this.addStruct(expr);
         return { kind: "List", heads: [] };
-      }
+
+      case "define":
+        this.addDefine(expr);
+        return { kind: "List", heads: [] };
 
       case "let": {
-        const valueBindings = expr.bindings.map(
-          ([name, value], index): Binding<Value> => ({
-            name: (name as NameBinding).id,
-            cell: { value: this.#eval(value, { index: 2 * index + 1 }) },
-          }),
+        const values = yield* collect(
+          expr.bindings.map(
+            ([, value], index): EvalState => ({ expr: value, index: 2 * index + 1 }),
+          ),
         );
+        const valueBindings = zipWith(expr.bindings, values, ([name], value) => ({
+          name: (name as NameBinding).id,
+          cell: { value },
+        }));
 
-        return this.#eval(expr.body, {
+        return yield {
+          expr: expr.body,
           index: 2 * expr.bindings.length,
           extendEnv: makeEnv(valueBindings),
-        });
+        };
       }
 
       case "letrec": {
@@ -256,18 +319,20 @@ export class Evaluator {
           ({ name }) => name,
         );
 
-        expr.bindings.forEach(([name, value], index) => {
+        for (const [[name, value], index] of withIndices(expr.bindings)) {
           const binding = valueBindings[(name as NameBinding).id]!;
-          binding.cell.value = this.#eval(value, {
+          binding.cell.value = yield {
+            expr: value,
             index: 2 * index + 1,
             extendEnv: makeEnv([binding]),
-          });
-        });
+          };
+        }
 
-        return this.#eval(expr.body, {
+        return yield {
+          expr: expr.body,
           index: 2 * expr.bindings.length,
           extendEnv: makeEnv(Object.values(valueBindings)),
-        });
+        };
       }
 
       case "lambda":
@@ -285,10 +350,12 @@ export class Evaluator {
         };
 
       case "sequence": {
+        const { exprs } = expr;
+
         let result: Value = { kind: "List", heads: [] };
-        expr.exprs.forEach((expr, index) => {
-          result = this.#eval(expr, { index });
-        });
+        for (const [expr, index] of withIndices(exprs)) {
+          result = yield { expr, index };
+        }
 
         return result;
       }
@@ -302,7 +369,7 @@ export class Evaluator {
         let index = 0;
         do {
           const arg = args.shift()!;
-          value = this.#eval(arg, { index: index++ });
+          value = yield { expr: arg, index: index++ };
         } while (args.length && valueAsBool(value));
 
         return value;
@@ -316,18 +383,18 @@ export class Evaluator {
         let index = 0;
         do {
           const arg = args.shift()!;
-          value = this.#eval(arg, { index: index++ });
+          value = yield { expr: arg, index: index++ };
         } while (args.length && !valueAsBool(value));
 
         return value;
       }
 
       case "if": {
-        const condition = this.#eval(expr.if, { index: 0 });
+        const condition = yield { expr: expr.if, index: 0 };
         if (valueAsBool(condition)) {
-          return this.#eval(expr.then, { index: 1 });
+          return yield { expr: expr.then, index: 1 };
         } else {
-          return this.#eval(expr.else, { index: 2 });
+          return yield { expr: expr.else, index: 2 };
         }
       }
 
@@ -338,7 +405,7 @@ export class Evaluator {
     }
   }
 
-  call(fn: FnValue, args: Value[]): Value {
+  *call(fn: FnValue, args: Value[]): EvalStateGenerator {
     checkCallAgainstTypeSignature(args, fn.signature);
 
     let callEnv = fn.env ?? {};
@@ -357,18 +424,15 @@ export class Evaluator {
     let result: Value;
     if (typeof fn.body === "function") {
       // Builtin
-      result = fn.body(args, this);
+      result = yield* fn.body(args, this);
     } else {
-      result = this.#eval(fn.body, {
-        indexPath: fn.indexPath,
-        env: callEnv,
-      });
+      result = yield { expr: fn.body, indexPath: fn.indexPath, env: callEnv };
     }
 
     return result;
   }
 
-  #get(name: string): Cell<Value> | undefined | "circular" {
-    return this.env[name]?.cell ?? this.defines.get(name);
+  *#get(name: string): EvalStateGenerator<Cell<Value> | undefined | "circular"> {
+    return this.env[name]?.cell ?? (yield* this.defines.get(name));
   }
 }

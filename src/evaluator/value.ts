@@ -5,7 +5,7 @@ import { TreeIndexPath } from "../editor/trees/tree";
 import { Expr } from "../expr/expr";
 import { SparkgroundComponent } from "./component";
 import { DynamicFnSignature } from "./dynamic-type";
-import { Evaluator } from "./evaluate";
+import { EvalStateGenerator, EvaluatorInterface } from "./evaluate";
 
 export type Value =
   | BoolDatum
@@ -30,7 +30,7 @@ export type FnValue = {
   env?: Environment;
 };
 
-export type BuiltinFn = (args: Value[], evaluator: Evaluator) => Value;
+export type BuiltinFn = (args: Value[], evaluator: EvaluatorInterface) => EvalStateGenerator;
 
 export type ComponentValue = {
   kind: "component";

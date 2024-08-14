@@ -1,6 +1,5 @@
-import { Evaluator } from "../evaluator/evaluate";
+import { evalFully, Evaluator } from "../evaluator/evaluate";
 import { Value } from "../evaluator/value";
-import { Cell } from "../editor/library/environments";
 import { Defines } from "../evaluator/defines";
 import { TreeIndexPath, nodeAtIndexPath, rootIndexPath } from "../editor/trees/tree";
 import { Tree } from "../editor/trees/Trees";
@@ -29,17 +28,21 @@ export class Program {
     return this.#evaluator;
   }
 
-  get defines(): Defines<Cell<Value>> {
+  get defines(): Defines {
     return this.evaluator.defines;
   }
 
   evalInProgram(entryPoint: TreeIndexPath): Value | undefined {
-    return this.evaluator.eval(nodeAtIndexPath(entryPoint), { indexPath: entryPoint });
+    return evalFully(this.evaluator, { expr: nodeAtIndexPath(entryPoint), indexPath: entryPoint });
+  }
+
+  evalInProgramInteractively(entryPoint: TreeIndexPath) {
+    return this.evaluator.eval({ expr: nodeAtIndexPath(entryPoint), indexPath: entryPoint });
   }
 
   runAll(): void {
     for (const entryPoint of this.#entryPointIndexPaths) {
-      this.evaluator.eval(nodeAtIndexPath(entryPoint), { indexPath: entryPoint });
+      this.evalInProgram(entryPoint);
     }
   }
 }
