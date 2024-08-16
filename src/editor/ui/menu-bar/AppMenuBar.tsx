@@ -1,6 +1,6 @@
 import { SyntheticEvent } from "react";
 import { Parser } from "../../../expr/parse";
-import { Point, PageID } from "../../trees/Trees";
+import { Point, PageID } from "../../trees/trees";
 import MenuBar from "./MenuBar";
 import MenuBarButton from "./MenuBarButton";
 import MenuBarTitle from "./MenuBarTitle";

@@ -2,7 +2,7 @@ import { evalFully, Evaluator } from "../evaluator/evaluate";
 import { Value } from "../evaluator/value";
 import { Defines } from "../evaluator/defines";
 import { TreeIndexPath, nodeAtIndexPath, rootIndexPath } from "../editor/trees/tree";
-import { Tree } from "../editor/trees/Trees";
+import { Tree } from "../editor/trees/trees";
 
 export class Program {
   #entryPointIndexPaths: TreeIndexPath[];

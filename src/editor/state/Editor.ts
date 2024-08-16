@@ -11,7 +11,7 @@ import {
   referencesToBindingInScope,
   rootIndexPath,
 } from "../trees/tree";
-import { Point, Trees } from "../trees/Trees";
+import { Point, Trees } from "../trees/trees";
 import { Datum } from "../../datum/datum";
 import { EditorRunner } from "./EditorRunner";
 

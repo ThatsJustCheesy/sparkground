@@ -1,4 +1,4 @@
-import { Tree } from "./Trees";
+import { Tree } from "./trees";
 import { isEqual } from "lodash";
 import { Expr, Hole, TypeExpr, Var, VarSlot } from "../../expr/expr";
 import { Datum } from "../../datum/datum";

@@ -1,7 +1,7 @@
 import { ContextMenu, ContextMenuItem } from "rctx-contextmenu";
 import { SyntheticEvent } from "react";
 import { TreeIndexPath, parentIndexPath } from "../../trees/tree";
-import { Point } from "../../trees/Trees";
+import { Point } from "../../trees/trees";
 import ContextMenuItemSeparator from "./ContextMenuItemSeparator";
 import { PropSetter } from "../../../util";
 import { Editor, typedNodeAtIndexPath } from "../../state/Editor";

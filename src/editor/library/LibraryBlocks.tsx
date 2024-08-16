@@ -1,7 +1,7 @@
 import "./library.css";
 import { Renderer } from "../trees/render";
 import { LibraryCategories, LibraryCategory } from "./library-defs";
-import { LibraryPageID, Tree } from "../trees/Trees";
+import { LibraryPageID, Tree } from "../trees/trees";
 import Nav from "react-bootstrap/Nav";
 import Tab from "react-bootstrap/Tab";
 import { InitialEnvironment } from "./environments";

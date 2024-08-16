@@ -23,7 +23,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import Library from "./library/Library";
-import { PageID } from "./trees/Trees";
+import { PageID } from "./trees/trees";
 import CodeEditorModal from "./CodeEditorModal";
 import { Expr, Var } from "../expr/expr";
 import { Parser } from "../expr/parse";

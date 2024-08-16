@@ -30,9 +30,8 @@ import {
   hasTag,
   isForallType,
 } from "./type";
-import { InvisiblePageID, Tree } from "../editor/trees/Trees";
+import { InvisiblePageID, Tree } from "../editor/trees/trees";
 import { isSubtype, typeJoin } from "./subtyping";
-import { Defines } from "../evaluator/defines";
 import { InitialTypeContext } from "../editor/typecheck";
 import {
   ConstraintSet,
