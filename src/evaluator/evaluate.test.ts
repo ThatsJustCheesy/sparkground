@@ -129,25 +129,31 @@ describe("evaluate", () => {
     }
 
     // No formal, one actual
-    expect(() => evaluator.call({ kind: "fn", signature: [], body }, [{ kind: "Boolean", value: true }])).toThrow()
+    expect(() => elaborate(evaluator, evaluator.call({ kind: "fn", signature: [], body }, [{ kind: "Boolean", value: true }]))).toThrow()
 
     // One formal, no actual
-    expect(() => evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Boolean" }], body }, [])).toThrow()
+    expect(() => elaborate(evaluator, evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Boolean" }], body }, []))).toThrow()
 
     // One formal, one actual, type mismatch
     expect(() =>
-      evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Number" }], body }, [{ kind: "Boolean", value: true }]),
+      elaborate(
+        evaluator,
+        evaluator.call({ kind: "fn", signature: [{ name: "x", type: "Number" }], body }, [{ kind: "Boolean", value: true }]),
+      ),
     ).toThrow()
 
     // Variadic formal, no actual
-    expect(() => evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, [])).not.toThrow()
+    expect(() => elaborate(evaluator, evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, []))).not.toThrow()
 
     // Variadic formal, 2 actual
     expect(() =>
-      evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, [
-        { kind: "Boolean", value: true },
-        { kind: "Number", value: 123 },
-      ]),
+      elaborate(
+        evaluator,
+        evaluator.call({ kind: "fn", signature: [{ name: "x", variadic: true }], body }, [
+          { kind: "Boolean", value: true },
+          { kind: "Number", value: 123 },
+        ]),
+      ),
     ).not.toThrow()
   })
 })
