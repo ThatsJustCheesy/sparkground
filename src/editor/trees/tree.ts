@@ -63,7 +63,7 @@ export function children(node: Expr): (Expr | undefined)[] {
       return [
         ...node.params,
         hole,
-        ...(node.returnType ? [{ kind: "type", type: node.returnType } satisfies TypeExpr] : []),
+        node.returnType ? ({ kind: "type", type: node.returnType } satisfies TypeExpr) : hole,
         node.body,
       ];
     case "sequence":

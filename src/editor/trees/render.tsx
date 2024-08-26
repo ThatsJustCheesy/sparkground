@@ -559,7 +559,7 @@ export class Renderer {
         }
       </>
     );
-    const body = this.#renderSubexpr(expr.body, expr.params.length + 1, {
+    const body = this.#renderSubexpr(expr.body, expr.params.length + 2, {
       environment: newEnvironment,
     });
 
