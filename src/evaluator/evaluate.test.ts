@@ -1,7 +1,7 @@
 import { Parser } from "../expr/parse"
 import { Parser as DatumParser } from "../datum/parse"
 import { Lambda } from "../expr/expr"
-import { Evaluator } from "./evaluate"
+import { elaborate, Evaluator } from "./evaluate"
 import { FnValue, Value } from "./value"
 import { datumEqual } from "../datum/equality"
 import { Environment } from "../editor/library/environments"

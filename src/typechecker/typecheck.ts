@@ -41,6 +41,7 @@ import {
 import { eliminateUp, generateConstraints } from "./constraints/constraint-gen";
 import { typeSubstitute } from "./type-substitution";
 import { ErrorsByIndexPath } from "../expr/errors";
+import { TypeDefines } from "./type-defines";
 
 export type TypeContext = Record<string, Type>;
 
@@ -80,7 +81,7 @@ export class Typechecker {
   errors: ErrorsByIndexPath<TypecheckError> = new ErrorsByIndexPath();
   autoReset: boolean;
 
-  #defines: Defines<Type> = new Defines();
+  #defines: TypeDefines = new TypeDefines();
   #inferenceCache = new InferenceCache();
 
   #nextFakeTreeID = 0;
