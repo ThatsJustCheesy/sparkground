@@ -74,19 +74,19 @@ export default function AppContextMenu({
   }
 
   async function cutSubject() {
-    if (subject) editor.cut(subject);
+    if (subject) await editor.cut(subject);
   }
 
   async function copySubject() {
-    if (subject) editor.copy(subject);
+    if (subject) await editor.copy(subject);
   }
 
   async function pasteInEditor(event: SyntheticEvent) {
-    editor.paste(mouseCursorLocation(event));
+    await editor.paste(mouseCursorLocation(event));
   }
 
   async function pasteOverSubject(event: SyntheticEvent) {
-    if (subject) editor.pasteOver(subject, mouseCursorLocation(event));
+    if (subject) await editor.pasteOver(subject, mouseCursorLocation(event));
   }
 
   function duplicateSubject(event: SyntheticEvent) {
